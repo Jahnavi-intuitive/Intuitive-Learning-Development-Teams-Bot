@@ -138,6 +138,15 @@ only.
    This dump was generated with `--clean --if-exists`, so it's safe to
    run even though the tables already exist from Step 3's migration —
    it drops and recreates everything, ending with your exact real data.
+   One thing worth knowing: this dump comes from a local Postgres 18
+   instance, restoring into Render's Postgres 16 (matched to whatever
+   `lnd-db` was actually created as — Postgres major version can't be
+   changed via a Blueprint sync, only the dashboard, once a database
+   already exists). Restoring a plain-SQL dump into an *older* major
+   version isn't officially guaranteed the way same-version or
+   upgrading is, but this schema doesn't use anything newer than
+   standard tables/enums/JSONB/pgvector, so it's a low-risk mismatch in
+   practice. If `psql` reports errors partway through, paste them here.
 3. Re-check `/health` and open the deployed URL in a browser — the
    employee dropdown should now show your 5 real employees.
 
