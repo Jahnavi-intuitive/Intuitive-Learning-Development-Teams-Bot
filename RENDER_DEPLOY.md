@@ -72,16 +72,17 @@ deploys from a connected Git repo, so:
 3. Render reads `render.yaml` from the repo root automatically and shows
    you 3 resources: `lnd-db`, `lnd-agent`, `lnd-backend` — confirm all
    three show the **Free** plan before continuing.
-4. It will prompt you for secret values (marked `sync: false` in
+4. It will prompt you for two secret values (marked `sync: false` in
    `render.yaml`, so they're never stored in the file itself):
    - **`GEMINI_API_KEY`** (on `lnd-backend`) — the same real key you
      already have in `backend/.env`.
    - **`GOOGLE_API_KEY`** (on `lnd-agent`) — the *same* key value again,
      just under the name the ADK library itself expects. Not two
      different keys.
-   - **`BACKEND_URL`** (on `lnd-agent`) and **`AGENT_URL`** (on
-     `lnd-backend`) — leave these as the `placeholder` default for now;
-     Step 2.5 fixes them once both services actually exist.
+   `BACKEND_URL` (on `lnd-agent`) and `AGENT_URL` (on `lnd-backend`)
+   aren't prompted — they're not secrets, just plain env vars defaulted
+   to the literal text `placeholder` in `render.yaml`. Leave them; Step
+   2.5 fixes them once both services actually exist.
 5. Click **Apply**. Render provisions the database, builds both Docker
    images, and deploys. First build takes a few minutes (installing
    `pyjwt`, `google-adk`, etc. — this happens once, not on every request,

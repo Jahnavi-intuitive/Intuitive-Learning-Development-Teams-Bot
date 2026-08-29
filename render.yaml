@@ -32,7 +32,6 @@ services:
       # service's plain public https://...onrender.com URL instead.
       - key: BACKEND_URL
         value: placeholder
-        sync: false
 
   - name: lnd-backend
     type: web
@@ -52,7 +51,6 @@ services:
       # (same reason as lnd-agent's BACKEND_URL above).
       - key: AGENT_URL
         value: placeholder
-        sync: false
       - key: AUTH_MODE
         value: header
       # See the deployment doc's security note: "header" mode trusts
