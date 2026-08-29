@@ -20,8 +20,25 @@ trusted service accounts (see
 backend/app/services/entra_auth.py::validate_service_id_token). Locally,
 where BACKEND_URL is localhost, that token fetch is a no-op and this
 behaves exactly as before.
+
+Every tool below is `async def` using httpx.AsyncClient, not a plain sync
+function — this is load-bearing, not stylistic. `adk api_server` runs
+tools directly on the single asyncio event loop with no thread-pool
+offload unless the tool itself is a coroutine (confirmed by reading
+google/adk/tools/function_tool.py directly: a sync callable only gets
+offloaded if something upstream has bound a "_SYNC_CALLABLE_RUNNER"
+context var, which nothing in api_server's request path actually does).
+A plain sync httpx.Client call blocks that entire process for its full
+duration — with a multi-tool recommendation question chaining three
+sequential backend calls, that was long enough to blow past Render's
+5-second health-check timeout and get the whole instance killed mid-
+request (confirmed live: Render's own event log showed "HTTP health
+check failed (timed out after 5 seconds)" exactly during that flow,
+resolved by this async rewrite — see DEVELOPMENT_LOG.md's 2026-08-30
+entry).
 """
 
+import asyncio
 import os
 
 import httpx
@@ -34,11 +51,16 @@ if _BACKEND_URL and "://" not in _BACKEND_URL:
     # private service, not a full URL — see render.yaml and the matching
     # normalization in backend/app/config.py.
     _BACKEND_URL = f"http://{_BACKEND_URL}"
-_client = httpx.Client(base_url=_BACKEND_URL, timeout=20.0)
+_client = httpx.AsyncClient(base_url=_BACKEND_URL, timeout=20.0)
 
 
-def _headers(as_employee_id: str) -> dict:
-    return {"X-Employee-Id": as_employee_id, **gcp_id_token.fetch_service_token_header(_BACKEND_URL)}
+async def _headers(as_employee_id: str) -> dict:
+    # fetch_service_token_header does a blocking google-auth call under
+    # the hood (fast-failing off-GCP, a real metadata-server round-trip
+    # on GCP) — run it off the event loop rather than await-ing it
+    # in-line, for the same reason every tool call itself is async now.
+    service_header = await asyncio.to_thread(gcp_id_token.fetch_service_token_header, _BACKEND_URL)
+    return {"X-Employee-Id": as_employee_id, **service_header}
 
 
 def _handle(resp: httpx.Response) -> dict:
@@ -51,7 +73,7 @@ def _handle(resp: httpx.Response) -> dict:
     return {"status": "success", "data": resp.json()}
 
 
-def search_certification_catalog(query: str) -> dict:
+async def search_certification_catalog(query: str) -> dict:
     """Search the certification catalog by name (autocomplete/lookup).
 
     Args:
@@ -61,11 +83,11 @@ def search_certification_catalog(query: str) -> dict:
         dict with status and, on success, a list of matching certifications
         (name, provider, level, prerequisites, validity period, status).
     """
-    resp = _client.get("/api/catalog/certifications", params={"q": query})
+    resp = await _client.get("/api/catalog/certifications", params={"q": query})
     return _handle(resp)
 
 
-def get_next_certification_for_practice(as_employee_id: str) -> dict:
+async def get_next_certification_for_practice(as_employee_id: str) -> dict:
     """Get the next recommended certification in the caller's own practice's
     learning path, skipping ones they've already completed. The practice is
     looked up from the employee's own record server-side — never ask the
@@ -89,15 +111,15 @@ def get_next_certification_for_practice(as_employee_id: str) -> dict:
         each with its own certification details, optional track_label,
         and reason) plus a data-as-of timestamp.
     """
-    resp = _client.get(
+    resp = await _client.get(
         "/api/learning-paths/next",
         params={"employee_id": as_employee_id},
-        headers=_headers(as_employee_id),
+        headers=await _headers(as_employee_id),
     )
     return _handle(resp)
 
 
-def get_learning_path_overview(as_employee_id: str) -> dict:
+async def get_learning_path_overview(as_employee_id: str) -> dict:
     """Get the FULL certification prerequisite graph for the caller's own
     practice path, with their own status against every certification in
     it (completed / in_progress / gave_exam_but_failed / not_started) —
@@ -126,15 +148,15 @@ def get_learning_path_overview(as_employee_id: str) -> dict:
         incoming_prerequisites: the exact named edges required to unlock
         it) plus a data-as-of timestamp.
     """
-    resp = _client.get(
+    resp = await _client.get(
         "/api/learning-paths/overview",
         params={"employee_id": as_employee_id},
-        headers=_headers(as_employee_id),
+        headers=await _headers(as_employee_id),
     )
     return _handle(resp)
 
 
-def submit_certification(
+async def submit_certification(
     as_employee_id: str,
     cert_name: str,
     submission_status: str,
@@ -174,11 +196,13 @@ def submit_certification(
         "credly_link": credly_link,
         "expiration_date": expiration_date,
     }
-    resp = _client.post("/api/certifications/submit", json=payload, headers=_headers(as_employee_id))
+    resp = await _client.post(
+        "/api/certifications/submit", json=payload, headers=await _headers(as_employee_id)
+    )
     return _handle(resp)
 
 
-def get_tracker_records(
+async def get_tracker_records(
     as_employee_id: str,
     for_employee_id: str | None = None,
     submission_status: str | None = None,
@@ -210,11 +234,11 @@ def get_tracker_records(
         params["verification_status"] = verification_status
     if cert_name:
         params["cert_name"] = cert_name
-    resp = _client.get("/api/tracker/records", params=params, headers=_headers(as_employee_id))
+    resp = await _client.get("/api/tracker/records", params=params, headers=await _headers(as_employee_id))
     return _handle(resp)
 
 
-def get_at_risk_certifications(as_employee_id: str, window_days: int = 30) -> dict:
+async def get_at_risk_certifications(as_employee_id: str, window_days: int = 30) -> dict:
     """Certifications expiring within window_days, scoped to who the caller can see.
 
     Args:
@@ -224,15 +248,15 @@ def get_at_risk_certifications(as_employee_id: str, window_days: int = 30) -> di
     Returns:
         dict with status and, on success, at-risk records plus a data-as-of timestamp.
     """
-    resp = _client.get(
+    resp = await _client.get(
         "/api/tracker/at-risk",
         params={"window_days": window_days},
-        headers=_headers(as_employee_id),
+        headers=await _headers(as_employee_id),
     )
     return _handle(resp)
 
 
-def query_knowledge_base(question: str, top_k: int = 3) -> dict:
+async def query_knowledge_base(question: str, top_k: int = 3) -> dict:
     """Semantic search over curated exam-prep knowledge-base content.
 
     Args:
@@ -244,11 +268,11 @@ def query_knowledge_base(question: str, top_k: int = 3) -> dict:
         (0-1) — treat matches below ~0.6 similarity as thin/no coverage
         rather than a confident answer.
     """
-    resp = _client.post("/api/kb/query", json={"question": question, "top_k": top_k})
+    resp = await _client.post("/api/kb/query", json={"question": question, "top_k": top_k})
     return _handle(resp)
 
 
-def create_escalation(as_employee_id: str, question: str, context: str | None = None) -> dict:
+async def create_escalation(as_employee_id: str, question: str, context: str | None = None) -> dict:
     """Escalate a question to the routed SME/L&D owner when the knowledge
     base has no confident answer.
 
@@ -261,14 +285,14 @@ def create_escalation(as_employee_id: str, question: str, context: str | None = 
         dict with status and, on success, the created escalation (routed
         owner, SLA due date, status).
     """
-    resp = _client.post(
+    resp = await _client.post(
         "/api/escalations",
         json={"employee_id": as_employee_id, "question": question, "context": context},
     )
     return _handle(resp)
 
 
-def get_my_drive_obligations(as_employee_id: str) -> dict:
+async def get_my_drive_obligations(as_employee_id: str) -> dict:
     """Get the caller's own mandatory certification drives ("campaigns") —
     e.g. "everyone in Data+AI must get an AWS cert by Q4" — that they're
     currently enrolled in. Closed drives are excluded. Structured metadata
@@ -285,15 +309,15 @@ def get_my_drive_obligations(as_employee_id: str) -> dict:
         is_compliant) plus a data-as-of timestamp. An empty list means no
         active mandatory drives currently target this employee.
     """
-    resp = _client.get(
+    resp = await _client.get(
         "/api/drives/my-obligations",
         params={"employee_id": as_employee_id},
-        headers=_headers(as_employee_id),
+        headers=await _headers(as_employee_id),
     )
     return _handle(resp)
 
 
-def open_certification_form(as_employee_id: str) -> dict:
+async def open_certification_form(as_employee_id: str) -> dict:
     """Open the certification submission form in the chat UI, pre-filled
     with the employee's manager/practice director (from their most recent
     prior submission, or their directory record if they have none) and
@@ -310,7 +334,7 @@ def open_certification_form(as_employee_id: str) -> dict:
         dict with status and, on success, prefill data (manager_name,
         practice_director_name, practice) for the form.
     """
-    resp = _client.get(f"/api/employees/{as_employee_id}/prefill", headers=_headers(as_employee_id))
+    resp = await _client.get(f"/api/employees/{as_employee_id}/prefill", headers=await _headers(as_employee_id))
     result = _handle(resp)
     if result.get("status") == "success":
         result["action"] = "open_certification_form"
