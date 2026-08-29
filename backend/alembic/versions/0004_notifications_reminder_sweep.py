@@ -116,7 +116,7 @@ def upgrade() -> None:
     op.create_index("ix_notifications_status", "notifications", ["status"])
     op.create_index("ix_notifications_recipient", "notifications", ["recipient_employee_id"])
 
-    # Exactly one settings row, seeded with the user's own example numbers
+    # Exactly one settings row, seeded with example numbers
     # as an explicit placeholder — NOT presented as final; see the
     # DEVELOPMENT_LOG.md entry and the chat response for this work.
     op.execute(

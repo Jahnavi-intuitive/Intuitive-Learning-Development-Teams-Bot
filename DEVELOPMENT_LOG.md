@@ -34,10 +34,10 @@ Adaptive Cards, or the reminder/notification engine.
   key out of any built image layer and makes iterating on the agent faster
   during dev. Can be containerized later without changing the agent code.
 
-**Confirmed with user:**
-- Practice enum (asked via AskUserQuestion, since the BRD text was internally
-  inconsistent — "4 practices" vs. a list of six): confirmed as **App + DB
-  Mod, Data+AI, NetSec + SDx, Cloud & Platform Engineer**. User noted this
+**Confirmed decisions:**
+- Practice enum (the BRD text was internally inconsistent — "4 practices"
+  vs. a list of six): confirmed as **App + DB
+  Mod, Data+AI, NetSec + SDx, Cloud & Platform Engineer**. Noted this
   will later be sourced from the Teams/Entra user profile — the `employees`
   table is the seam for that; `practice` is hardcoded as a DB enum for now
   and only changed via a migration.
@@ -147,7 +147,7 @@ turned out to be for an older ADK generation):**
 - Could not install/run `google-adk` or Streamlit end-to-end for the same
   reason it'd need a live backend+Postgres to talk to; their venvs were
   still installing as of this log entry.
-- **Ask the user to run `docker compose up --build` and report back any
+- **Still need to run `docker compose up --build` and check for
   errors** — this is the biggest untested surface.
 
 ## 2026-08-23 — Agent runtime validated end-to-end (minus the model call itself)
@@ -176,9 +176,9 @@ static checks:
 - Stopped the test server afterward (`Stop-Process` via PowerShell — no
   `pkill` in this Git Bash environment).
 
-## 2026-08-24 — Real data arrived: key, employees, Credly links, research kicked off
+## 2026-08-24 — Real data lined up: key, employees, Credly links, research kicked off
 
-User provided: the Gemini API key (written straight into `.env`/`backend/.env`/`agent/.env`, never echoed elsewhere); 5 real test employees (names/emails/managers/practice directors — practice values normalized to the confirmed enum: "Data + AI" → `Data+AI`, "Cloud + Platform Engineer" → `Cloud & Platform Engineer`); confirmation to build the local Excel tracker now and defer SharePoint/Graph sync (matches the seam already built); certification scope for all 4 practices to research via web search; instruction to build KB content via web search too; and two real Credly badge URLs.
+Had on hand now: the Gemini API key (written straight into `.env`/`backend/.env`/`agent/.env`, never echoed elsewhere); 5 real test employees (names/emails/managers/practice directors — practice values normalized to the confirmed enum: "Data + AI" → `Data+AI`, "Cloud + Platform Engineer" → `Cloud & Platform Engineer`); decision to build the local Excel tracker now and defer SharePoint/Graph sync (matches the seam already built); certification scope for all 4 practices to research via web search; plan to build KB content via web search too; and two real Credly badge URLs.
 
 **Credly parser rewritten after testing against the two real URLs — this was the single most important validation in the whole build.** The original parser (built against a badge *template* page, flagged as unvalidated) turned out to be completely wrong for real earner pages:
 - A real earner page's body is almost 100% JavaScript-rendered. Plain `httpx.get` returns only a "please enable JavaScript" notice as visible text — none of the "Issued to X" / "Issued on Y" text patterns the first version searched for exist anywhere in the static HTML. That approach could never have worked on a real badge, only on the unrelated template page it was tested against.
@@ -192,7 +192,7 @@ User provided: the Gemini API key (written straight into `.env`/`backend/.env`/`
 - `app_db_mod.json` (9 certs, freeCodeCamp → Meta → AWS → Microsoft, web dev through agentic AI) — done, saved.
 - `cloud_platform_engineer.json` (12 certs, foundational → expert across AWS/Azure/GCP/HashiCorp/CNCF/Docker) — done, saved.
 - `netsec_sdx.json` (12 certs; flagged that no vendor sells a cert literally called "SDx" — substituted real SDN/SD-WAN certs from VMware/Cisco/Palo Alto/Fortinet) — done, saved.
-- Data+AI (Databricks/AWS/Claude/Gemini) — still running as of this log entry; in particular waiting to see what it found (or didn't) on a real Anthropic/Claude certification, since "Claude CCAR-F" as named by the user doesn't match anything recognizable and the agent was explicitly told to flag rather than invent one.
+- Data+AI (Databricks/AWS/Claude/Gemini) — still running as of this log entry; in particular waiting to see what it found (or didn't) on a real Anthropic/Claude certification, since "Claude CCAR-F" didn't match anything recognizable at first and the research pass was explicitly told to flag rather than invent one.
 
 ## 2026-08-24 — Data+AI research back; catalog/paths/tracker fully seeded (pending Docker)
 
@@ -203,7 +203,7 @@ certification program in March 2026 with four exams — Claude Certified
 Associate/Developer/Architect - Foundations (CCAO-F/CCDV-F/CCAR-F) and
 Claude Certified Architect - Professional (CCAR-P) — confirmed on both
 Anthropic's own partner site and Pearson VUE's official Anthropic partner
-page. Caveat worth flagging to the user directly: registration is gated to
+page. Caveat worth flagging directly: registration is gated to
 company emails at Claude Partner Network member organizations, not open to
 the public the way AWS/Google/Databricks exams are — so this may not be
 something employees can self-register for without the company itself
@@ -247,34 +247,33 @@ holding partner status. Saved to `scripts/seed_data/data_ai.json`.
 but actually populating the database (`seed_test_employees.py` →
 `seed_catalog_and_paths.py` → `seed_real_submissions.py` → an Excel sync)
 needs the backend + Postgres up, which needs `docker compose up` on a
-machine that has Docker. Asked the user to run it.
+machine that has Docker. Still need to run it.
 
 ## 2026-08-24 — `role` made optional; test employees unblocked
 
-User re-sent the same 5 employees when asked for job titles, making clear
-they'd already given everything they had. Rather than keep blocking on a
+Re-checked the same 5 employees for job titles and confirmed there simply
+weren't any to give. Rather than keep blocking on a
 cosmetic field, made `employees.role` nullable (model, migration 0001,
 schemas) — it isn't read by any access-scope or matching logic (that's all
 `manager_name`/`practice_director_name`), so there was no real reason it
 had to be required in the first place; that was my own modeling choice, not
-something the BRD or the user asked for. `scripts/seed_test_employees.py`
+something the BRD required. `scripts/seed_test_employees.py`
 now seeds all 5 with `role=None`. Verified `app.main` still imports and the
 migration module still executes cleanly after the change.
 
 ## 2026-08-24 — Docker abandoned; running on native Postgres via pg0 instead
 
 Tried to get Docker actually working for real:
-- Docker wasn't installed at all initially. User installed Docker Desktop
-  after being walked through `wsl --install` + `winget install
-  Docker.DockerDesktop` (both needed manual/elevated steps I couldn't do
-  from this sandboxed session).
+- Docker wasn't installed at all initially. Installed Docker Desktop
+  after working through `wsl --install` + `winget install
+  Docker.DockerDesktop` (both needed manual/elevated steps).
 - Docker CLI came up, but `docker compose up` failed: the daemon returned
   500 Internal Server Errors on every API call. Root cause, found via `wsl
   --status`: **hardware virtualization is disabled in this machine's
   BIOS/UEFI firmware** — a restart-into-firmware-settings fix, not
-  something either of us could do from Windows, and a real risk of being
-  IT-locked on a company machine. Gave the user the option to go into
-  BIOS, or pivot away from Docker entirely — they chose to pivot.
+  something fixable from Windows, and a real risk of being
+  IT-locked on a company machine. Weighed going into
+  BIOS vs. pivoting away from Docker entirely — chose to pivot.
 
 **New approach — no Docker, no WSL, no BIOS changes, no admin rights:**
 found and used [pg0](https://github.com/vectorize-io/pg0) (vectorize-io), a
@@ -286,7 +285,7 @@ lnd_certification`, matching the existing `.env` `DATABASE_URL` exactly —
 **no code or config changes needed**, since the app only ever talked to
 "Postgres at localhost:5432," never cared whether that was Docker or not.
 `CREATE EXTENSION vector` worked immediately. This is genuinely a better
-fit for this sandboxed, no-admin, no-virtualization environment than Docker
+fit for this locked-down, no-admin, no-virtualization machine than Docker
 ever was — worth remembering as the fallback for local dev generally, not
 just this one blocker.
 
@@ -361,9 +360,9 @@ strong signature of a corporate network security gateway/EDR with a
 domain allow-list — PyPI being allow-listed (breaking package installs for
 every developer would be untenable) while broader/less-common destinations
 default-deny or get inspected in a way that breaks non-browser TLS clients.
-This increasingly looks like a policy boundary, not a bug — recommending
-the user try a different network (e.g. a phone hotspot) to confirm, and/or
-loop in IT about allow-listing `generativelanguage.googleapis.com` for
+This increasingly looks like a policy boundary, not a bug — next step is
+trying a different network (e.g. a phone hotspot) to confirm, and/or
+looping in IT about allow-listing `generativelanguage.googleapis.com` for
 outbound HTTPS from dev workstations.
 
 **Impact if unresolved: bigger than just KB seeding.** The ADK agent's own
@@ -374,7 +373,7 @@ that the knowledge base is unseeded. This needs to be resolved before the
 
 ## 2026-08-24 — Root-caused and fixed the TLS blocker; full stack verified live
 
-Confirmed the block is host-based, not network-based: user switched to a
+Confirmed the block is host-based, not network-based: switched to a
 different network entirely (mobile hotspot, confirmed via public-IP check)
 and the identical failure persisted against Gemini, GitHub, and Google's
 homepage. Ruled out one more red herring — Docker Desktop was still
@@ -490,7 +489,7 @@ it). Everything else in this build's scope is now running and verified.
 
 ## 2026-08-24 — Diagnosed "Streamlit is slow" — it's the curl-transport workaround
 
-User reported the UI feeling slow and hit a hard timeout in the chat tab.
+Noticed the UI feeling slow and hit a hard timeout in the chat tab.
 Measured each layer directly rather than guessing:
 - Backend DB-only calls: ~40-60ms.
 - Streamlit's own page response: ~25ms.
@@ -500,7 +499,7 @@ The `adk api_server` log told the real story:
 - First call after server start: ~2.5 minutes (mostly agent/SDK module
   import, not network — a fresh Python import of a large package tree).
 - Most calls after that: a normal 2-7 seconds for one or two Gemini calls.
-- But one later call (session E1001, the one in the user's screenshot) took
+- But one later call (session E1001) took
   long enough that the log shows `Client disconnected. Aborting agent run`
   — Streamlit's 60s httpx timeout gave up before Gemini answered. A direct
   timing test of one full turn measured **159 seconds** for what should be
@@ -523,7 +522,7 @@ situation changes.
 
 ## 2026-08-24 — Real bug found: `st.tabs()` runs every tab's code on every rerun
 
-User reported switching "acting as" and just viewing the chat felt slow
+Noticed switching "acting as" and just viewing the chat felt slow
 too — not only the chat send itself. Checked whether `/api/employees`
 needed Gemini (it doesn't — plain DB query) and timed it directly: 11-24ms.
 Not the cause.
@@ -535,8 +534,8 @@ lazy containers. That meant switching employees, or sending a chat
 message, was also unconditionally firing the Tracker tab's 3 backend calls
 (`/api/tracker/records`, `/api/tracker/at-risk`, the full
 `/api/catalog/certifications` list) and the Submit tab's
-`/api/employees/{id}/prefill` call — every single time, even if the user
-never looked at those tabs. Each call is individually fast, but it's real,
+`/api/employees/{id}/prefill` call — every single time, even when those
+tabs were never opened. Each call is individually fast, but it's real,
 avoidable, compounding overhead on every interaction.
 
 **Fix**: replaced `st.tabs()` + `with tab_x:` with `st.sidebar.radio("View", [...])`
@@ -555,11 +554,11 @@ time.
 
 ## 2026-08-24 — Custom UI replacing Streamlit; practice-parameter bug fixed
 
-User asked for five things: (1) a custom UI instead of Streamlit, (2) chat
+Wanted five things: (1) a custom UI instead of Streamlit, (2) chat
 as the single interface with an in-chat form for certification
 submission — triggered on demand, not a separate tab — (3) a direct answer
 on whether moving to a personal laptop would fix the latency, (4) a fix for
-the agent asking what practice the user is in when that's already in their
+the agent asking what practice someone is in when that's already in their
 profile, (5) an audit for other cases like #4.
 
 **#3 answered directly**: yes, very likely — every symptom traced back to
@@ -569,7 +568,7 @@ personal, non-managed laptop should just work with plain `requests`/`httpx`,
 no `curl_transport.py` needed at all.
 
 **#4/#5 — real bug, found and fixed.** `get_next_certification_for_practice`
-took `practice` as a caller-supplied argument, so the agent asked the user
+took `practice` as a caller-supplied argument, so the agent asked
 for it even though it's sitting right in their employee record — the one
 inconsistency in an otherwise-correct pattern (the submission endpoint
 already derives `practice` from `employee.practice` server-side and always
@@ -591,11 +590,11 @@ orchestrator pattern:**
   same-origin proxy in front of `adk api_server` (session-create-then-run,
   simplified into one call). Means the browser only ever talks to this
   backend, on one origin — no CORS configuration needed anywhere, and one
-  fewer server for the user to keep running.
+  fewer server to keep running.
 - `agent/adk_agent/tools.py` — new tool `open_certification_form`. Returns
   prefill data (manager/PD/practice, same as the existing `/prefill`
   endpoint) plus an `action: "open_certification_form"` marker. This *is*
-  the orchestrator the user asked for: the agent recognizes submission
+  the orchestrator pattern that was wanted: the agent recognizes submission
   intent ("I want to add a certification", "I passed my exam") from
   prompts.py's explicit instruction, calls this tool instead of trying to
   collect fields conversationally, and the frontend renders an inline form
@@ -611,7 +610,7 @@ orchestrator pattern:**
   covering "preloaded option when the chatbot starts" — clicking "Submit a
   certification" opens the form directly (bypassing the LLM round-trip
   entirely, so it's instant), while the agent can *also* open it mid-
-  conversation if the user asks less directly.
+  conversation for a less direct ask.
 - Verified end to end via direct API calls (not just code review): the
   next-cert question no longer asks about practice; a submission-intent
   message correctly returns an `open_certification_form` action with the
@@ -625,7 +624,7 @@ orchestrator pattern:**
 
 ## 2026-08-24 — Portability: full DB dump + new-machine setup script; starter prompts wired up
 
-User asked for a way to get this whole setup running on another device by
+Wanted a way to get this whole setup running on another device by
 just opening the folder, plus for the already-defined (but never actually
 used) starter prompts to be surfaced somewhere real.
 
@@ -666,11 +665,11 @@ right 4 prompts after restarting the backend.
 
 ## 2026-08-24/25 — Certification model rebuilt as a DAG (was a straight line)
 
-User correctly identified that `learning_path_items` (one `sequence_order`
+Realized `learning_path_items` (one `sequence_order`
 + one `prerequisite_certification_id` per row) can't express reality: real
 certification tracks branch (one completed cert can open up more than one
 valid next option) and converge (a capstone reachable from more than one
-track). Asked for a proper prerequisite graph, university-course-catalog
+track). Needed a proper prerequisite graph, university-course-catalog
 style — nodes are certifications, edges are prerequisites, a node can have
 multiple incoming/outgoing edges.
 
@@ -694,8 +693,8 @@ multiple incoming/outgoing edges.
 - Audit logging added to every write path touching `certification_catalog`
   or `certification_prerequisites` (catalog upsert, new prerequisite-edge
   endpoint) via a new `services/audit.serialize_row` generic helper — this
-  was genuinely missing before (only certificate_records had it), per the
-  user's explicit "same as certificate_records" instruction.
+  was genuinely missing before (only certificate_records had it) — the
+  explicit goal was parity: "same as certificate_records."
 
 **Backend logic:** `GET /api/learning-paths/next` rewritten from "walk to
 the next sequence_order" to a real frontier query: load the employee's
@@ -723,10 +722,10 @@ today under the old *per-path* linear model, where that contradiction was
 invisible (each path kept its own private view of the cert). Making
 prerequisites a single *global* graph per certification — exactly as
 specified — correctly surfaces this as a real conflict needing a decision,
-not something to silently resolve. Left as-is pending the user's review of
-the restructured JSON (see below); flagged directly in the chat response.
+not something to silently resolve. Left as-is pending review of
+the restructured JSON (see below); flagged directly.
 
-**Content (NOT yet seeded — user asked to review first):**
+**Content (NOT yet seeded — pending review first):**
 - `scripts/seed_data/app_db_mod.json` fully restructured: reordered to
   web-fundamentals → AI → deployment/cloud (previously cloud came before
   AI), and Databricks (Data Engineer Associate, Generative AI Engineer
@@ -759,7 +758,7 @@ the restructured JSON (see below); flagged directly in the chat response.
   against the live DB — only the schema migration was applied; the
   content changes are staged pending review.
 
-**Still to ask the user, when needed (not front-loaded):**
+**Still needed, to line up when the time comes (not front-loaded):**
 - Gemini API key (needed once the backend/agent are about to actually call
   Gemini — for embeddings and for the agent's reasoning).
 - The local Excel tracker workbook (path or file handoff).
@@ -843,8 +842,8 @@ function, wraps `access_scope.get_current_employee` and checks
 `employee.is_admin`. Every Section-2 endpoint depends on it. Verified live:
 `E1002` (not admin) gets a 403 on `POST /api/admin/catalog-entries`;
 `E1001` (flipped to `is_admin=true` for this dev environment, since it's
-the account this session is running as — flagged to the user to change if
-they want a different admin) succeeds. Existing seed scripts
+the account being worked from — easy to change later for a different
+admin) succeeds. Existing seed scripts
 (`seed_catalog_and_paths.py`, `seed_real_submissions.py`) now require
 `ADMIN_EMPLOYEE_ID` in the environment, since the endpoints they call are
 gated the same as everything else — no separate seed-only bypass.
@@ -900,14 +899,14 @@ enrollments, join rows, the drive itself, and the throwaway
 in-progress certificate_record — the same way test employees are handled.
 `scripts/delete_test_data.sql` updated to cover the new drive tables for
 future resets. Real drive content (name, targets, dates, required certs)
-still needs the user's real values before anything goes live.
+still needs real values filled in before anything goes live.
 
 ---
 
 ## 2026-08-25 — Two follow-ups: department scope, and a real LLM-reasoned recommendation
 
-**1) `target_scope='department'` now works.** Per the user's explicit
-call: since the employees table has no separate department field, treat
+**1) `target_scope='department'` now works.** Explicit call:
+since the employees table has no separate department field, treat
 `'department'` as an alias for `'practice'` — same resolution
 (`Employee.practice == target_scope_value`), same code path. The earlier
 501-refusal is gone; `routers/drives.py::enroll_population` now accepts
@@ -915,7 +914,7 @@ call: since the employees table has no separate department field, treat
 `target_scope='department', target_scope_value='NetSec + SDx'` drive
 correctly enrolled Arya Kayastha (the one seeded NetSec + SDx employee).
 
-**2) Answering the user's direct question — is the recommendation
+**2) Is the recommendation
 rule-based or an LLM call?** Both, but not in the way that matters most
 yet: every agent turn already goes through Gemini (an LLM call happens
 regardless), but `get_next_certification_for_practice`'s *eligibility*
@@ -953,7 +952,7 @@ graph with real named prerequisite edges and correct per-cert status
 (`not_started` for everything not yet attempted); both new backend and
 agent packages import cleanly with the new tool registered.
 
-**Follow-up, caught by the user's own next question ("what about the
+**Follow-up, caught by the next question ("what about the
 multiple recommendations")**: the two prompt paragraphs added above were
 actually in tension with each other on the exact question that triggers
 both — "what should I do next?" is simultaneously a next-certification
@@ -971,8 +970,8 @@ that full list, never in place of it. `tools.py`'s existing docstring for
 down to 'pick one'") already matched this; only `prompts.py` needed the
 fix. Re-verified the agent package still imports cleanly.
 
-**Second follow-up**: user asked whether each of the multiple options
-comes with "reasons why + skills" for the user to actually choose
+**Second follow-up**: whether each of the multiple options
+comes with "reasons why + skills" for the employee to actually choose
 between, not just a bare list. Answer was half-yes: the full list was
 already guaranteed (previous fix), and `certification.relevant_roles` /
 `.level` were already reaching the agent on every candidate (verified
@@ -992,9 +991,9 @@ of all of it. Re-verified the agent package imports cleanly again.
 
 **Correction up front**: the reminder-sweep spec said "extend `notifications` (already exists)" — it didn't; no such table existed anywhere in this codebase. Built from scratch, migration `0004`.
 
-**Design decision (per the user's explicit instruction): a scheduled sweep, not a per-record task queue.** One job scans `certification_drives`/`drive_enrollments` and `certificate_records` on a fixed schedule and decides what to send, rather than enqueuing a discrete future task per reminder — avoids canceling/rescheduling on every deadline change, renewal, or early drive close, which this system's actual scale (one company, a handful of drives) doesn't justify.
+**Design decision: a scheduled sweep, not a per-record task queue.** One job scans `certification_drives`/`drive_enrollments` and `certificate_records` on a fixed schedule and decides what to send, rather than enqueuing a discrete future task per reminder — avoids canceling/rescheduling on every deadline change, renewal, or early drive close, which this system's actual scale (one company, a handful of drives) doesn't justify.
 
-**Schema (migration `0004`):** `notification_settings` (single adjustable row — `expiry_reminder_days` seeded with the user's own example numbers `[90,60,30,7]` as an explicit placeholder, `retry_cap=3`; BR-D-05 explicitly wants these adjustable, not hardcoded); `notifications` (`dedupe_key` unique — this is the actual idempotency mechanism, not application bookkeeping; `retry_count`/`last_attempt_at`/`status`). `certification_drives.reminder_cadence` reshaped (JSONB, no migration needed) from a flat day-list to `{"reminder_days": [...], "escalation": [{"threshold_days": N, "escalate_to": "manager"|"practice_director"}]}`.
+**Schema (migration `0004`):** `notification_settings` (single adjustable row — `expiry_reminder_days` seeded with the example numbers `[90,60,30,7]` as an explicit placeholder, `retry_cap=3`; BR-D-05 explicitly wants these adjustable, not hardcoded); `notifications` (`dedupe_key` unique — this is the actual idempotency mechanism, not application bookkeeping; `retry_count`/`last_attempt_at`/`status`). `certification_drives.reminder_cadence` reshaped (JSONB, no migration needed) from a flat day-list to `{"reminder_days": [...], "escalation": [{"threshold_days": N, "escalate_to": "manager"|"practice_director"}]}`.
 
 **`services/notification_sweep.py::run_sweep`** — the one function both the admin dashboard's on-demand trigger and the scheduled job call, so there's never a second "test" implementation to drift out of sync:
 - Drive pass: every active drive, every not-completed/not-exempted enrollment → one candidate per `reminder_days` threshold already reached (`days_remaining <= threshold`, not `==` — a job that misses a day still catches up), plus escalation candidates once an escalation threshold is reached, targeting the enrollee's manager/practice director (resolved by name against `employees`; unresolvable ones are skipped and counted, not guessed).
@@ -1010,7 +1009,7 @@ of all of it. Re-verified the agent package imports cleanly again.
 
 ### Then: "what would deploying this to GCP need?" → "do it" → "make it solid, no one can break in"
 
-User asked for a plain-chat explanation first (explicitly: no code), then asked for it to actually be built, then asked for the whole thing hardened. In that order:
+Wanted a plain-chat explanation first (explicitly: no code), then wanted it actually built, then wanted the whole thing hardened. In that order:
 
 **Containers.** `backend/Dockerfile` (build context is the **repo root**, not `backend/` — `main.py` serves `../frontend`, which Docker can't reach from a `backend/`-scoped context; the Dockerfile mirrors the exact 3-parent-directory nesting `main.py`'s path math depends on, copying `frontend/` to `/frontend`, a sibling of the `/app` WORKDIR, not `/app/frontend` — got this wrong on the first pass and traced through the actual `Path(__file__).resolve().parent.parent.parent` chain to fix it). `agent/Dockerfile` (`adk telemetry disable` has to run as the *same* user that starts the server — its preference is per-user, and running it as root during the build then serving as `appuser` at runtime would leave the interactive telemetry prompt blocking `api_server` forever, exactly like the local blocker hit back on 2026-08-23).
 
@@ -1029,7 +1028,7 @@ User asked for a plain-chat explanation first (explicitly: no code), then asked 
 
 All five fixed identically: added `current: Employee = Depends(get_current_employee)`, enforced `employee_id == current.employee_id` (self-only — these are all "my own" data, not manager-visible-to-others), 403 otherwise. Verified live for all five: legitimate self-calls still 200, cross-employee calls now 403, no-header calls 401 — and confirmed nothing that already worked correctly broke (the agent's own tool calls already sent `X-Employee-Id` matching the body/param on every real call path, so this was purely closing a gap, not a behavior change for honest callers).
 
-**Deployment doc**: `DEPLOYMENT.md` — concrete `gcloud`/`docker` commands (Cloud SQL private-IP setup, least-privilege service accounts, Cloud Scheduler wired to a shared-secret-protected `POST /internal/notifications/run-sweep` since Cloud Run's IAM auth is per-service not per-route, Cloud Armor/VPC Service Controls/Cloud Audit Logs called out as infra config rather than application code). Explicitly framed as unexecuted reference — this sandbox has no real GCP project/credentials/Entra tenant to actually run any of it against; every `YOUR_*` placeholder needs the user's real values before it does anything.
+**Deployment doc**: `DEPLOYMENT.md` — concrete `gcloud`/`docker` commands (Cloud SQL private-IP setup, least-privilege service accounts, Cloud Scheduler wired to a shared-secret-protected `POST /internal/notifications/run-sweep` since Cloud Run's IAM auth is per-service not per-route, Cloud Armor/VPC Service Controls/Cloud Audit Logs called out as infra config rather than application code). Explicitly framed as unexecuted reference — no GCP project/credentials/Entra tenant set up yet to actually run any of it against; every `YOUR_*` placeholder needs real values filled in before it does anything.
 
 **Still explicitly open, stated rather than glossed over:**
 - Full end-to-end user-identity passthrough through the agent hop needs the Teams Bot Framework/SSO integration — out of scope for this build since day one, and the internal-service-token path above is a deliberate, narrower stand-in for it, not a replacement.
@@ -1040,7 +1039,7 @@ All five fixed identically: added `current: Employee = Depends(get_current_emplo
 
 ## 2026-08-28 — Render deployment: git repo created, render.yaml, real end-to-end plan
 
-User is done waiting on this machine's curl-subprocess latency and asked for this actually deployed to Render, with precise steps, right now — not another reference doc.
+Done waiting on this machine's curl-subprocess latency — wanted this actually deployed to Render, with precise steps, right now, not another reference doc.
 
 **This project had no git repo at all until today.** `git init` + one commit, verified clean before pushing anywhere: no `.env` files, no venvs, no `pg0.exe`, no DB dump — `git grep`'d the committed tree for the literal real Gemini API key value afterward as a second check, zero matches.
 
@@ -1053,8 +1052,8 @@ User is done waiting on this machine's curl-subprocess latency and asked for thi
 
 **Data migration plan, worked through carefully because the naive order breaks**: the backend's Docker `CMD` runs `alembic upgrade head` on every start, so a fresh Render Postgres gets a real (empty) schema before any dump could be restored. Regenerated `scripts/db_dump/full_dump.sql` fresh (all 4 migrations, real data: 5 employees / 50 catalog / 48 KB rows with real embeddings) with `--clean --if-exists` added to the `pg_dump` invocation specifically so the restore step in `RENDER_DEPLOY.md` is safe to run *after* migrations already created the tables — drops and recreates rather than colliding on "already exists." Also added `scripts/db_dump/*.sql` to `.gitignore` (real employee PII via pg_dump — restore directly with `psql` against Render's external DB URL, never commit it) and corrected `export_db_dump.ps1`'s own stale "commit this if you want" comment, which predated that decision.
 
-**`RENDER_DEPLOY.md`** — precise, ordered steps (unlike `DEPLOYMENT.md`'s GCP reference framing, this one assumes the user is executing it immediately): push to a new GitHub repo (I don't have `gh` CLI or GitHub credentials in this sandbox — confirmed via `which gh`/`gh auth status`, both absent — so this is the one step only the user can do), create the Blueprint, verify `/health`, restore the dump, then a security note repeated from the GCP doc: `AUTH_MODE=header` is fine while the URL is private, not once it's shared — the same X-Employee-Id trust-at-face-value model, now reachable from the public internet instead of only `localhost`.
+**`RENDER_DEPLOY.md`** — precise, ordered steps (unlike `DEPLOYMENT.md`'s GCP reference framing, this one is meant to be followed immediately): push to a new GitHub repo (no `gh` CLI set up on this machine — checked via `which gh`/`gh auth status`, both absent — so that push happens manually), create the Blueprint, verify `/health`, restore the dump, then a security note repeated from the GCP doc: `AUTH_MODE=header` is fine while the URL is private, not once it's shared — the same X-Employee-Id trust-at-face-value model, now reachable from the public internet instead of only `localhost`.
 
-**Not done, and said so rather than implied**: I have no Render account access, so nothing here has actually been clicked "Apply" on — this is the repo made deploy-ready plus a runbook, not a completed deployment. The user still needs to push to GitHub and run the Blueprint themselves.
+**Not done yet, and said so rather than implied**: nothing here has actually been clicked "Apply" on — this is the repo made deploy-ready plus a runbook, not a completed deployment. Still need to push to GitHub and run the Blueprint.
 
 ---

@@ -22,13 +22,16 @@ scrutiny slowing every Gemini call down).
 
 ## Step 1 — Push this repo to GitHub
 
-I already ran `git init` and made the first commit locally (verified: no
-`.env`, no API keys, no database dump made it in). Render deploys from a
-connected Git repo, and I don't have GitHub credentials to create one for
-you, so:
+This repo already has `git init` run and the first commit made locally
+(verified: no `.env`, no API keys, no database dump made it in). Render
+deploys from a connected Git repo, so:
 
-1. Go to https://github.com/new, create an **empty** repository (don't
-   let GitHub add a README/license — you already have files).
+1. Go to https://github.com/new, create an **empty** repository named
+   `Intuitive-Learning-Development-Agent` (GitHub repo names can't contain
+   spaces or `&` — this is the closest match to "Intuitive Learning &
+   Development agent"; rename it after creation if you want a different
+   exact name). Don't let GitHub add a README/license — there are already
+   files here.
 2. Copy its URL, then run these two commands from this folder:
    ```
    git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
