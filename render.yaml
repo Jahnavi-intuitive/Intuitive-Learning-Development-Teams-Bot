@@ -21,6 +21,7 @@ services:
       - key: BACKEND_URL
         fromService:
           name: lnd-backend
+          type: web
           property: hostport
 
   - name: lnd-backend
@@ -39,6 +40,7 @@ services:
       - key: AGENT_URL
         fromService:
           name: lnd-agent
+          type: pserv
           property: hostport
       - key: AUTH_MODE
         value: header
