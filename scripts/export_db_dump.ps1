@@ -23,7 +23,7 @@ New-Item -ItemType Directory -Force -Path $dumpDir | Out-Null
 
 Write-Host "Dumping lnd_certification (schema + data) to $dumpPath ..."
 $env:PGPASSWORD = "change_me_locally"
-& $pg0Bin -h 127.0.0.1 -p 5432 -U lnd_app -d lnd_certification --no-owner --no-privileges -f $dumpPath
+& $pg0Bin -h 127.0.0.1 -p 5432 -U lnd_app -d lnd_certification --no-owner --no-privileges --clean --if-exists -f $dumpPath
 Remove-Item Env:\PGPASSWORD
 
 Write-Host "Done. This file is gitignored (real employee PII) - restore it directly with psql, never commit it." -ForegroundColor Green
