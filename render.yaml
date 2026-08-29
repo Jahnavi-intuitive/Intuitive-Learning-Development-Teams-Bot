@@ -1,0 +1,53 @@
+databases:
+  - name: lnd-db
+    databaseName: lnd_certification
+    user: lnd_app
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+
+services:
+  # Private service — Render assigns it NO public URL at all. Only
+  # lnd-backend (below) can reach it, over Render's internal network.
+  # This is a stronger guarantee than anything achievable via application
+  # code: there is no address for an outside caller to even try.
+  - name: lnd-agent
+    type: pserv
+    runtime: docker
+    dockerfilePath: ./agent/Dockerfile
+    dockerContext: ./agent
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: BACKEND_URL
+        fromService:
+          name: lnd-backend
+          property: hostport
+
+  - name: lnd-backend
+    type: web
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lnd-db
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AGENT_URL
+        fromService:
+          name: lnd-agent
+          property: hostport
+      - key: AUTH_MODE
+        value: header
+      # See the deployment doc's security note: "header" mode trusts
+      # X-Employee-Id at face value, same as local dev — fine while this
+      # URL isn't shared, not fine for anyone else who finds it. Switch to
+      # AUTH_MODE=entra (see backend/app/services/entra_auth.py) before
+      # sharing this deployment with anyone else.
+      - key: NOTIFICATION_SWEEP_ENABLED
+        value: "true"
+      - key: SWEEP_TRIGGER_SECRET
+        generateValue: true

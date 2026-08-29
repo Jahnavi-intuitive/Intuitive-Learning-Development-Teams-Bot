@@ -1,0 +1,140 @@
+{
+  "practice": "App + DB Mod",
+  "learning_path_name": "App & DB Modernization: Web Fundamentals -> AI -> Deployment & Cloud",
+  "schema_note": "DAG shape (2026-08-24 restructure): prerequisite_names is always a list (empty = no prerequisite; more than one entry = a real branch point or a converging capstone, governed by prerequisite_logic). track_label is presentation-only metadata for grouping branches in the agent's response text, never used in the eligibility logic itself. Reordered per explicit instruction: fundamentals first, then AI, then deployment/cloud/other-important-things (previously cloud came before AI) - this is our own recommended sequencing, not an issuer-enforced order (see per-cert notes on prerequisite enforcement).",
+  "certifications": [
+    {
+      "name": "Responsive Web Design Certification",
+      "provider": "freeCodeCamp",
+      "level": "Certification",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null,
+      "validity_period_months": null,
+      "relevant_roles": ["Front-End Developer", "Web Developer"],
+      "kb_content": "freeCodeCamp's Responsive Web Design Certification is free and self-paced on freecodecamp.org. It covers semantic HTML, forms, accessibility basics, CSS Flexbox, CSS Grid, and responsive layout techniques. To register, create a free freeCodeCamp account and work through the interactive lessons and labs in the curriculum. To earn the credential you must complete 5 required certification projects that pass freeCodeCamp's automated test suite, then sit a 50-question proctored-style online exam through freeCodeCamp's exam environment. There is no cost and no formal prerequisite. This is the entry point of freeCodeCamp's newer 'checkpoint' certification structure, which is being rolled into a larger Certified Full Stack Developer (CFSD) capstone credential requiring roughly 1,800 hours of cumulative coursework. As of 2026 freeCodeCamp has stated new checkpoint certs may eventually carry a 3-year validity with a future continuing-education renewal path, but has not yet implemented expiration and has committed to at least a year's notice before doing so. Prepare using the free curriculum itself plus the required projects; no paid study materials are needed. Best for absolute beginners establishing HTML/CSS fundamentals before moving into JavaScript and application logic."
+    },
+    {
+      "name": "JavaScript Algorithms and Data Structures Certification",
+      "provider": "freeCodeCamp",
+      "level": "Certification",
+      "prerequisite_names": ["Responsive Web Design Certification"],
+      "prerequisite_logic": "any",
+      "track_label": null,
+      "validity_period_months": null,
+      "relevant_roles": ["Front-End Developer", "Full Stack Developer"],
+      "kb_content": "This freeCodeCamp certification builds directly on Responsive Web Design and covers core JavaScript: variables, arrays, objects, functions, object-oriented programming, functional programming, and algorithmic problem solving (recursion, searching, sorting). Like the Responsive Web Design cert, it is free on freecodecamp.org and requires completing 5 certification projects that pass automated tests, followed by a 50-question exam taken in freeCodeCamp's exam environment. No cost, no application process beyond a free account, and no formal prerequisite is enforced by freeCodeCamp itself, though completing Responsive Web Design first is the logical and curriculum-intended order. Validity policy mirrors the rest of freeCodeCamp's new checkpoint certs: expiration is not currently enforced, though a future 3-year validity with free renewal has been discussed publicly by freeCodeCamp staff. Preparation is entirely through the free curriculum's interactive coding challenges and project builds; freeCodeCamp's forum and YouTube channel are commonly used supplementary resources. This certification is the last purely front-end/logic-focused credential before the path moves into a broader full-stack/back-end professional certificate."
+    },
+    {
+      "name": "Meta Back-End Developer Professional Certificate",
+      "provider": "Meta (via Coursera)",
+      "level": "Professional Certificate",
+      "prerequisite_names": ["JavaScript Algorithms and Data Structures Certification"],
+      "prerequisite_logic": "any",
+      "track_label": null,
+      "validity_period_months": null,
+      "relevant_roles": ["Back-End Developer", "Full Stack Developer"],
+      "kb_content": "Designed by Meta's software engineering team and delivered on Coursera, this is a beginner-friendly, roughly 8-month program (at a recommended pace) requiring no prior back-end experience. It covers Python programming, the Django web framework, building and securing REST APIs with Django Rest Framework, user authentication (registration/login/logout), and MySQL - including writing SQL queries and connecting a Django application to a relational database. The capstone project requires building a Django web server with multiple API endpoints wired to a MySQL database, directly relevant to database modernization work. Register on coursera.org; access requires a Coursera subscription (financial aid available), and the credential is earned by completing graded assignments and quizzes across the specialization plus the capstone rather than a single proctored exam. There is no stated expiration - Coursera Professional Certificates do not require renewal. Graduates get access to Meta's Career Programs Job Board, which connects them with employers sourcing from Meta-certified candidates. This is the last pure web-fundamentals credential in this path before it moves into AI."
+    },
+    {
+      "name": "AWS Certified AI Practitioner",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Foundational",
+      "prerequisite_names": ["Meta Back-End Developer Professional Certificate"],
+      "prerequisite_logic": "any",
+      "track_label": "AWS AI track",
+      "validity_period_months": 36,
+      "relevant_roles": ["AI/ML-Adjacent Professional", "Solutions Developer"],
+      "kb_content": "Exam code AIF-C01. No mandatory prerequisite; AWS recommends about six months of exposure to AI/ML concepts and AWS services. The exam has 65 questions (50 scored, 15 unscored) in 90 minutes, costs $100 USD, and requires a scaled passing score of 700 out of 1000. It validates foundational understanding of AI, machine learning, and generative AI concepts and how they map to AWS services (e.g., Amazon Bedrock, SageMaker) along with responsible-AI considerations, independent of a specific technical role - it is explicitly designed to be accessible to non-technical and tech-adjacent professionals as well as developers. Delivered via Pearson VUE; register through aws.amazon.com/certification. Preparation resources include AWS Skill Builder's free Exam Prep Plan, digital courses, and official practice question sets. Certification is valid for 3 years with standard AWS recertification rules. In this path it's the first AI-focused credential after web-development fundamentals, a deliberate reordering (previously cloud came before AI in this practice's path) so app/DB developers build AI literacy before layering on cloud/deployment skills."
+    },
+    {
+      "name": "Databricks Certified Data Engineer Associate",
+      "provider": "Databricks",
+      "level": "Associate",
+      "prerequisite_names": ["Meta Back-End Developer Professional Certificate"],
+      "prerequisite_logic": "any",
+      "track_label": "Databricks data track",
+      "validity_period_months": 24,
+      "relevant_roles": ["Data Engineering", "Database Modernization"],
+      "kb_content": "This Associate exam validates ability to build and manage basic ETL pipelines on the Databricks Intelligence Platform - directly relevant to this practice's database-modernization half, not just the app-development half. No formal prerequisite; Databricks recommends hands-on experience with the data engineering tasks in the exam guide. Content domains: Databricks Intelligence Platform (~6%), Data Ingestion/Loading (~21%), Data Transformation/Modeling (~22%), Lakeflow Jobs (~16%), CI/CD (~10%), Troubleshooting/Monitoring/Optimization (~10%), and Governance/Security (~15%). Format: 45 scored multiple-choice questions, 90 minutes, $200 USD, proctored online or at a test center via WebAssessor, available in English, Japanese, Portuguese (BR), and Korean. Prepare using the official Exam Guide PDF, Databricks' AI Prep Guide, and Databricks Academy's self-paced or instructor-led data engineering courses covering Lakeflow, Delta Lake, and Unity Catalog. Register at webassessor.com/databricks. Databricks does not publish an exact passing score for this exam. Validity is 2 years, after which recertification requires retaking the current exam version - notable since Databricks periodically updates content, so recertification also keeps skills current with platform changes. This is a genuine branch alongside AWS Certified AI Practitioner: both open up right after the web-fundamentals stage, and either (or both) leads into the Databricks Generative AI Engineer Associate cert next."
+    },
+    {
+      "name": "Databricks Certified Generative AI Engineer Associate",
+      "provider": "Databricks",
+      "level": "Associate",
+      "prerequisite_names": ["AWS Certified AI Practitioner", "Databricks Certified Data Engineer Associate"],
+      "prerequisite_logic": "any",
+      "track_label": "Databricks AI track",
+      "validity_period_months": 24,
+      "relevant_roles": ["Generative AI", "LLM Engineering"],
+      "kb_content": "This Associate exam validates skills building generative AI applications on Databricks, including RAG pipelines, AI/Vector Search, Model Serving, MLflow, and Unity Catalog governance for LLM apps. No formal prerequisite; Databricks recommends 6+ months hands-on experience with the GenAI solution-building tasks in the exam guide. Content domains: Designing Applications (~14%), Data Preparation (~14%), Application Development (~30%), Assembling & Deploying Applications (~22%), Governance (~8%), and Evaluation & Monitoring (~12%). Format: 45 scored multiple-choice questions, 90 minutes, $200 USD, proctored online or at a test center via WebAssessor, available in English, Japanese, Portuguese (BR), and Korean. Prepare with the official Exam Guide PDF, Databricks' AI Prep Guide, and the 'Generative AI Engineering with Databricks' self-paced or instructor-led course on Databricks Academy, which covers RAG architecture, vector search, and model serving hands-on. Register at webassessor.com/databricks. No official passing score is published. Validity is 2 years. Reachable from either the AWS AI-literacy branch or the Databricks data-engineering branch (prerequisite_logic 'any') - you don't need both, either foundation is considered sufficient before attempting this."
+    },
+    {
+      "name": "AWS Certified Cloud Practitioner",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Foundational",
+      "prerequisite_names": ["AWS Certified AI Practitioner"],
+      "prerequisite_logic": "any",
+      "track_label": null,
+      "validity_period_months": 36,
+      "relevant_roles": ["Cloud Practitioner", "IT Generalist", "Software Developer"],
+      "kb_content": "Exam code CLF-C02. No formal prerequisites; AWS recommends roughly six months of general IT exposure and three months of AWS familiarity. The exam has 65 questions (50 scored, 15 unscored, unidentified to the candidate) in a 90-minute window, costs $100 USD, and uses a scaled score of 100-1000 with a passing score of 700 under a compensatory model (no per-domain minimum). Domains cover Cloud Concepts, Security and Compliance, Cloud Technology and Services, and Billing/Pricing/Support. Delivered via Pearson VUE at a testing center or online proctored. Register and schedule through aws.amazon.com/certification. Prepare using AWS Skill Builder's free digital training, the official exam guide, and practice exams (e.g., AWS's own practice exam or third-party providers like Tutorials Dojo). Certification is valid for 3 years, after which recertification via the current exam version (or a higher-level AWS exam) is required. This is the entry point of this path's deployment/cloud stage - deliberately placed after the AI stage per the reordering, not before it. AWS itself doesn't enforce any order between its own foundational certs; this sequencing is this tracker's own recommendation."
+    },
+    {
+      "name": "Kubernetes and Cloud Native Associate (KCNA)",
+      "provider": "CNCF / Linux Foundation",
+      "level": "Associate (pre-professional / entry-level)",
+      "prerequisite_names": ["AWS Certified Cloud Practitioner"],
+      "prerequisite_logic": "any",
+      "track_label": "Kubernetes / cloud-native track",
+      "validity_period_months": 36,
+      "relevant_roles": ["Platform Engineer", "Kubernetes / Cloud Native", "Application Developer"],
+      "kb_content": "The Kubernetes and Cloud Native Associate (KCNA), from the Linux Foundation/CNCF, is a pre-professional credential covering Kubernetes fundamentals, container orchestration, cloud native architecture, observability, and application delivery - CNCF explicitly positions it as preparation for the hands-on CKA, CKAD, and CKS exams. Registration happens through the Linux Foundation training and certification portal, using remote browser-based proctoring. The exam is 90 minutes, 60 multiple-choice questions, with no command-line or hands-on tasks, and requires a 75% score to pass. The 2026 domain weighting is Kubernetes Fundamentals (46%), Container Orchestration (22%), Cloud Native Architecture (16%), Cloud Native Observability (8%), and Cloud Native Application Delivery (8%). Preparation resources include the Linux Foundation's official self-paced KCNA course and CNCF's free 'Kubernetes Fundamentals' curriculum materials. Under CNCF's CARE program, earning or recertifying CKA or CKAD after January 1, 2026 can automatically extend a KCNA holder's expiration to match. Note: some third-party sources cite an older 2-year validity figure; the most current guidance found is 3 years. Carries no formal prerequisites and is a genuine branch alongside AWS Certified Developer - Associate: both open right after Cloud Practitioner, and app/DB developers who'll be deploying containerized workloads benefit from this even without going deep on AWS-specific development."
+    },
+    {
+      "name": "AWS Certified Developer - Associate",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Associate",
+      "prerequisite_names": ["AWS Certified Cloud Practitioner"],
+      "prerequisite_logic": "any",
+      "track_label": "AWS developer track",
+      "validity_period_months": 36,
+      "relevant_roles": ["Application Developer", "Cloud Developer"],
+      "kb_content": "Exam code DVA-C02. No enforced prerequisite, but AWS recommends one or more years of hands-on experience developing and maintaining applications on AWS plus proficiency in at least one high-level programming language. The exam has 65 questions (50 scored, 15 unscored) in 130 minutes, costs $150 USD, and requires a scaled passing score of 720 out of 1000. It was refreshed in December 2024 to add skills around Amazon Q Developer and event-driven architectures. Content covers developing, testing, deploying, and debugging cloud-based applications: serverless architectures (Lambda, API Gateway), CI/CD pipelines, application security, monitoring/observability, and performance optimization on AWS services and SDKs. Delivered via Pearson VUE (testing center or online proctored); register at aws.amazon.com/certification. Prepare via AWS Skill Builder's Exam Prep courses, hands-on labs, and official practice exams. Valid for 3 years with the same recertification and grace-period policy as other AWS certifications. Branches alongside KCNA right after Cloud Practitioner; this is the more AWS-specific deployment track, feeding into the generative-AI-on-AWS professional credential next."
+    },
+    {
+      "name": "AWS Certified Generative AI Developer - Professional",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Professional",
+      "prerequisite_names": ["AWS Certified Developer - Associate"],
+      "prerequisite_logic": "any",
+      "track_label": "AWS developer track",
+      "validity_period_months": 36,
+      "relevant_roles": ["Generative AI Developer", "Agentic AI Engineer"],
+      "kb_content": "Exam code AIP-C01. No formal prerequisite is enforced, but AWS recommends 2+ years building production applications on AWS or open-source platforms, a foundational grasp of AI/ML principles and data pipelines, and roughly a year of hands-on experience implementing generative AI or LLM-based applications, plus familiarity with IaC and AWS deployment workflows. The exam includes 75 questions (65 scored, 10 unscored), runs about 180 minutes, costs $300 USD, and requires a scaled passing score of 750 out of 1000, using scenario-based questions where candidates select the best implementation approach. Five weighted domains: Foundation Model Integration/Data Management/Compliance (31%), Implementation and Integration (26%), AI Safety/Security/Governance (20%), Operational Efficiency and Optimization (12%), and Testing/Validation/Troubleshooting (11%). The 2026 refresh added Amazon Bedrock AgentCore content, directly covering agentic AI patterns. Prepare using the AWS Skill Builder Exam Prep Plan (practice assessments, AWS SimuLearn hands-on labs, and domain-review lessons). Valid 3 years under standard AWS recertification policy. This is the AWS flagship professional credential for building generative and agentic AI applications."
+    },
+    {
+      "name": "Microsoft Certified: AI Agent Builder Associate",
+      "provider": "Microsoft",
+      "level": "Associate",
+      "prerequisite_names": ["AWS Certified Generative AI Developer - Professional", "Databricks Certified Generative AI Engineer Associate"],
+      "prerequisite_logic": "any",
+      "track_label": null,
+      "validity_period_months": 12,
+      "relevant_roles": ["AI Agent Developer", "Low-Code/Copilot Studio Developer"],
+      "kb_content": "Earned by passing Exam AB-620: Designing and Building Integrated AI Agent Solutions in Copilot Studio, generally available from mid-2026. Candidates are expected to have practical experience with Microsoft Copilot Studio and the Power Platform, plus knowledge of Power Fx, Microsoft Dataverse, and Microsoft 365 Copilot. The exam runs 120 minutes and costs $165 USD, with a passing score of 700 out of 1000; as an associate-level exam it includes an embedded, in-exam link to relevant Microsoft Learn documentation. Content covers planning and configuring agent solutions, multi-agent design patterns, retrieval-augmented generation, Model Context Protocol (MCP) and Agent2Agent (A2A) integrations, workflow automation, and integrating/extending Copilot Studio agents with Azure and Microsoft Foundry for production environments. Retake policy: 24-hour wait after a first failed attempt, 14 days between subsequent attempts, capped at 5 attempts per rolling 12 months. Register and schedule via Pearson VUE (learn.microsoft.com/credentials). The certification expires 12 months after being earned; Microsoft offers a free, unproctored, open-book online renewal assessment on Microsoft Learn starting 6 months before expiration, extending validity another year each time it's passed. This is a genuine convergence point: reachable from either the AWS professional track or the Databricks AI track (prerequisite_logic 'any') - completing either one, not both, is enough to attempt it."
+    },
+    {
+      "name": "AWS Agentic AI Demonstrated",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Microcredential",
+      "prerequisite_names": ["Microsoft Certified: AI Agent Builder Associate"],
+      "prerequisite_logic": "any",
+      "track_label": null,
+      "validity_period_months": null,
+      "relevant_roles": ["Agentic AI Engineer", "Cloud AI Solutions Architect"],
+      "kb_content": "This is a hands-on, lab-based AWS microcredential rather than a multiple-choice exam. Candidates complete a timed 'exam lab' inside a live, provisioned AWS environment, working through simulated business scenarios that require troubleshooting, repairing, integrating, and enhancing Amazon Bedrock Agents and Bedrock Guardrails exactly as they would on the job - no answer choices, just real configuration work. Specific tasks include: troubleshooting and repairing supervisor and specialist Bedrock Agents, fixing an Amazon Bedrock knowledge base, integrating and repairing a Bedrock Agent, extending Bedrock Agent capabilities, wiring Bedrock Guardrails into an Agent, and connecting a web application chat client to a Bedrock Agent. Access is through AWS Skill Builder, and as of the AWS microcredentials relaunch it is free to attempt with no Skill Builder subscription required. On passing, recipients receive a verifiable digital badge issued via Credly (searchable under 'AWS Agentic AI Demonstrated'). No explicit multi-year expiration period is publicly stated for this microcredential, so it is treated here as this path's capstone."
+    }
+  ],
+  "notes": "Restructured 2026-08-24 per explicit instruction: (1) reordered so web-dev fundamentals come first, then AI, then deployment/cloud/other-important-things (previously cloud came before AI) - our own recommended sequencing, not an issuer-enforced order; (2) added Databricks Certified Data Engineer Associate and Databricks Certified Generative AI Engineer Associate (same real, already-verified certifications used in data_ai.json - reused verbatim, not re-researched) to give this practice an AI/data angle distinct from the pure-AWS one; (3) added Kubernetes and Cloud Native Associate (KCNA) (same real, already-verified certification used in cloud_platform_engineer.json) to the deployment stage, since containerized deployment is a genuinely important 'other thing along with cloud' for app/DB modernization work. Schema changed from a single linear prerequisite_name to prerequisite_names (a list) plus prerequisite_logic and track_label, to represent this DAG honestly: three real branch points now exist (after Meta Back-End Developer Professional Certificate: AWS AI vs Databricks data; after AWS Certified Cloud Practitioner: Kubernetes vs AWS developer track) and one real convergence point (Microsoft Certified: AI Agent Builder Associate, reachable from either the AWS professional track or the Databricks AI track). NOT YET SEEDED - scripts/seed_catalog_and_paths.py needs updating to read this shape (prerequisite_names/prerequisite_logic/track_label) before this can be loaded, and the user asked to review this content first."
+}

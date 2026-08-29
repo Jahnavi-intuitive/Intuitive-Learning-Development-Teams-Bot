@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L&D Admin</title>
+<style>
+  :root {
+    --bg: #f7f7f8; --panel: #ffffff; --border: #e3e3e6; --text: #1c1c1e; --muted: #6b6b70;
+    --accent: #c0392b; --accent-soft: #fbe9e7; --radius: 10px;
+    --ok-bg: #e3f4e3; --ok-text: #1e6b1e; --warn-bg: #fdf3d8; --warn-text: #8a6d1a;
+    --bad-bg: #fde8e8; --bad-text: #a12a2a; --neutral-bg: #e5e7eb; --neutral-text: #444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  a { color: var(--accent); }
+
+  header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 16px; margin: 0; }
+  header .spacer { flex: 1; }
+  header label { font-size: 12px; color: var(--muted); margin-right: 6px; }
+  select, input, button, textarea { font-family: inherit; font-size: 14px; }
+  header select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); }
+  #authNote { font-size: 12px; color: var(--muted); }
+
+  nav { display: flex; gap: 8px; padding: 14px 20px 0; }
+  nav button { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-size: 13.5px; }
+  nav button.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  main { padding: 16px 20px 60px; max-width: 1100px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .card h3 { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .card .hint { font-size: 12px; color: var(--muted); margin: -6px 0 12px; }
+
+  .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 4px; }
+  .row label { font-size: 12px; color: var(--muted); }
+  .row input, .row select, .row textarea { padding: 7px 8px; border-radius: 6px; border: 1px solid var(--border); }
+  .row textarea { min-height: 70px; font-family: inherit; }
+  .checkbox-row { display: flex; align-items: center; gap: 6px; }
+
+  .actions { display: flex; gap: 8px; margin-top: 6px; }
+  button.btn { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; }
+  button.btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  button.btn.danger { background: var(--bad-bg); color: var(--bad-text); border-color: var(--bad-bg); }
+  button.btn:disabled { opacity: 0.5; cursor: default; }
+  button.btn:hover:not(:disabled) { filter: brightness(0.97); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+  th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: var(--bg); }
+  .truncate { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: inline-block; }
+  .pill-active, .pill-completed, .pill-verified { background: var(--ok-bg); color: var(--ok-text); }
+  .pill-pending_setup, .pill-pending_review, .pill-draft, .pill-in_progress, .pill-not_started { background: var(--warn-bg); color: var(--warn-text); }
+  .pill-deprecated, .pill-closed, .pill-exception { background: var(--bad-bg); color: var(--bad-text); }
+  .pill-exempted, .pill-organization { background: var(--neutral-bg); color: var(--neutral-text); }
+
+  #toast { position: fixed; bottom: 16px; right: 16px; max-width: 360px; }
+  .toast-msg { padding: 10px 14px; border-radius: 8px; margin-top: 8px; font-size: 13px; }
+  .toast-ok { background: var(--ok-bg); color: var(--ok-text); }
+  .toast-err { background: var(--bad-bg); color: var(--bad-text); }
+  .empty-state { color: var(--muted); font-size: 13px; padding: 8px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>L&D Admin (test harness)</h1>
+  <div class="spacer"></div>
+  <div>
+    <label for="employeeSelect">Acting as</label>
+    <select id="employeeSelect"></select>
+  </div>
+  <div id="authNote"></div>
+</header>
+
+<nav>
+  <button id="navCatalog" class="active" onclick="showSection('catalog')">Certification Catalog</button>
+  <button id="navKb" onclick="showSection('kb')">Knowledge Base / Q&amp;A</button>
+  <button id="navDrives" onclick="showSection('drives')">Certification Drives</button>
+</nav>
+
+<main>
+
+  <!-- ================= CATALOG ================= -->
+  <section id="section-catalog" class="section active">
+    <div class="card">
+      <h2>Certifications</h2>
+      <div class="row">
+        <div><label>Name contains</label><input id="catFilterName" placeholder="e.g. AWS"></div>
+        <div><label>Status</label>
+          <select id="catFilterStatus">
+            <option value="">All</option>
+            <option value="active">active</option>
+            <option value="pending_setup">pending_setup</option>
+            <option value="deprecated">deprecated</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions"><button class="btn primary" onclick="loadCatalog()">Load / Refresh</button></div>
+      <div id="catalogTableWrap"><div class="empty-state">Not loaded yet — click Load.</div></div>
+    </div>
+
+    <div class="card">
+      <h2 id="catFormTitle">Add / update a certification</h2>
+      <p class="hint">Saving upserts by name — editing an existing name updates it in place. Real catalog content only; ask before filling this in with placeholder data.</p>
+      <div class="row">
+        <div><label>Name *</label><input id="catName"></div>
+        <div><label>Provider</label><input id="catProvider"></div>
+        <div><label>Level</label><input id="catLevel"></div>
+      </div>
+      <div class="row">
+        <div><label>Status</label>
+          <select id="catStatus"><option value="active">active</option><option value="pending_setup">pending_setup</option><option value="deprecated">deprecated</option></select>
+        </div>
+        <div><label>Prerequisite logic</label>
+          <select id="catPrereqLogic"><option value="any">any</option><option value="all">all</option></select>
+        </div>
+        <div><label>Validity (months)</label><input id="catValidity" type="number"></div>
+      </div>
+      <div class="row">
+        <div><label>Prerequisites (display only, comma-separated)</label><input id="catPrereqs"></div>
+        <div><label>Relevant roles (comma-separated)</label><input id="catRoles"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="saveCatalogEntry()">Save</button>
+        <button class="btn" onclick="clearCatalogForm()">Clear form</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Learning-path membership</h2>
+      <p class="hint">Attach a certification to one practice's path, or every path at once.</p>
+      <div class="row">
+        <div><label>Certification name</label><input id="pathCertName"></div>
+        <div><label>Practice (single-path add)</label>
+          <select id="pathPractice">
+            <option value="App + DB Mod">App + DB Mod</option>
+            <option value="Data+AI">Data+AI</option>
+            <option value="NetSec + SDx">NetSec + SDx</option>
+            <option value="Cloud & Platform Engineer">Cloud & Platform Engineer</option>
+          </select>
+        </div>
+        <div><label>Required?</label>
+          <select id="pathIsRequired"><option value="true">Yes</option><option value="false">No</option></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="addCertToPath()">Add to this practice's path</button>
+        <button class="btn" onclick="addCertToAllPaths()">Add to ALL paths</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Prerequisite edges</h2>
+      <p class="hint">certification requires prerequisite_certification. any/all evaluation is set on the certification itself, above.</p>
+      <div class="row">
+        <div><label>Certification</label><input id="edgeCert"></div>
+        <div><label>Prerequisite</label><input id="edgePrereq"></div>
+        <div><label>Track label (optional)</label><input id="edgeTrack"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="addEdge()">Add / update edge</button>
+        <button class="btn danger" onclick="removeEdge()">Remove edge</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= KNOWLEDGE BASE ================= -->
+  <section id="section-kb" class="section">
+    <div class="card">
+      <h2>Knowledge base entries</h2>
+      <div class="row">
+        <div><label>Status</label>
+          <select id="kbFilterStatus">
+            <option value="">All</option>
+            <option value="active">active</option>
+            <option value="pending_review">pending_review</option>
+            <option value="deprecated">deprecated</option>
+          </select>
+        </div>
+        <div><label>Certification name (exact)</label><input id="kbFilterCert"></div>
+      </div>
+      <div class="actions"><button class="btn primary" onclick="loadKb()">Load / Refresh</button></div>
+      <div id="kbTableWrap"><div class="empty-state">Not loaded yet — click Load.</div></div>
+    </div>
+
+    <div class="card">
+      <h2 id="kbFormTitle">Add a knowledge-base entry</h2>
+      <p class="hint">Editing only owner/status/last-reviewed-date never re-embeds — only a content change does. Leave certification blank for general content.</p>
+      <input type="hidden" id="kbEditId">
+      <div class="row">
+        <div style="flex:2"><label>Content *</label><textarea id="kbContent"></textarea></div>
+      </div>
+      <div class="row">
+        <div><label>Certification name (optional)</label><input id="kbCertName"></div>
+        <div><label>Tags (comma-separated)</label><input id="kbTags"></div>
+        <div><label>Owner *</label><input id="kbOwner"></div>
+      </div>
+      <div class="row">
+        <div><label>Status</label>
+          <select id="kbStatus"><option value="active">active</option><option value="pending_review">pending_review</option><option value="deprecated">deprecated</option></select>
+        </div>
+        <div><label>Last reviewed date</label><input id="kbLastReviewed" type="date"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="saveKbEntry()">Save</button>
+        <button class="btn" onclick="clearKbForm()">Clear / new entry</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DRIVES ================= -->
+  <section id="section-drives" class="section">
+    <div class="card">
+      <h2>Drives</h2>
+      <div class="row">
+        <div><label>Status</label>
+          <select id="driveFilterStatus">
+            <option value="">All</option>
+            <option value="draft">draft</option>
+            <option value="active">active</option>
+            <option value="closed">closed</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions"><button class="btn primary" onclick="loadDrives()">Load / Refresh</button></div>
+      <div id="drivesTableWrap"><div class="empty-state">Not loaded yet — click Load.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Create a drive</h2>
+      <p class="hint">Don't fabricate real campaign targets/deadlines here — this is for genuine campaigns only.</p>
+      <div class="row">
+        <div><label>Name *</label><input id="drvName"></div>
+        <div style="flex:2"><label>Description</label><input id="drvDescription"></div>
+      </div>
+      <div class="row">
+        <div><label>Target scope</label>
+          <select id="drvScope"><option value="practice">practice</option><option value="department">department</option><option value="organization">organization</option></select>
+        </div>
+        <div><label>Target scope value *</label><input id="drvScopeValue" placeholder="e.g. Data+AI"></div>
+        <div><label>Metric type</label>
+          <select id="drvMetric"><option value="percentage">percentage</option><option value="count">count</option></select>
+        </div>
+        <div><label>Target value *</label><input id="drvTargetValue" type="number"></div>
+      </div>
+      <div class="row">
+        <div><label>Start date *</label><input id="drvStart" type="date"></div>
+        <div><label>Deadline *</label><input id="drvDeadline" type="date"></div>
+        <div><label>Reminder cadence (days before, comma-sep)</label><input id="drvReminders" placeholder="30,14,7,1"></div>
+      </div>
+      <div class="row">
+        <div style="flex:2"><label>Required certifications (comma-separated names) *</label><input id="drvCerts"></div>
+        <div class="checkbox-row" style="align-self:center; margin-top:18px;"><input type="checkbox" id="drvIsTest"><label for="drvIsTest">Test data (not a real campaign)</label></div>
+      </div>
+      <div class="actions"><button class="btn primary" onclick="createDrive()">Create drive (as draft)</button></div>
+    </div>
+
+    <div class="card" id="driveDetailCard" style="display:none;">
+      <h2 id="driveDetailTitle">Drive detail</h2>
+      <div id="driveDetailBody"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+const state = { employees: [] };
+
+function toast(message, ok) {
+  const div = document.createElement('div');
+  div.className = 'toast-msg ' + (ok ? 'toast-ok' : 'toast-err');
+  div.textContent = message;
+  document.getElementById('toast').appendChild(div);
+  setTimeout(() => div.remove(), 6000);
+}
+
+function actingAs() {
+  const sel = document.getElementById('employeeSelect');
+  return sel.value;
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'X-Employee-Id': actingAs() } };
+  if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const resp = await fetch(path, opts);
+  const text = await resp.text();
+  let data = null;
+  if (text) { try { data = JSON.parse(text); } catch { data = text; } }
+  if (!resp.ok) {
+    const detail = data && data.detail ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) : resp.statusText;
+    throw new Error(detail);
+  }
+  return data;
+}
+
+function pill(value) {
+  if (value === null || value === undefined || value === '') return '';
+  return `<span class="pill pill-${value}">${value}</span>`;
+}
+
+function esc(s) {
+  return (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- header: acting-as employee list (loaded once) ----------
+async function loadEmployees() {
+  const employees = await api('GET', '/api/employees');
+  state.employees = employees;
+  const sel = document.getElementById('employeeSelect');
+  sel.innerHTML = employees.map(e => `<option value="${e.employee_id}">${esc(e.name)} (${e.employee_id})${e.is_admin ? ' — admin' : ''}</option>`).join('');
+  const saved = localStorage.getItem('admin_acting_as');
+  if (saved && employees.some(e => e.employee_id === saved)) sel.value = saved;
+  sel.onchange = () => localStorage.setItem('admin_acting_as', sel.value);
+  const current = employees.find(e => e.employee_id === sel.value);
+  document.getElementById('authNote').textContent = current && !current.is_admin
+    ? 'Not an admin — mutations here will be refused server-side.' : '';
+  sel.onchange = () => {
+    localStorage.setItem('admin_acting_as', sel.value);
+    const emp = state.employees.find(e => e.employee_id === sel.value);
+    document.getElementById('authNote').textContent = emp && !emp.is_admin
+      ? 'Not an admin — mutations here will be refused server-side.' : '';
+  };
+}
+
+// ---------- nav ----------
+function showSection(name) {
+  for (const s of ['catalog', 'kb', 'drives']) {
+    document.getElementById('section-' + s).classList.toggle('active', s === name);
+    document.getElementById('nav' + s[0].toUpperCase() + s.slice(1)).classList.toggle('active', s === name);
+  }
+}
+
+// ============ CATALOG ============
+async function loadCatalog() {
+  const wrap = document.getElementById('catalogTableWrap');
+  wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const q = document.getElementById('catFilterName').value.trim();
+    const status = document.getElementById('catFilterStatus').value;
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (status) params.set('status', status);
+    const rows = await api('GET', '/api/catalog/certifications?' + params.toString());
+    if (!rows.length) { wrap.innerHTML = '<div class="empty-state">No matching certifications.</div>'; return; }
+    wrap.innerHTML = `<table><thead><tr><th>Name</th><th>Provider</th><th>Level</th><th>Status</th><th>Prereq logic</th><th>Actions</th></tr></thead><tbody>
+      ${rows.map(c => `<tr>
+        <td>${esc(c.name)}</td><td>${esc(c.provider)}</td><td>${esc(c.level)}</td>
+        <td>${pill(c.status)}</td><td>${esc(c.prerequisite_logic)}</td>
+        <td>
+          <button class="btn" onclick='editCatalogEntry(${JSON.stringify(c).replace(/'/g, "&#39;")})'>Edit</button>
+          ${c.status !== 'deprecated' ? `<button class="btn danger" onclick="deprecateCatalogEntry('${c.id}')">Deprecate</button>` : ''}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
+}
+
+function editCatalogEntry(c) {
+  document.getElementById('catFormTitle').textContent = 'Edit: ' + c.name;
+  document.getElementById('catName').value = c.name;
+  document.getElementById('catProvider').value = c.provider || '';
+  document.getElementById('catLevel').value = c.level || '';
+  document.getElementById('catStatus').value = c.status;
+  document.getElementById('catPrereqLogic').value = c.prerequisite_logic;
+  document.getElementById('catValidity').value = c.validity_period_months ?? '';
+  document.getElementById('catPrereqs').value = (c.prerequisites || []).join(', ');
+  document.getElementById('catRoles').value = (c.relevant_roles || []).join(', ');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clearCatalogForm() {
+  document.getElementById('catFormTitle').textContent = 'Add / update a certification';
+  for (const id of ['catName','catProvider','catLevel','catValidity','catPrereqs','catRoles']) document.getElementById(id).value = '';
+  document.getElementById('catStatus').value = 'active';
+  document.getElementById('catPrereqLogic').value = 'any';
+}
+
+async function saveCatalogEntry() {
+  const name = document.getElementById('catName').value.trim();
+  if (!name) { toast('Name is required.', false); return; }
+  const csv = s => s.split(',').map(x => x.trim()).filter(Boolean);
+  const payload = {
+    name,
+    provider: document.getElementById('catProvider').value.trim() || null,
+    level: document.getElementById('catLevel').value.trim() || null,
+    status: document.getElementById('catStatus').value,
+    prerequisite_logic: document.getElementById('catPrereqLogic').value,
+    validity_period_months: document.getElementById('catValidity').value ? Number(document.getElementById('catValidity').value) : null,
+    prerequisites: csv(document.getElementById('catPrereqs').value),
+    relevant_roles: csv(document.getElementById('catRoles').value),
+  };
+  try {
+    await api('POST', '/api/admin/catalog-entries', payload);
+    toast('Saved: ' + name, true);
+    clearCatalogForm();
+    loadCatalog();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function deprecateCatalogEntry(id) {
+  if (!confirm('Deprecate this certification? This is a soft delete — it stays in history.')) return;
+  try {
+    await api('POST', `/api/admin/certifications/${id}/deprecate`);
+    toast('Deprecated.', true);
+    loadCatalog();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function addCertToPath() {
+  const certName = document.getElementById('pathCertName').value.trim();
+  const practice = document.getElementById('pathPractice').value;
+  const isRequired = document.getElementById('pathIsRequired').value === 'true';
+  if (!certName) { toast('Certification name is required.', false); return; }
+  try {
+    const path = await api('GET', `/api/learning-paths/${encodeURIComponent(practice)}`);
+    const result = await api('POST', `/api/learning-paths/${path.id}/certifications`, { certification_name: certName, is_required: isRequired });
+    toast(result.already_member ? `${certName} is already on the ${practice} path.` : `Added ${certName} to the ${practice} path.`, true);
+  } catch (e) { toast(e.message, false); }
+}
+
+async function addCertToAllPaths() {
+  const certName = document.getElementById('pathCertName').value.trim();
+  if (!certName) { toast('Certification name is required.', false); return; }
+  try {
+    const result = await api('POST', `/api/learning-paths/certifications/${encodeURIComponent(certName)}/add-to-paths`, { all: true });
+    toast(`Added to ${result.added_to_paths.length} path(s), already on ${result.already_member_paths.length}.`, true);
+  } catch (e) { toast(e.message, false); }
+}
+
+async function addEdge() {
+  const certification_name = document.getElementById('edgeCert').value.trim();
+  const prerequisite_certification_name = document.getElementById('edgePrereq').value.trim();
+  const track_label = document.getElementById('edgeTrack').value.trim() || null;
+  if (!certification_name || !prerequisite_certification_name) { toast('Both certification names are required.', false); return; }
+  try {
+    await api('POST', '/api/admin/certification-prerequisites', { certification_name, prerequisite_certification_name, track_label });
+    toast(`Edge saved: ${certification_name} <- ${prerequisite_certification_name}`, true);
+  } catch (e) { toast(e.message, false); }
+}
+
+async function removeEdge() {
+  const certification_name = document.getElementById('edgeCert').value.trim();
+  const prerequisite_certification_name = document.getElementById('edgePrereq').value.trim();
+  if (!certification_name || !prerequisite_certification_name) { toast('Both certification names are required.', false); return; }
+  if (!confirm('Remove this prerequisite edge?')) return;
+  try {
+    await api('DELETE', '/api/admin/certification-prerequisites', { certification_name, prerequisite_certification_name });
+    toast('Edge removed.', true);
+  } catch (e) { toast(e.message, false); }
+}
+
+// ============ KNOWLEDGE BASE ============
+async function loadKb() {
+  const wrap = document.getElementById('kbTableWrap');
+  wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const status = document.getElementById('kbFilterStatus').value;
+    const cert = document.getElementById('kbFilterCert').value.trim();
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (cert) params.set('certification_name', cert);
+    const rows = await api('GET', '/api/kb/items?' + params.toString());
+    if (!rows.length) { wrap.innerHTML = '<div class="empty-state">No matching entries.</div>'; return; }
+    wrap.innerHTML = `<table><thead><tr><th>Content</th><th>Tags</th><th>Status</th><th>Owner</th><th>Actions</th></tr></thead><tbody>
+      ${rows.map(r => `<tr>
+        <td class="truncate" title="${esc(r.content)}">${esc(r.content)}</td>
+        <td>${(r.tags || []).map(esc).join(', ')}</td>
+        <td>${pill(r.status)}</td>
+        <td>${esc(r.owner)}</td>
+        <td>
+          <button class="btn" onclick='editKbEntry(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Edit</button>
+          ${r.status !== 'deprecated' ? `<button class="btn danger" onclick="deprecateKbEntry('${r.id}')">Deprecate</button>` : ''}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
+}
+
+function editKbEntry(r) {
+  document.getElementById('kbFormTitle').textContent = 'Edit knowledge-base entry';
+  document.getElementById('kbEditId').value = r.id;
+  document.getElementById('kbContent').value = r.content;
+  document.getElementById('kbTags').value = (r.tags || []).join(', ');
+  document.getElementById('kbOwner').value = r.owner || '';
+  document.getElementById('kbStatus').value = r.status;
+  document.getElementById('kbLastReviewed').value = r.last_reviewed_date || '';
+  document.getElementById('kbCertName').value = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clearKbForm() {
+  document.getElementById('kbFormTitle').textContent = 'Add a knowledge-base entry';
+  document.getElementById('kbEditId').value = '';
+  for (const id of ['kbContent','kbCertName','kbTags','kbOwner','kbLastReviewed']) document.getElementById(id).value = '';
+  document.getElementById('kbStatus').value = 'active';
+}
+
+async function saveKbEntry() {
+  const id = document.getElementById('kbEditId').value;
+  const content = document.getElementById('kbContent').value.trim();
+  const tags = document.getElementById('kbTags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const owner = document.getElementById('kbOwner').value.trim();
+  const status = document.getElementById('kbStatus').value;
+  const last_reviewed_date = document.getElementById('kbLastReviewed').value || null;
+  try {
+    if (id) {
+      // certification_name is left alone on edit unless explicitly typed —
+      // avoids accidentally clearing it since the edit form doesn't reload it.
+      const certName = document.getElementById('kbCertName').value.trim();
+      const payload = { content, tags, owner, status, last_reviewed_date };
+      if (certName) payload.certification_name = certName;
+      await api('PATCH', `/api/kb/items/${id}`, payload);
+      toast('Updated.', true);
+    } else {
+      if (!content || !owner) { toast('Content and owner are required.', false); return; }
+      await api('POST', '/api/kb/items', {
+        content, owner, status, tags,
+        certification_name: document.getElementById('kbCertName').value.trim() || null,
+        last_reviewed_date,
+      });
+      toast('Created.', true);
+    }
+    clearKbForm();
+    loadKb();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function deprecateKbEntry(id) {
+  if (!confirm('Deprecate this knowledge-base entry?')) return;
+  try {
+    await api('POST', `/api/kb/items/${id}/deprecate`);
+    toast('Deprecated.', true);
+    loadKb();
+  } catch (e) { toast(e.message, false); }
+}
+
+// ============ DRIVES ============
+async function loadDrives() {
+  const wrap = document.getElementById('drivesTableWrap');
+  wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const status = document.getElementById('driveFilterStatus').value;
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    const rows = await api('GET', '/api/admin/drives?' + params.toString());
+    if (!rows.length) { wrap.innerHTML = '<div class="empty-state">No drives yet.</div>'; return; }
+    wrap.innerHTML = `<table><thead><tr><th>Name</th><th>Scope</th><th>Metric target</th><th>Deadline</th><th>Status</th><th></th></tr></thead><tbody>
+      ${rows.map(d => `<tr class="clickable" onclick="viewDrive('${d.id}')">
+        <td>${esc(d.name)}${d.is_test_data ? ' <span class="pill pill-draft">test</span>' : ''}</td>
+        <td>${esc(d.target_scope)}: ${esc(d.target_scope_value)}</td>
+        <td>${d.target_value}${d.target_metric_type === 'percentage' ? '%' : ' certs'}</td>
+        <td>${esc(d.deadline)}</td>
+        <td>${pill(d.status)}</td>
+        <td><button class="btn">View</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
+}
+
+async function createDrive() {
+  const name = document.getElementById('drvName').value.trim();
+  const target_scope_value = document.getElementById('drvScopeValue').value.trim();
+  const target_value = document.getElementById('drvTargetValue').value;
+  const start_date = document.getElementById('drvStart').value;
+  const deadline = document.getElementById('drvDeadline').value;
+  const certNames = document.getElementById('drvCerts').value.split(',').map(s => s.trim()).filter(Boolean);
+  if (!name || !target_scope_value || !target_value || !start_date || !deadline || !certNames.length) {
+    toast('Name, scope value, target value, dates, and at least one certification are required.', false);
+    return;
+  }
+  const remindersRaw = document.getElementById('drvReminders').value.trim();
+  const payload = {
+    name,
+    description: document.getElementById('drvDescription').value.trim() || null,
+    target_scope: document.getElementById('drvScope').value,
+    target_scope_value,
+    target_metric_type: document.getElementById('drvMetric').value,
+    target_value: Number(target_value),
+    start_date, deadline,
+    reminder_cadence: remindersRaw ? remindersRaw.split(',').map(n => Number(n.trim())).filter(n => !isNaN(n)) : null,
+    certification_names: certNames,
+    is_test_data: document.getElementById('drvIsTest').checked,
+  };
+  try {
+    const drive = await api('POST', '/api/admin/drives', payload);
+    toast('Drive created as draft: ' + drive.name, true);
+    loadDrives();
+    viewDrive(drive.id);
+  } catch (e) { toast(e.message, false); }
+}
+
+async function viewDrive(id) {
+  const card = document.getElementById('driveDetailCard');
+  card.style.display = 'block';
+  document.getElementById('driveDetailTitle').textContent = 'Loading drive…';
+  document.getElementById('driveDetailBody').innerHTML = '';
+  try {
+    const detail = await api('GET', `/api/admin/drives/${id}`);
+    renderDriveDetail(detail);
+    card.scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { toast(e.message, false); }
+}
+
+function renderDriveDetail(detail) {
+  const d = detail.drive;
+  document.getElementById('driveDetailTitle').textContent = d.name + ' — ' + d.status;
+  const canDelete = detail.enrolled_count === 0;
+  document.getElementById('driveDetailBody').innerHTML = `
+    <p class="hint">${esc(d.description || '')}</p>
+    <div class="row">
+      <div><label>Required certifications</label><div>${detail.required_certifications.map(esc).join(', ')}</div></div>
+      <div><label>Deadline</label><div>${esc(d.deadline)}</div></div>
+      <div><label>Compliance</label><div><strong>${detail.compliance_pct}%</strong> (${detail.compliant_count} compliant / ${detail.enrolled_count} enrolled, ${detail.exempted_count} exempted)</div></div>
+    </div>
+    <div class="actions">
+      ${d.status !== 'closed' ? `<button class="btn primary" onclick="enrollPopulation('${d.id}')">Enroll population (sync)</button>` : ''}
+      ${d.status !== 'closed' ? `<button class="btn" onclick="closeDrive('${d.id}')">Close drive</button>` : ''}
+      <button class="btn danger" ${canDelete ? '' : 'disabled title="Only a zero-enrollment drive can be deleted — close it instead."'} onclick="deleteDrive('${d.id}')">Delete drive${canDelete ? '' : ' (has enrollments)'}</button>
+    </div>
+    <h3 style="margin-top:16px;">Enrollments (data as of ${esc(detail.data_as_of)})</h3>
+    ${detail.enrollments.length ? `<table><thead><tr><th>Employee</th><th>Status</th><th>Compliant?</th><th>Exemption</th><th></th></tr></thead><tbody>
+      ${detail.enrollments.map(e => `<tr>
+        <td>${esc(e.employee_name)} (${esc(e.employee_id)})</td>
+        <td>${pill(e.enrollment_status)}</td>
+        <td>${e.is_compliant ? '✅' : '—'}</td>
+        <td>${esc(e.exemption_reason || '')}</td>
+        <td>${e.enrollment_status !== 'exempted' ? `<button class="btn" onclick="exemptEnrollment('${d.id}','${e.employee_id}')">Exempt</button>` : ''}</td>
+      </tr>`).join('')}
+    </tbody></table>` : '<div class="empty-state">No enrollments yet — click "Enroll population" above.</div>'}
+  `;
+}
+
+async function enrollPopulation(driveId) {
+  try {
+    const detail = await api('POST', `/api/admin/drives/${driveId}/enroll-population`);
+    toast('Population synced.', true);
+    renderDriveDetail(detail);
+    loadDrives();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function closeDrive(driveId) {
+  if (!confirm('Close this drive? This preserves its compliance record — it cannot be reopened here.')) return;
+  try {
+    await api('POST', `/api/admin/drives/${driveId}/close`);
+    toast('Drive closed.', true);
+    viewDrive(driveId);
+    loadDrives();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function deleteDrive(driveId) {
+  if (!confirm('Permanently delete this drive? This only works if it has zero enrollments. This cannot be undone.')) return;
+  try {
+    await api('DELETE', `/api/admin/drives/${driveId}?confirm=true`);
+    toast('Drive deleted.', true);
+    document.getElementById('driveDetailCard').style.display = 'none';
+    loadDrives();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function exemptEnrollment(driveId, employeeId) {
+  const reason = prompt('Exemption reason:');
+  if (!reason) return;
+  try {
+    await api('POST', `/api/admin/drives/${driveId}/enrollments/${employeeId}/exempt`, { reason });
+    toast('Enrollment exempted.', true);
+    viewDrive(driveId);
+  } catch (e) { toast(e.message, false); }
+}
+
+loadEmployees();
+</script>
+</body>
+</html>

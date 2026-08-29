@@ -1,0 +1,127 @@
+{
+  "practice": "Cloud & Platform Engineer",
+  "learning_path_name": "Cloud & Platform Engineering Certification Path",
+  "certifications": [
+    {
+      "name": "AWS Certified Cloud Practitioner",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Foundational",
+      "sequence_order": 1,
+      "prerequisite_name": null,
+      "validity_period_months": 36,
+      "relevant_roles": ["Cloud Generalist", "IT/Business Stakeholder"],
+      "kb_content": "The AWS Certified Cloud Practitioner (CLF-C02) is AWS's entry-level, role-agnostic credential covering cloud concepts, AWS core services, security, billing, and support. Register and schedule through the AWS Certification portal (aws.amazon.com/certification), which routes to Pearson VUE (test center or online proctored) or PSI. The exam has 65 questions (50 scored, 15 unscored and unidentified) in a 90-minute session, mixing multiple-choice and multiple-response items; it is closed-book with no labs or coding. Scoring is scaled from 100-1000 with a minimum passing score of 700. Cost is $100 USD. To prepare, AWS publishes a free exam guide and sample questions, and offers the self-paced 'AWS Cloud Practitioner Essentials' digital course plus AWS Skill Builder practice exams; most candidates study 4-6 weeks combining that with a video course and practice tests. The certification is valid for 3 years, after which renewal requires retaking the current exam version or passing a higher-level AWS certification. There are no formal prerequisites, though AWS recommends at least 6 months of exposure to the AWS Cloud in any role. It's commonly used as the on-ramp before Associate-level AWS certifications like Solutions Architect Associate."
+    },
+    {
+      "name": "Microsoft Certified: Azure Fundamentals (AZ-900)",
+      "provider": "Microsoft Azure",
+      "level": "Fundamentals",
+      "sequence_order": 2,
+      "prerequisite_name": null,
+      "validity_period_months": null,
+      "relevant_roles": ["Cloud Generalist", "IT Support"],
+      "kb_content": "Microsoft Certified: Azure Fundamentals (exam AZ-900) validates baseline knowledge of cloud concepts and core Azure services, pricing, and governance for non-technical and technical audiences alike. Register through the Microsoft Learn certification dashboard, which schedules delivery via Pearson VUE, including online proctored options from home or office. The exam runs 60-90 minutes and mixes multiple-choice, drag-and-drop, and case-study-style questions; Microsoft revised the question wording in January 2026 to emphasize practical scenarios over rote recall. Cost is $99 USD, and the exam is offered in over a dozen languages including English, Japanese, German, and Spanish. Preparation resources are free: Microsoft Learn publishes self-paced learning paths mapped directly to exam objectives, plus official practice assessments. Unlike Associate, Expert, and Specialty-level Microsoft certifications, which expire after one year, the 'Fundamentals' designation does not expire once earned - no renewal is required. There are no prerequisites; it's designed as the starting point for anyone entering the Azure ecosystem, including non-IT roles, and is the logical first step before pursuing Associate-level Azure credentials such as Azure Administrator Associate (AZ-104)."
+    },
+    {
+      "name": "HashiCorp Certified: Terraform Associate",
+      "provider": "HashiCorp",
+      "level": "Associate",
+      "sequence_order": 3,
+      "prerequisite_name": null,
+      "validity_period_months": 24,
+      "relevant_roles": ["Platform Engineer", "DevOps / Infrastructure as Code"],
+      "kb_content": "HashiCorp Certified: Terraform Associate (currently version 004, aligned to Terraform 1.12) validates the ability to author, test, and manage infrastructure as code with the Terraform CLI and HCP Terraform. Registration and scheduling run through HashiCorp's certification portal (developer.hashicorp.com/certifications) via a remote-proctored testing partner. The exam is one hour long, made up of multiple-choice (single and multiple response), drag-and-drop, and performance-based questions, and is offered in English, German, and Japanese. Cost is $70.50 USD, making it one of the least expensive professional infrastructure certifications on the market. Scheduling for the 004 exam opened December 9, 2025, with the prior 003 version retired January 7, 2026; 004 adds coverage of lifecycle/import blocks, custom conditions, and HCP Terraform projects. HashiCorp sets no formal prerequisite, but the exam assumes real hands-on practice writing and testing configurations, not just reading documentation - HashiCorp's free tutorials on developer.hashicorp.com are the primary official study resource. The credential is valid for 2 years; candidates can recertify starting at the 18-month mark, and letting it lapse means testing again from scratch with a new expiration date. It pairs naturally with any major cloud provider's associate certification."
+    },
+    {
+      "name": "Kubernetes and Cloud Native Associate (KCNA)",
+      "provider": "CNCF / Linux Foundation",
+      "level": "Associate (pre-professional / entry-level)",
+      "sequence_order": 4,
+      "prerequisite_name": null,
+      "validity_period_months": 36,
+      "relevant_roles": ["Platform Engineer", "Kubernetes / Cloud Native"],
+      "kb_content": "The Kubernetes and Cloud Native Associate (KCNA), from the Linux Foundation/CNCF, is a pre-professional credential covering Kubernetes fundamentals, container orchestration, cloud native architecture, observability, and application delivery - CNCF explicitly positions it as preparation for the hands-on CKA, CKAD, and CKS exams. Registration happens through the Linux Foundation training and certification portal, using remote browser-based proctoring. The exam is 90 minutes, 60 multiple-choice questions, with no command-line or hands-on tasks, and requires a 75% score to pass. The 2026 domain weighting is Kubernetes Fundamentals (46%), Container Orchestration (22%), Cloud Native Architecture (16%), Cloud Native Observability (8%), and Cloud Native Application Delivery (8%). Preparation resources include the Linux Foundation's official self-paced KCNA course and CNCF's free 'Kubernetes Fundamentals' curriculum materials. Under CNCF's CARE program, earning or recertifying CKA or CKAD after January 1, 2026 can automatically extend a KCNA holder's expiration to match. Note: some third-party sources cite an older 2-year validity figure; the most current guidance found is 3 years. It carries no formal prerequisites and is aimed at newcomers to cloud native roles."
+    },
+    {
+      "name": "Docker Certified Associate (DCA)",
+      "provider": "Mirantis (originally Docker, Inc.)",
+      "level": "Associate",
+      "sequence_order": 5,
+      "prerequisite_name": null,
+      "validity_period_months": 24,
+      "relevant_roles": ["Platform Engineer", "Containers"],
+      "kb_content": "The Docker Certified Associate (DCA) validates hands-on Docker skills - image creation, orchestration, networking, security, and troubleshooting - for engineers with roughly 6-12 months of real Docker experience. It originated under Docker Inc. and, since Docker's 2019 sale of its enterprise business, has been owned and administered by Mirantis; it is purchased directly from the Mirantis webstore (store.mirantis.com) and delivered remotely proctored on a candidate's own Windows or Mac computer. The exam has 55 questions in 90 minutes: 13 standard multiple-choice and 42 'discrete option multiple choice' (DOMC) items, where each answer option is presented as a separate true/false statement. Cost starts at $199 USD, and results are delivered immediately after the session. Official preparation includes Mirantis's DCA study guide and published exam objectives (orchestration, image creation/management, installation/configuration, networking, security, storage/volumes), plus community courses. The certification is valid for 2 years, after which it must be retaken to stay current. There's no formal prerequisite, but candidates are expected to already be comfortable operating Docker in production - a good complement to a Kubernetes associate-level credential. NOTE: some third-party sources claim this credential was discontinued in 2026, but a direct check of Mirantis's official webstore confirmed it is still purchasable and actively delivered as of this research."
+    },
+    {
+      "name": "AWS Certified Solutions Architect - Associate",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Associate",
+      "sequence_order": 6,
+      "prerequisite_name": "AWS Certified Cloud Practitioner",
+      "validity_period_months": 36,
+      "relevant_roles": ["Solutions Architect", "Cloud Infrastructure"],
+      "kb_content": "The AWS Certified Solutions Architect - Associate (SAA-C03) validates the ability to design cost-effective, resilient, high-performing, and secure distributed systems on AWS. Register via the AWS Certification portal, delivered through Pearson VUE or PSI (test center or online proctored). The exam has 65 questions (multiple-choice and multiple-response) with a 130-minute time limit, scored on a 100-1000 scale with a minimum passing score of 720; cost is $150 USD. The 2026 exam guide weights four domains: Design Secure Architectures (30%), Design Resilient Architectures (26%), Design High-Performing Architectures (24%), and Design Cost-Optimized Architectures (20%). AWS recommends roughly one year of hands-on AWS experience, though there's no enforced formal prerequisite (Cloud Practitioner is a recommended, not mandatory, on-ramp). Preparation typically combines the free official exam guide and sample questions, AWS Skill Builder's exam-prep course, and third-party practice tests; a 6-12 week study window is typical for candidates with some prior AWS exposure. The certification is valid for 3 years and can be renewed by retaking the current exam or passing a higher-level Professional AWS certification. It's the most widely held AWS credential and the standard next step for anyone moving into cloud architecture or platform engineering."
+    },
+    {
+      "name": "Microsoft Certified: Azure Administrator Associate (AZ-104)",
+      "provider": "Microsoft Azure",
+      "level": "Associate",
+      "sequence_order": 7,
+      "prerequisite_name": "Microsoft Certified: Azure Fundamentals (AZ-900)",
+      "validity_period_months": 12,
+      "relevant_roles": ["Cloud Administrator", "Infrastructure"],
+      "kb_content": "Microsoft Certified: Azure Administrator Associate (exam AZ-104) validates the ability to implement, manage, and monitor an Azure environment - compute, storage, networking, identity, security, and governance. Registration runs through the Microsoft Learn certification dashboard, scheduled with Pearson VUE (in-person or online proctored). The exam allows 100 minutes for roughly 40-60 questions across formats including single/multiple-answer, drag-and-drop, and case studies. Microsoft's official Learn paths, matched module-for-module to exam objectives, are the primary free prep resource, supplemented by an official practice assessment. The certification is valid for just 1 year, but renewal is free: a shorter, unproctored online assessment on Microsoft Learn, available starting 6 months before expiration and retakeable as many times as needed until passed. There's no enforced formal prerequisite, though Azure Fundamentals (AZ-900) knowledge is recommended groundwork since AZ-104 assumes familiarity with core Azure concepts. Holding an active AZ-104 is also a hard requirement for earning and keeping the Azure Solutions Architect Expert title (AZ-305), since Microsoft requires both certifications to remain active concurrently for that Expert designation to be valid."
+    },
+    {
+      "name": "Google Cloud Associate Cloud Engineer",
+      "provider": "Google Cloud",
+      "level": "Associate",
+      "sequence_order": 8,
+      "prerequisite_name": null,
+      "validity_period_months": 36,
+      "relevant_roles": ["Cloud Engineer", "Infrastructure"],
+      "kb_content": "The Google Cloud Associate Cloud Engineer certification validates the ability to deploy applications, monitor operations, and manage Google Cloud environments - including gcloud CLI, Cloud Shell, Deployment Manager, IAM, Cloud Monitoring/Logging, and basic GKE operations. Registration is through Google Cloud's certification site (Webassessor), with a choice of onsite testing center or online-proctored delivery from home. The exam runs 2 hours with 50-60 multiple-choice and multiple-select, scenario-based questions, and costs $125 USD. Provisional pass/fail shows immediately at the end of the session, with the official result emailed within 7-10 business days. Google's own free preparation resources include the Associate Cloud Engineer Coursera specialization, hands-on labs on Google Skills, and an official practice exam; 2026 exam content places added emphasis on security, automation, containers, and AI fundamentals. There's no formal prerequisite, though Google recommends 6+ months of hands-on Google Cloud experience. The certification is valid for 3 years, with recertification eligible starting 180 days before expiry via the standard exam, a shorter renewal exam, or qualifying Google Skills courses/badges. It's the standard entry point into the Google Cloud certification track before Professional-level exams."
+    },
+    {
+      "name": "Certified Kubernetes Administrator (CKA)",
+      "provider": "CNCF / Linux Foundation",
+      "level": "Professional-level (hands-on)",
+      "sequence_order": 9,
+      "prerequisite_name": "Kubernetes and Cloud Native Associate (KCNA)",
+      "validity_period_months": 24,
+      "relevant_roles": ["Kubernetes Administrator", "Platform Engineer"],
+      "kb_content": "The Certified Kubernetes Administrator (CKA), from CNCF/the Linux Foundation, is a fully hands-on, performance-based exam: candidates solve real administration tasks (cluster setup, networking, storage, troubleshooting, security) directly at a command line against live clusters, with no multiple-choice questions. Registration is through the Linux Foundation training portal, delivered via remote browser-based proctoring. Candidates get 2 hours to complete the scored tasks; cost is $445 USD and includes one free retake plus access to the Killer.sh exam simulator. Candidates have 12 months from purchase to schedule and sit the exam. CNCF plans quarterly content updates to track current Kubernetes releases, so the official domain outline should be checked close to test day. There's no enforced formal prerequisite, though CNCF frames KCNA as preparatory groundwork. The certification's validity was shortened from 3 years to 2 years for exams passed after April 2024. Under CNCF's 2026 CARE program, passing or recertifying the Certified Kubernetes Security Specialist (CKS) exam automatically extends an existing CKA's expiration date to match the new CKS expiration - an incentive to continue into the security track after CKA."
+    },
+    {
+      "name": "AWS Certified DevOps Engineer - Professional",
+      "provider": "Amazon Web Services (AWS)",
+      "level": "Professional",
+      "sequence_order": 10,
+      "prerequisite_name": "AWS Certified Solutions Architect - Associate",
+      "validity_period_months": 36,
+      "relevant_roles": ["DevOps Engineer", "Platform Engineer"],
+      "kb_content": "The AWS Certified DevOps Engineer - Professional (DOP-C02) validates the ability to implement CI/CD pipelines, infrastructure as code, monitoring/logging, and governance at scale on AWS. Register through the AWS Certification portal, delivered via Pearson VUE or PSI. AWS sets no formal, enforced prerequisite, but strongly recommends candidates already hold an Associate-level AWS certification (Solutions Architect or Developer Associate are common paths) and have at least 2 years of hands-on experience managing and automating AWS environments, including CI/CD tooling, infrastructure as code, and security/logging practices. Official prep includes the free AWS exam guide and sample questions plus the AWS Skill Builder exam-prep course; because it's a Professional-level exam, most candidates study for several months after clearing an associate cert. As with other AWS Professional exams, expect scenario-heavy, multi-service questions rather than single-fact recall. The certification is valid for 3 years, renewable by retaking the current exam version. It sits at the top of the AWS track for platform/DevOps-focused engineers, alongside AWS Solutions Architect - Professional, and is a natural, though optional, extension of the Solutions Architect Associate credential."
+    },
+    {
+      "name": "Microsoft Certified: Azure Solutions Architect Expert (AZ-305)",
+      "provider": "Microsoft Azure",
+      "level": "Expert",
+      "sequence_order": 11,
+      "prerequisite_name": "Microsoft Certified: Azure Administrator Associate (AZ-104)",
+      "validity_period_months": 12,
+      "relevant_roles": ["Cloud Architect", "Infrastructure"],
+      "kb_content": "Microsoft Certified: Azure Solutions Architect Expert (exam AZ-305, 'Designing Microsoft Azure Infrastructure Solutions') validates the ability to design solutions across compute, network, storage, monitoring, identity, governance, and business continuity on Azure. Registration is through the Microsoft Learn certification dashboard, scheduled with Pearson VUE. Unlike most Microsoft Expert exams, AZ-305 carries a genuine hard prerequisite: a candidate can sit the exam without it, but the Solutions Architect Expert title is only awarded - and only remains active - while the candidate also holds an active Azure Administrator Associate (AZ-104) certification; each credential is tracked and renewed independently, so if either lapses, the Expert designation lapses too. Preparation resources are Microsoft's free official Learn paths mapped to the AZ-305 objectives, plus an official practice assessment. The certification expires 1 year after being earned, but renewal is free: a shorter, unproctored online assessment on Microsoft Learn, available in the 6 months before expiration and repeatable until passed. This annual-renewal Expert tier is the top of the Azure architecture track and a common companion to AWS Solutions Architect Professional or Google Cloud Professional Cloud Architect for multi-cloud engineers."
+    },
+    {
+      "name": "Google Cloud Professional Cloud Architect",
+      "provider": "Google Cloud",
+      "level": "Professional",
+      "sequence_order": 12,
+      "prerequisite_name": "Google Cloud Associate Cloud Engineer",
+      "validity_period_months": 24,
+      "relevant_roles": ["Cloud Architect", "Solutions Architect"],
+      "kb_content": "The Google Cloud Professional Cloud Architect certification validates the ability to design, develop, and manage secure, scalable, highly available, and cost-optimized solutions on Google Cloud, mapped to Google's Well-Architected pillars (operational excellence, security, reliability, performance, cost, sustainability). Registration is through Google Cloud's Webassessor certification site, with onsite or online-proctored delivery. The exam runs 2 hours with 50-60 questions, heavily weighted toward 4-6 detailed case studies that each require multi-part scenario analysis rather than isolated fact recall. Cost is $200 USD plus tax (retakes are priced the same). Official prep includes the published case studies (available in advance on Google's certification site), the Cloud Architecture Learning Path on Google Skills, and an official practice exam; reported first-time pass rates run 60-70%, reflecting the exam's scenario-based difficulty. There's no formal prerequisite, but Associate Cloud Engineer knowledge or equivalent hands-on Google Cloud experience is the expected foundation. The certification is valid for 2 years, with renewal available via the standard exam, a shorter renewal exam, or qualifying Google Skills courses/badges. It represents the top Google Cloud architecture credential and pairs with AWS Solutions Architect Professional or Azure Solutions Architect Expert for multi-cloud architects."
+    }
+  ],
+  "notes": "Ordering logic: four tiers - (1) Foundational/Fundamentals with no prerequisites (AWS Cloud Practitioner, Azure Fundamentals), (2) entry-level tooling associates (Terraform Associate, KCNA, Docker Certified Associate), (3) cloud-provider Associate/Administrator certs assuming ~1 year hands-on experience (AWS SA Associate, Azure AZ-104, GCP Associate Cloud Engineer), and (4) Professional/Expert-tier certs (CKA, AWS DevOps Engineer Professional, Azure AZ-305, GCP Professional Cloud Architect). Most prerequisite_name values reflect officially recommended progression, not an enforced gate - the one confirmed hard prerequisite is AZ-104 for the AZ-305 Expert title. Caveats: Docker Certified Associate's status is contested online (some claim discontinuation) but confirmed still purchasable on Mirantis's official webstore. KCNA's validity is reported inconsistently across sources (2 vs 3 years) - used 3 years as the more current figure with moderate confidence. AWS SysOps Administrator - Associate was renamed AWS Certified CloudOps Engineer - Associate (SOA-C03, Sept 2025) and is real/current but omitted here to avoid AWS over-representation. Other real certs not included, worth adding later: CKAD, CKS (hard CKA prerequisite), Microsoft AZ-400, AWS Solutions Architect - Professional, Google Cloud Professional Cloud DevOps Engineer."
+}

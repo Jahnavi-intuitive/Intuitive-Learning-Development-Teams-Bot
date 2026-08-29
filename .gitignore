@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+data/trackers/*.xlsx
+!data/trackers/.gitkeep
+postgres_data/
+tools/pg0.exe
+tools/.pg0/
+*.log
+.DS_Store
+
+# Contains real employee PII (names/emails) via pg_dump — restore it
+# straight into a target database with psql, never commit it. See
+# RENDER_DEPLOY.md's data-migration step.
+scripts/db_dump/*.sql
+
+# Claude Code / ADK local session artifacts — not part of the app.
+.claude/scheduled_tasks.lock
+agent/adk_agent/.adk/

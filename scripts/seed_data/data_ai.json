@@ -1,0 +1,302 @@
+{
+  "practice": "Data+AI",
+  "learning_path_name": "Data + AI Practice Certification Path (Databricks / AWS / Google Cloud / Anthropic Claude)",
+  "certifications": [
+    {
+      "name": "AWS Certified AI Practitioner",
+      "provider": "AWS",
+      "level": "Foundational",
+      "validity_period_months": 36,
+      "relevant_roles": [
+        "AI Literacy",
+        "Business/Technical Stakeholder"
+      ],
+      "kb_content": "AI Practitioner (exam code AIF-C01) is AWS's entry-level, non-coding AI/ML credential aimed at business analysts, PMs, and technical staff with up to ~6 months AI/ML exposure. No prerequisites. Content domains: Fundamentals of AI/ML (20%), Fundamentals of Generative AI (24%), Applications of Foundation Models (28%), Responsible AI (14%), Security/Compliance/Governance for AI (14%). Exam: 65 total questions (50 scored + 15 unscored), 90 minutes, $100 USD, mixed multiple choice/multiple response/ordering/matching, scaled score 100-1000 with a passing score of 700 (compensatory scoring across domains). To prepare, follow AWS's official 4-step Skill Builder exam prep plan: the AIF-C01 Exam Guide, the Official Practice Question Set/Pretest/Practice Exam, and hands-on AWS Builder Labs, Cloud Quest, AWS Jam, and SimuLearn/Escape Room scenarios covering Bedrock, SageMaker, and responsible-AI concepts. Register and schedule through Pearson VUE, available either at a physical testing center or online proctored from home, offered in 12 languages. AWS positions this cert as the on-ramp into both the Machine Learning Engineer - Associate and Data Engineer - Associate tracks, and passing ML Engineer - Associate auto-recertifies AI Practitioner.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Generative AI Leader",
+      "provider": "Google Cloud",
+      "level": "Foundational",
+      "validity_period_months": 36,
+      "relevant_roles": [
+        "AI Strategy",
+        "Gen AI Literacy (Non-Technical)"
+      ],
+      "kb_content": "Generative AI Leader is Google Cloud's foundational, business-facing gen-AI credential, sitting alongside Cloud Digital Leader at the Foundational tier. No prerequisites and no required experience - designed for any role, technical or not. Exam domains: Fundamentals of gen AI (~30%), Google Cloud's gen AI offerings including Gemini, Agent Platform/Model Garden, and RAG tooling (~35%), techniques to improve model output such as prompt engineering and grounding (~20%), and business strategy/responsible-AI frameworks like Google's SAIF (~15%). Format: 50-60 multiple-choice questions, 90 minutes, $99 USD, offered in English, Japanese, Spanish, and Portuguese. Prepare via the free Generative AI Leader learning path on Google Cloud Skills Boost, the official Study Guide PDF, the official Exam Guide PDF, and untimed/unlimited-attempt sample questions. Register through Google's Certmetrics portal and sit the exam online-proctored via Pearson VUE OnVue or in person at a Pearson VUE test center. Validity is 3 years, renewable via a full retake, a shorter 20-question/45-minute renewal exam, or a qualifying Google Cloud Skills Boost course/skill badge. Note: exam content is being refreshed to reflect the Vertex AI to 'Gemini Enterprise Agent Platform' rebrand announced at Google Cloud Next '26.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Claude Certified Associate - Foundations",
+      "provider": "Anthropic",
+      "level": "Foundations",
+      "validity_period_months": null,
+      "relevant_roles": [
+        "Claude/AI Literacy",
+        "Business Use of Claude"
+      ],
+      "kb_content": "Claude Certified Associate - Foundations (exam code CCAO-F) is Anthropic's entry-level, non-developer credential in the Claude Partner Network certification program, confirmed live on Anthropic's official partner training site (anthropic-partners.skilljar.com) and on Pearson VUE's official Anthropic partner page. List price is $99. Registration is restricted to individuals affiliated with a company enrolled in the Claude Partner Network - a personal/non-company email is rejected at sign-up, so an individual employee generally needs their employer to hold partner status. The exam itself is delivered as a proctored assessment via Pearson VUE (testing center or online proctored), distinct from Anthropic Academy's free, self-paced, non-proctored courses at academy.claude.com, which grant completion certificates but not this formal credential. Recommended preparation is Anthropic Academy's free foundational courses on Claude concepts and safe/effective usage, plus any partner-specific enablement materials provided through the Skilljar partner portal. Be cautious of third-party 'exam dump' or unofficial practice-test sites that have sprung up around this credential - only a Pearson VUE-proctored pass counts toward the official certification.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Claude Certified Developer - Foundations",
+      "provider": "Anthropic",
+      "level": "Foundations",
+      "validity_period_months": null,
+      "relevant_roles": [
+        "Claude API Development",
+        "LLM Application Integration"
+      ],
+      "kb_content": "Claude Certified Developer - Foundations (exam code CCDV-F) is the developer-track entry credential in Anthropic's Claude Partner Network certification program, confirmed on Anthropic's official partner training site and Pearson VUE's Anthropic partner page. List price is $125. Like the Associate track, registration requires a company email tied to an organization enrolled in the Claude Partner Network - it is not open for general public self-registration outside a partner relationship. The exam is a proctored, scenario-based assessment delivered through Pearson VUE (online proctored or testing center), separate from Anthropic Academy's free non-proctored courses, which are useful preparation but do not themselves confer this credential. This track targets engineers building with the Claude API: prompt engineering, tool use/function calling, structured outputs, context management, and integrating Claude into applications. Recommended preparation is hands-on work with the Claude API plus Anthropic's developer documentation and Academy technical courses, along with any Skilljar partner-portal enablement content. Treat only a verified Pearson VUE pass as the real credential.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Claude Certified Architect - Foundations",
+      "provider": "Anthropic",
+      "level": "Foundations",
+      "validity_period_months": null,
+      "relevant_roles": [
+        "AI Solution Architecture",
+        "Claude Deployment Design"
+      ],
+      "kb_content": "Claude Certified Architect - Foundations is the credential publicly named in Anthropic's March 2026 Claude Partner Network launch announcement (anthropic.com/news/claude-partner-network) as 'available today for partners.' Its exam code, CCAR-F, is listed verbatim on Pearson VUE's official Anthropic partner page alongside the other three Partner Network exams - this confirms that the 'CCAR-F' name is a real, Anthropic-sanctioned credential, not a fabrication. List price is $125. Registration is gated to individuals at companies enrolled in the Claude Partner Network (personal emails are rejected). The exam is proctored via Pearson VUE (online or testing center) and is scenario-based, covering solution architecture for deploying Claude in enterprise environments: model selection, RAG/knowledge-base design, safety/governance patterns, and integration architecture. Preparation should combine Anthropic Academy's free architecture-oriented courses with Claude Partner Network enablement materials distributed through the Skilljar partner portal. Only a verified Pearson VUE pass constitutes the actual certification.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Data Analyst Associate",
+      "provider": "Databricks",
+      "level": "Associate",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Data Analysis",
+        "BI/Dashboarding"
+      ],
+      "kb_content": "This Associate-level exam validates ability to use Databricks SQL and the Lakehouse platform for data analysis, dashboards, and basic data management. No formal prerequisite; Databricks recommends 6+ months of hands-on experience performing the analyst tasks in the exam guide. Content domains include Data Platform Fundamentals, Data Management, SQL Query Execution (~20%), Query Analysis, Dashboards/Visualizations (~16%), AI/BI Genie Spaces (~12%), Data Modeling, and Data Security. Format: 45 scored multiple-choice questions, 90 minutes, $200 USD, proctored online or at a test center via WebAssessor, available in English, Japanese, Portuguese (BR), and Korean. Preparation resources are the official Exam Guide PDF, Databricks' 'AI Prep Guide,' and self-paced or instructor-led Databricks Academy courses on Databricks SQL and data analytics. Register at webassessor.com/databricks; complete the platform's system/tech check before test day if testing online. Databricks does not publicly disclose an exact passing score for this exam; third-party prep vendors commonly estimate ~70%, but that figure is not confirmed on an official Databricks page. Recertification requires retaking the current version of the exam after the 2-year validity period expires.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Associate Developer for Apache Spark",
+      "provider": "Databricks",
+      "level": "Associate",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Data Engineering",
+        "Apache Spark Development"
+      ],
+      "kb_content": "This Associate exam validates core Apache Spark development skills on Databricks: Spark architecture, Spark SQL, and the DataFrame/Dataset APIs. No formal prerequisite; Databricks recommends 6+ months hands-on Spark experience. Content domains: Spark Architecture & Components (~20%), Spark SQL (~20%), DataFrame/Dataset API Development (~30%), Troubleshooting/Tuning (~10%), Structured Streaming (~10%), Spark Connect (~5%), and Pandas API on Spark (~5%). Format: 45 scored multiple-choice questions, 90 minutes, $200 USD, English only, no test aids, proctored online or at a test center via WebAssessor; code snippets are presented in Python. Preparation resources are the official Exam Guide PDF (check the current dated version, as this exam is periodically refreshed for new Spark releases), the AI Prep Guide, and Databricks Academy's Spark development coursework. Register at webassessor.com/databricks. Industry estimates commonly cite a ~70% passing score but this is unconfirmed on Databricks' own materials. Recertification is required every 2 years via retaking the then-current exam version, which matters given how frequently Spark's API surface evolves.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Data Engineer Associate",
+      "provider": "Databricks",
+      "level": "Associate",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Data Engineering"
+      ],
+      "kb_content": "This Associate exam validates ability to build and manage basic ETL pipelines on the Databricks Intelligence Platform. No formal prerequisite; Databricks recommends hands-on experience with the data engineering tasks in the exam guide. Content domains: Databricks Intelligence Platform (~6%), Data Ingestion/Loading (~21%), Data Transformation/Modeling (~22%), Lakeflow Jobs (~16%), CI/CD (~10%), Troubleshooting/Monitoring/Optimization (~10%), and Governance/Security (~15%). Format: 45 scored multiple-choice questions, 90 minutes, $200 USD, proctored online or at a test center via WebAssessor, available in English, Japanese, Portuguese (BR), and Korean. Prepare using the official Exam Guide PDF, Databricks' AI Prep Guide, and Databricks Academy's self-paced or instructor-led data engineering courses covering Lakeflow, Delta Lake, and Unity Catalog. Register at webassessor.com/databricks. Databricks does not publish an exact passing score for this exam. Validity is 2 years, after which recertification requires retaking the current exam version - notable since Databricks periodically updates content, so recertification also keeps skills current with platform changes.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "AWS Certified Data Engineer - Associate",
+      "provider": "AWS",
+      "level": "Associate",
+      "validity_period_months": 36,
+      "relevant_roles": [
+        "Data Engineering",
+        "Data Pipeline/Governance"
+      ],
+      "kb_content": "AWS Certified Data Engineer - Associate (DEA-C01) is included in AWS's own 'expanded AI/ML/data portfolio' grouping and covers building and operating data pipelines that feed AI/ML and analytics workloads. No enforced prerequisite; AWS recommends 2-3 years of data engineering experience and 1-2 years hands-on with AWS. AWS's stated learning path shows AI Practitioner feeding into this certification for candidates newer to AWS. Content domains: Data Ingestion & Transformation (~34%), Data Store Management (~26%), Data Operations & Support (~22%), and Data Security & Governance (~18%). Format: 65 total questions (50 scored + 15 unscored), 130 minutes, $150 USD, multiple choice/multiple response only, scaled passing score of 720/1000. Prepare via AWS's official 4-step Skill Builder exam prep plan, the DEA-C01 Exam Guide, the Official Practice Question Set/Pretest/Practice Exam, and hands-on AWS Builder Labs, Cloud Quest, and AWS Jam exercises. Register and schedule through Pearson VUE, sat either online-proctored or at a physical testing center, offered in English, Japanese, Korean, and Simplified Chinese. Passing earns a 50% discount voucher toward your next AWS certification exam. Validity is 36 months.",
+      "prerequisite_names": [
+        "AWS Certified AI Practitioner"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Machine Learning Associate",
+      "provider": "Databricks",
+      "level": "Associate",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Machine Learning"
+      ],
+      "kb_content": "This Associate exam validates core ML development skills on Databricks: using AutoML, Feature Store, MLflow, and Unity Catalog for the ML lifecycle. No formal prerequisite; Databricks recommends 6+ months hands-on ML experience. Content domains: Databricks Machine Learning (~38%), ML Workflows (~19%), Model Development (~31%), and Model Deployment (~12%); all exam code is presented in Python. Format: 45 (some sources note up to 48) scored multiple-choice questions, 90 minutes, $200 USD, proctored online or at a test center via WebAssessor. Databricks groups this certification under an internal 'ML Engineer' learning-pathway label on its certification hub, but the credential's official name remains 'Databricks Certified Machine Learning Associate.' Prepare using the official Exam Guide PDF, the AI Prep Guide, and Databricks Academy courses covering AutoML, MLflow tracking, Feature Store, and Unity Catalog governance for ML assets. Register at webassessor.com/databricks. No official passing score is published; third-party estimates of ~70% are unconfirmed. Validity is 2 years, after which recertification requires retaking the current exam version to stay current with Databricks' evolving ML tooling.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "AWS Certified Machine Learning Engineer - Associate",
+      "provider": "AWS",
+      "level": "Associate",
+      "validity_period_months": 36,
+      "relevant_roles": [
+        "ML/MLOps Engineering",
+        "Production ML Pipelines"
+      ],
+      "kb_content": "AWS Certified Machine Learning Engineer - Associate (MLA-C01) is AWS's current primary ML certification, having effectively replaced the now-retired ML - Specialty exam. No enforced prerequisite; AWS recommends 1+ year hands-on with Amazon SageMaker and related services plus 1+ year in a related role (data engineer, data scientist, backend/DevOps). AWS's stated learning path positions AI Practitioner as feeding into this certification, and passing this exam auto-recertifies AI Practitioner. Content domains: Data Preparation for ML (~28%), ML Model Development (~26%), Deployment & Orchestration of ML Workflows (~22%), and ML Solution Monitoring/Maintenance/Security (~24%). Format: 65 total questions (50 scored + 15 unscored), 130 minutes, $150 USD, multiple choice/multiple response/ordering/matching, passing score 720/1000. Prepare via AWS's Skill Builder 4-step plan, the official exam guide, practice question set/pretest/exam, Builder Labs, Cloud Quest, and Jam. Register through Pearson VUE (testing center or online proctored), offered in English, Japanese, Korean, and Simplified Chinese. Validity is 36 months. Important: the current MLA-C01 version is last bookable in English September 28, 2026, with the updated MLA-C02 opening for registration September 1, 2026 - verify the active version before scheduling.",
+      "prerequisite_names": [
+        "AWS Certified AI Practitioner"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Generative AI Engineer Associate",
+      "provider": "Databricks",
+      "level": "Associate",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Generative AI",
+        "LLM Engineering"
+      ],
+      "kb_content": "This Associate exam validates skills building generative AI applications on Databricks, including RAG pipelines, AI/Vector Search, Model Serving, MLflow, and Unity Catalog governance for LLM apps. No formal prerequisite; Databricks recommends 6+ months hands-on experience with the GenAI solution-building tasks in the exam guide. Content domains: Designing Applications (~14%), Data Preparation (~14%), Application Development (~30%), Assembling & Deploying Applications (~22%), Governance (~8%), and Evaluation & Monitoring (~12%). Format: 45 scored multiple-choice questions, 90 minutes, $200 USD, proctored online or at a test center via WebAssessor, available in English, Japanese, Portuguese (BR), and Korean. Prepare with the official Exam Guide PDF, Databricks' AI Prep Guide, and the 'Generative AI Engineering with Databricks' self-paced or instructor-led course on Databricks Academy, which covers RAG architecture, vector search, and model serving hands-on. Register at webassessor.com/databricks. No official passing score is published. Validity is 2 years. This certification is a natural precursor in skill terms (though not an enforced prerequisite) to Databricks' newer Context Engineer Associate certification, which extends into agentic and multi-step AI systems.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Context Engineer Associate",
+      "provider": "Databricks",
+      "level": "Associate",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Generative AI",
+        "AI Agent Systems"
+      ],
+      "kb_content": "Launched in 2026, Databricks markets this as 'the industry's first certification purpose-built' for context engineering of AI agent systems. No formal prerequisite; Databricks recommends 6+ months hands-on experience with context engineering tasks. Coverage includes structuring system prompts/instructions, retrieval configuration via AI Search, memory architecture (Lakebase, MLflow state persistence), agent-tool integration via MCP, context-window compaction/trimming, Unity Catalog governance and PII handling, and evaluating multi-agent/long-horizon workflows. Format: 45 scored multiple-choice questions, 90 minutes, $200 USD, English only, no test aids, proctored online or at a test center via WebAssessor; code is in Python (SQL for non-ML workflows). Prepare with the official Exam Guide PDF, the AI Prep Guide, and related Databricks Academy training on agentic systems and context engineering. Register via the certification page at databricks.com/learn/certification/context-engineer-associate, scheduled through webassessor.com/databricks. No official passing score is published. Validity is 2 years. As the newest credential in Databricks' catalog, expect exam content to evolve quickly alongside Databricks' agent-platform tooling - recheck the dated exam guide close to your test date.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Data Engineer Professional",
+      "provider": "Databricks",
+      "level": "Professional",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Data Engineering (Advanced)",
+        "Production Pipelines"
+      ],
+      "kb_content": "This Professional-level exam validates advanced, production-grade data engineering on Databricks. Databricks does not formally gate this exam behind the Associate certification, but the Associate credential is the typical, provider-implied step before attempting Professional-level content. Format: 59 scored multiple-choice questions, 120 minutes, $200 USD, proctored online or at a test center via WebAssessor, available in English, Japanese, Portuguese (BR), and Korean. Prepare with the official Exam Guide PDF, Databricks' AI Prep Guide, and Databricks Academy's advanced data engineering training covering complex pipeline design, orchestration, performance tuning, CI/CD, and governance at scale. Register at webassessor.com/databricks. No official passing score is published (third-party estimates cite ~70%, unconfirmed). Validity is 2 years, and recertification requires retaking the then-current version of the exam, which matters given how quickly Databricks evolves its Lakeflow/orchestration tooling. This is the most advanced data-engineering-specific certification in Databricks' current catalog.",
+      "prerequisite_names": [
+        "Databricks Certified Data Engineer Associate"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Databricks Certified Machine Learning Professional",
+      "provider": "Databricks",
+      "level": "Professional",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "Machine Learning (Production/MLOps)"
+      ],
+      "kb_content": "This Professional exam validates advanced ML engineering and MLOps practice on Databricks. Databricks does not formally require the Associate certification first, but it is the typical prior step in the provider's own learning pathway, and Databricks recommends roughly 1+ year of hands-on ML experience for this level. Content domains: Model Development (~44%), ML Ops (~44%), and Model Deployment (~12%). Format: 59 scored multiple-choice questions, 120 minutes, $200 USD, English only, no test aids. Prepare with the official Exam Guide PDF, the AI Prep Guide, and Databricks Academy's production-ML/MLOps coursework covering advanced MLflow usage, model registry workflows, monitoring, and deployment patterns at scale. Register at webassessor.com/databricks, proctored online or at a test center. No official passing score is published. Validity is 2 years, after which recertification against the then-current exam is required. This is the most advanced general ML certification in Databricks' current catalog.",
+      "prerequisite_names": [
+        "Databricks Certified Machine Learning Associate"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Professional Machine Learning Engineer",
+      "provider": "Google Cloud",
+      "level": "Professional",
+      "validity_period_months": 24,
+      "relevant_roles": [
+        "ML Engineering/MLOps",
+        "Applied Generative AI"
+      ],
+      "kb_content": "Professional Machine Learning Engineer is Google Cloud's flagship AI/ML certification. Officially no required prerequisite, but Google recommends 3+ years of industry experience including 1+ years designing/managing solutions on Google Cloud, plus basic Python/SQL familiarity. Content domains (per the June 2026 exam guide refresh reflecting the Vertex AI to 'Gemini Enterprise Agent Platform' rebrand): architecting low-code AI solutions (~13%), collaborating to manage data and models (~16%), scaling prototypes into ML models (~21%), serving and scaling models (~20%), automating/orchestrating ML pipelines (~18%), and monitoring AI solutions including responsible-AI and security risks (~13%). Format: 50-60 multiple-choice and multiple-select questions, 2 hours, $200 USD, offered in English and Japanese. Prepare via the official Skills Boost learning path, the Wiley-published official study guide, the official Exam Guide PDF, sample questions, and a Cloud OnAir prep webinar. Register through Certmetrics and sit the exam online-proctored via Pearson VUE OnVue or at a Pearson VUE test center. Note: the live certification page did not display an explicit validity-period field at time of research (likely mid-update); 24 months is inferred from Google's standard Professional-tier policy and should be reconfirmed.",
+      "prerequisite_names": [],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "AWS Certified Generative AI Developer - Professional",
+      "provider": "AWS",
+      "level": "Professional",
+      "validity_period_months": 36,
+      "relevant_roles": [
+        "Generative AI Application Development",
+        "Agentic AI on AWS"
+      ],
+      "kb_content": "AWS Certified Generative AI Developer - Professional (AIP-C01) is AWS's newest and most advanced AI-specific credential, covering building, integrating, and operating GenAI and agentic applications on AWS (primarily Amazon Bedrock). No enforced prerequisite; AWS recommends first holding AI Practitioner, Solutions Architect - Associate, ML Engineer - Associate, and/or Data Engineer - Associate, plus 2+ years building production AWS applications and 1+ year hands-on with GenAI implementation. Content domains: Foundation Model Integration/Data Management/Compliance (~31%), Implementation & Integration (~26%), AI Safety/Security/Governance (~20%), Operational Efficiency & Optimization (~12%), and Testing/Validation/Troubleshooting (~11%) - covering vector stores, RAG, knowledge bases, prompt engineering, and agentic implementations on Bedrock. Format: 75 total questions (65 scored + 10 unscored), 180 minutes, $300 USD, multiple choice/multiple response only, passing score 750/1000 (the highest bar in AWS's AI/ML track). Prepare via AWS's Skill Builder 4-step plan, the official exam guide, the Official Practice Question Set, Builder Labs, Cloud Quest, Jam, SimuLearn, and AWS's 'Advanced Generative AI Development' classroom course. Register through Pearson VUE, offered in English, Japanese, Korean, and Simplified Chinese. Validity is 36 months. AWS also offers a related hands-on 'AWS Agentic AI Demonstrated' microcredential as a complementary, non-exam skill badge.",
+      "prerequisite_names": [
+        "AWS Certified Machine Learning Engineer - Associate"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Claude Certified Architect - Professional",
+      "provider": "Anthropic",
+      "level": "Professional",
+      "validity_period_months": null,
+      "relevant_roles": [
+        "Enterprise AI Solution Architecture",
+        "Advanced Claude Deployment"
+      ],
+      "kb_content": "Claude Certified Architect - Professional (exam code CCAR-P) is the most advanced credential in Anthropic's Claude Partner Network certification program, confirmed on Anthropic's official partner training site and Pearson VUE's Anthropic partner page. List price is $175, the highest of the four Partner Network exams. As with the Foundations-level exams, registration requires a company email tied to an organization enrolled in the Claude Partner Network - individuals cannot self-register without a qualifying partner affiliation. The exam is a proctored, scenario-based assessment delivered via Pearson VUE (online proctored or testing center); third-party sources cite a roughly 2-hour format with a 720/1000 passing score, though this was not independently confirmed on a first-party Anthropic page and should be treated as likely-but-unverified. The Architect - Foundations credential is the logical prerequisite step given the shared 'Architect' track naming, though Anthropic describes it as a recommended progression rather than an enforced gate. Preparation should combine Anthropic Academy's advanced architecture content with Claude Partner Network enablement materials. Disregard unofficial 'dump' sites and rely only on a verified Pearson VUE pass as proof of certification.",
+      "prerequisite_names": [
+        "Claude Certified Architect - Foundations"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": null
+    },
+    {
+      "name": "Microsoft Certified: Azure AI Apps and Agents Developer Associate",
+      "provider": "Microsoft",
+      "level": "Associate (Intermediate)",
+      "validity_period_months": null,
+      "relevant_roles": [
+        "AI Agent Developer",
+        "Azure AI Engineer"
+      ],
+      "kb_content": "Exam AI-103, generally available mid-2026 (beta ran April 2026). Validates designing, developing, and deploying advanced Azure AI solutions using Python and Microsoft Foundry, including generative AI and agentic solutions, computer vision, text analysis, and information extraction. Candidates should have experience developing apps in Python and familiarity with general AI, generative AI, and Azure services. The exam runs 120 minutes, is proctored, and includes interactive components; offered in English, Chinese (Simplified/Traditional), French, German, Japanese, Korean, Italian, Portuguese (Brazil), and Spanish. Register and schedule through Pearson VUE via Microsoft Learn. Retake policy: 24 hours after a first failed attempt, longer waits for subsequent retakes (see Microsoft's retake policy page for current specifics). Prepare via the official AI-103 study guide, the Microsoft Learn exam sandbox (a demo of the real exam UI), and the AI Skills Navigator practice assessment. No explicit renewal/validity period was stated on Microsoft's certification page at time of research; most Microsoft Associate-level certs expire 12 months after being earned with a free online renewal assessment, but this specific detail is unconfirmed for this newly-launched exam - verify before relying on it.",
+      "prerequisite_names": [
+        "AWS Certified AI Practitioner"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": "Microsoft agent-ops track"
+    },
+    {
+      "name": "Certified Agentic AI System Architect (CAASA)",
+      "provider": "ADaSci (Association of Data Scientists)",
+      "level": "Professional / Architect",
+      "validity_period_months": null,
+      "relevant_roles": [
+        "Agentic AI Architect",
+        "AI Operations / Governance"
+      ],
+      "kb_content": "A vendor-neutral, framework-agnostic credential for professionals who design, deploy, and govern production-grade multi-agent AI systems - distinct from the vendor-specific certs in this path in that it's judged on architectural decision-making rather than any one platform's tooling. Curriculum spans 8 modules: agent architecture patterns (ReAct, planner-executor, hierarchical, swarm, graph-based), multi-agent orchestration frameworks (LangGraph, AutoGen, CrewAI, OpenAI Agents SDK), tool use/function calling/routing, memory hierarchies and retrieval-augmented agents, evaluation methods and hallucination detection, guardrails and safety (input/output filters, jailbreak resistance, action whitelisting), observability and distributed tracing, deployment (async execution, autoscaling, cost control), and governance (audit logging of agent actions, human-in-the-loop checkpoints, EU AI Act / NIST AI RMF alignment) - this is the deployment-and-operations-focused capstone in this path, not just another model-building credential. Exam: 60 multiple-choice questions, 1 hour, proctored, 70%+ passing score. Cost starts at $249. Content is roughly 30 hours, typically completed in 3-6 weeks at 5-10 hours/week. Enrollment is open year-round through the ADaSci platform - no fixed exam window. No formal prerequisite is stated, but it assumes working-professional-level familiarity with agentic systems, which is why this path places it after any one of the professional-tier, vendor-specific agentic certs rather than at the start.",
+      "prerequisite_names": [
+        "AWS Certified Generative AI Developer - Professional",
+        "Claude Certified Architect - Professional",
+        "Microsoft Certified: Azure AI Apps and Agents Developer Associate"
+      ],
+      "prerequisite_logic": "any",
+      "track_label": "Agent operations & governance capstone"
+    }
+  ],
+  "notes": "ANTHROPIC/CLAUDE FINDING: the 'CCAR-F' credential is real, not invented. Anthropic launched a formal 'Claude Partner Network' certification program (announced March 12, 2026), with four paid, Pearson VUE-proctored exams confirmed on Anthropic's own partner training site and independently on Pearson VUE's official Anthropic partner page: Claude Certified Associate - Foundations (CCAO-F, $99), Claude Certified Developer - Foundations (CCDV-F, $125), Claude Certified Architect - Foundations (CCAR-F, $125), and Claude Certified Architect - Professional (CCAR-P, $175). CAVEAT: registration is gated to the Claude Partner Network - requires a company email from a partner organization, not open to the general public the way AWS/Google/Databricks exams are. No publicly stated exam validity period, question count, or officially-confirmed passing score was found for any of the four Claude exams - validity_period_months set to null for all four rather than guessed. Anthropic Academy (academy.claude.com) offers separate, free, non-proctored courses with completion certificates - not the same credential, excluded. OTHER CAVEATS: AWS ML - Specialty is retired (excluded, replaced by ML Engineer - Associate). AWS MLA-C01 is mid-version-transition to MLA-C02 (Sept 2026). Databricks also offers free non-proctored 'accreditation' badges, excluded here as lighter-weight than the $200 paid role-based certs. Google Cloud's Associate Data Practitioner and Professional Data Engineer were excluded as not primarily AI/gen-AI-focused. No provider hard-gates a cert behind another same-provider AI cert as a registration requirement - all prerequisite_name values reflect either an explicitly stated recommended learning path or a same-track Foundations-to-Professional naming convention, not an enforced exam block. ADDED 2026-08-24: Microsoft Certified: Azure AI Apps and Agents Developer Associate (exam AI-103, confirmed live/current on Microsoft Learn) and Certified Agentic AI System Architect (CAASA, confirmed live on ADaSci's site) - both real, verified via direct fetch of their official pages, added specifically to cover agent deployment/operations/governance, which the original 18-cert set didn't address. CAASA converges from any of the three professional-tier agentic certs already in this path (prerequisite_logic 'any') as a vendor-neutral operations/governance capstone. NOT YET SEEDED - scripts/seed_catalog_and_paths.py needs updating for the new prerequisite_names/prerequisite_logic/track_label shape first, and the user asked to review this content before it's loaded."
+}

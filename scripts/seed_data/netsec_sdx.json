@@ -1,0 +1,127 @@
+{
+  "practice": "NetSec + SDx",
+  "learning_path_name": "Network Security & Software-Defined Infrastructure Path",
+  "certifications": [
+    {
+      "name": "CompTIA Network+ (N10-009)",
+      "provider": "CompTIA",
+      "level": "Foundational / Core",
+      "sequence_order": 1,
+      "prerequisite_name": null,
+      "validity_period_months": 36,
+      "relevant_roles": ["Network Administrator", "NOC/Help Desk Technician"],
+      "kb_content": "Network+ is CompTIA's vendor-neutral networking foundation cert, currently on version N10-009 (released June 2024), which expanded coverage of cloud networking, SDN/SD-WAN concepts, zero trust, and modern wireless compared to N10-008. CompTIA recommends CompTIA A+ plus 9-12 months of hands-on networking experience, but this is only a recommendation, not an enforced prerequisite. The exam has up to 90 questions (multiple-choice, performance-based simulations, and drag-and-drop), a 90-minute time limit, and a passing score of 720 on a 100-900 scale. Cost is roughly $369 (US) as of 2026. Register through the CompTIA store or a Pearson VUE testing center (in-person or OnVUE online proctored). Prepare using CompTIA CertMaster Learn/Practice, the official Network+ study guide, or instructor-led bootcamps; hands-on labs with subnetting, switching/routing basics, and basic SDN/SD-WAN terminology are recommended given the N10-009 update. Certification is valid for 3 years; renew via 30 CEUs through CertMaster CE, by passing a higher CompTIA cert (Security+, Cloud+, etc.), by passing a qualifying third-party cert (e.g., Cisco CCNA), or by retaking the current exam."
+    },
+    {
+      "name": "CompTIA Security+ (SY0-701)",
+      "provider": "CompTIA",
+      "level": "Foundational / Core",
+      "sequence_order": 2,
+      "prerequisite_name": "CompTIA Network+ (N10-009)",
+      "validity_period_months": 36,
+      "relevant_roles": ["Security Analyst", "SOC Analyst (Entry)"],
+      "kb_content": "Security+ is the baseline vendor-neutral security certification, currently exam SY0-701 (launched November 2023), covering five domains: general security concepts, threats/vulnerabilities/mitigations, security architecture, security operations, and program/risk management. CompTIA recommends Network+ and about two years of security-related IT experience first, though neither is enforced. The exam has a maximum of 90 questions mixing multiple-choice with performance-based questions (e.g., ordering firewall rules, placing devices on a topology, log analysis), runs 90 minutes, and requires a scaled score of 750 out of 900 to pass. List price is about $425 (US). Register via the CompTIA marketplace/voucher and schedule at Pearson VUE (test center or OnVUE remote proctoring). Prepare with CompTIA CertMaster Learn/Labs/CE, official study guides, or practice exams; performance-based items reward genuine hands-on familiarity with firewalls, IAM, and incident response workflows, not just memorization. Valid for 3 years, renewable through CompTIA's Continuing Education (CE) program by earning CEUs, holding a qualifying higher-level certification, or retaking the current exam before expiration."
+    },
+    {
+      "name": "Cisco Certified Cybersecurity Associate (200-201 CBROPS)",
+      "provider": "Cisco",
+      "level": "Associate",
+      "sequence_order": 3,
+      "prerequisite_name": "CompTIA Security+ (SY0-701)",
+      "validity_period_months": 36,
+      "relevant_roles": ["SOC Analyst (Tier 1)", "Security Operations"],
+      "kb_content": "This credential (formerly branded CyberOps Associate; renamed Cybersecurity Associate effective January 21, 2025, with the exam listed as 200-201 CBROPS/CCNACBR) validates entry-level SOC analyst skills: security monitoring, host- and network-based intrusion analysis, security concepts, and incident-response procedures. A single exam, Understanding Cisco Cybersecurity Operations Fundamentals (200-201, v1.2 as of the 2024/2026 blueprint refresh adding AI-assisted monitoring, cloud, containers, and DevSecOps topics), runs 120 minutes with pass/fail scoring released online within 48 hours. Cisco imposes no formal prerequisites - anyone can register - but recommends familiarity with TCP/IP, subnetting, firewall concepts, and basic security principles first. Register and schedule through Pearson VUE via a Cisco certification account. Preparation options include Cisco U. self-paced content, the official Cert Guide, and Cisco Networking Academy (NetAcad) courses. The certification is valid for 3 years; recertify by earning 30 Continuing Education (CE) credits within the cycle or by retaking a current qualifying exam. This is Cisco's practical, SOC-facing counterpart to CompTIA Security+ and a natural bridge before pursuing CCNP Security."
+    },
+    {
+      "name": "ISC2 Systems Security Certified Practitioner (SSCP)",
+      "provider": "ISC2",
+      "level": "Associate / Practitioner",
+      "sequence_order": 4,
+      "prerequisite_name": "CompTIA Security+ (SY0-701)",
+      "validity_period_months": 36,
+      "relevant_roles": ["Systems Security Practitioner", "Network Security Administrator"],
+      "kb_content": "SSCP validates hands-on operational security skills across seven domains: Security Concepts and Practices, Access Controls, Risk Identification/Monitoring/Analysis, Incident Response and Recovery, Cryptography, Network and Communications Security, and Systems and Application Security. Candidates need one year of cumulative paid full-time experience in one or more domains; a relevant bachelor's/master's degree can satisfy up to one year of that requirement. Without qualifying experience, you may pass the exam and become an 'Associate of ISC2,' with up to two years to complete the experience requirement. The exam has 125 multiple-choice questions, a 3-hour time limit, and requires a scaled score of 700/1000 to pass; cost is approximately $249. Register through Pearson VUE via your ISC2 account. Study options include the official ISC2 SSCP study guide, ISC2-authorized training, and Boson/Wiley practice tests. Certification lasts 3 years and requires 60 CPE credits over the cycle (minimum 20/year) plus an Annual Maintenance Fee (~$135) to remain active. SSCP is commonly positioned as a practitioner-level stepping stone toward CISSP."
+    },
+    {
+      "name": "Fortinet NSE 4 - FortiGate Security",
+      "provider": "Fortinet",
+      "level": "NSE 4 (Fortinet Certified Professional tier)",
+      "sequence_order": 5,
+      "prerequisite_name": null,
+      "validity_period_months": 24,
+      "relevant_roles": ["Firewall Administrator", "Network Security Engineer"],
+      "kb_content": "NSE 4 validates the ability to configure, operate, and administer FortiGate next-generation firewalls: policies, authentication, VPNs, security profiles, routing, and day-to-day operations. Fortinet enforces no hard prerequisite for the written exam, though the foundational NSE 1-3 awareness/operator content (Cybersecurity Fundamentals through FortiGate Operator) is the recommended on-ramp. The exam version tracks FortiOS releases (e.g., FCP_FGT_AD-7.6), is delivered proctored, and is commonly reported at roughly 50-60 questions with a 90-105 minute time limit; Fortinet does not publish an exact numeric cut score but candidates widely report needing ~70% correct. Cost varies (commonly cited around $200-400) and is sometimes bundled free with completion of Fortinet's self-paced NSE Training Institute courses. Register and schedule at home.pearsonvue.com/fortinet, paying by credit card or exam voucher purchased from an Authorized Training Center or the Fortinet Training Institute eStore. Passing NSE 4 automatically recertifies NSE 1-3 if still active. Certification is valid 2 years. This is Fortinet's core hands-on firewall-admin credential and a common entry point before branching into Secure Networking/SD-WAN or SASE specialist tracks."
+    },
+    {
+      "name": "VMware Certified Professional - Network Virtualization (VCP-NV)",
+      "provider": "Broadcom (VMware)",
+      "level": "Professional",
+      "sequence_order": 6,
+      "prerequisite_name": "CompTIA Network+ (N10-009)",
+      "validity_period_months": 24,
+      "relevant_roles": ["SDN/Network Virtualization Engineer", "NSX Administrator"],
+      "kb_content": "VCP-NV is Broadcom/VMware's core software-defined-networking (SDN) credential, validating the ability to install, configure, and administer NSX virtual networking environments. The current exam is 2V0-41.24 (VMware NSX 4.x Professional V2), covering NSX Manager architecture, transport zones, the Geneve overlay, Edge nodes, Tier-0/Tier-1 gateways, BGP, Distributed and Gateway Firewall, micro-segmentation, IPsec VPN, load balancing, and troubleshooting. The exam has 55 questions (multiple-choice and drag-and-drop), a 135-minute time limit, and requires a scaled score of 300 to pass; it is offered in English only. Registration and scheduling run through Pearson VUE under Broadcom's certification program (docs.broadcom.com hosts the exam prep guide). No separate qualifying exam is formally required, but hands-on NSX administration experience is strongly recommended before attempting it. Preparation resources include the official Broadcom exam prep guide, VMware/Broadcom Education courses, and community study guides. This is the direct real-world equivalent of an 'SDx' certification in this path - validating true software-defined datacenter networking and micro-segmentation skills rather than traditional hardware-centric routing/switching."
+    },
+    {
+      "name": "Cisco Certified Network Professional (CCNP) Security",
+      "provider": "Cisco",
+      "level": "Professional",
+      "sequence_order": 7,
+      "prerequisite_name": "Cisco Certified Cybersecurity Associate (200-201 CBROPS)",
+      "validity_period_months": 36,
+      "relevant_roles": ["Security Engineer", "Network Security Engineer"],
+      "kb_content": "CCNP Security requires passing two exams: the core exam 350-701 SCOR (Implementing and Operating Cisco Security Core Technologies) plus one concentration exam of the candidate's choosing. SCOR runs 120 minutes, costs $400, and spans network security, cloud security, content security, endpoint protection, secure network access, and security concepts; passing it alone also awards the standalone 'Cisco Certified Specialist - Security Core' credential. As of the August 2026 exam refresh, concentration choices include 300-710 SNCF (Securing Networks with Cisco Firepower, updated to v1.2 on Aug 27, 2026), 300-715 SISE (Identity Services Engine), and 300-735 SAUTO (Security Automation/APIs); the SESA, SWSA, and SVPN concentrations were retired around the same date, so verify current options on Cisco's site before registering. Cisco states no formal prerequisites but recommends CCNA-level knowledge and 3-5 years of security experience. Register and schedule via Pearson VUE. Study via Cisco U., official Cert Guides, or Cisco Learning Network. Valid 3 years; recertify via Cisco's Continuing Education program (80 credits) or by passing qualifying exams, which also recertifies SCOR."
+    },
+    {
+      "name": "Cisco Certified Specialist - Enterprise SD-WAN Implementation",
+      "provider": "Cisco",
+      "level": "Specialist (CCNP Enterprise concentration)",
+      "sequence_order": 8,
+      "prerequisite_name": "Cisco Certified Network Professional (CCNP) Security",
+      "validity_period_months": 36,
+      "relevant_roles": ["SD-WAN Engineer", "WAN/Network Engineer"],
+      "kb_content": "This credential is earned by passing Implementing Cisco (Catalyst) SD-WAN Solutions (300-415 ENSDWI), a 90-minute proctored exam with roughly 60 multiple-choice and simulation-based questions, requiring a passing score of 825; cost is $300 plus tax. Content covers Cisco SD-WAN/Catalyst SD-WAN architecture (orchestration plane/vBond, management plane/vManage, control plane/vSmart-OMP, data plane), controller and WAN Edge router deployment, policies, security, QoS, multicast, and management/operations. Passing this exam alone earns the standalone 'Cisco Certified Specialist - Enterprise SD-WAN' credential, and it also satisfies the concentration-exam requirement toward full CCNP Enterprise when paired with the ENCOR 350-401 core exam. No formal prerequisite exam is enforced, though solid enterprise routing/WAN knowledge is expected. Register via Pearson VUE. Preparation resources include Cisco's official ENSDWI course, Cisco U. content, and third-party training (CBT Nuggets, Udemy). This is one of the clearest real, currently-offered 'SDx' (software-defined WAN) certifications from a networking vendor and the natural specialization point after general network-security professional credentials."
+    },
+    {
+      "name": "Palo Alto Networks Certified SD-WAN Engineer",
+      "provider": "Palo Alto Networks",
+      "level": "Specialist (Network Security track)",
+      "sequence_order": 9,
+      "prerequisite_name": "Cisco Certified Specialist - Enterprise SD-WAN Implementation",
+      "validity_period_months": 24,
+      "relevant_roles": ["SD-WAN Engineer", "SASE/Prisma SD-WAN Engineer"],
+      "kb_content": "Part of Palo Alto Networks' 2025-2026 role-based certification framework (which replaced the legacy PCCET/PCNSA/PCNSE product-specific exams), the SD-WAN Engineer credential sits at the Specialist level within the Network Security track. It validates the ability to plan, deploy, configure, operate, monitor, and troubleshoot Prisma SD-WAN across both standalone SD-WAN and SASE-integrated deployments, covering architecture, pre-deployment planning, deployment, policy management, troubleshooting, and ongoing operations. Specialist-level Palo Alto exams generally run 90-120 minutes with 60-70 scenario-based and multiple-choice questions, and require a scaled passing score (commonly cited around 860 on a 300-1000 scale); this exam is priced at $250. Register through Pearson VUE via the Palo Alto Networks certification portal. No enforced prerequisite exists, but completing the Professional-level Network Security Professional credential first is recommended for broader context. Preparation resources include Palo Alto's official Education Services courses and Prisma SD-WAN documentation. Certifications in this framework are valid 2 years. This is the clearest Palo Alto-specific real-world equivalent to a distinct 'SDx' certification."
+    },
+    {
+      "name": "Fortinet NSE 7 - Secure Networking",
+      "provider": "Fortinet",
+      "level": "NSE 7 (Fortinet Certified Solution Specialist tier)",
+      "sequence_order": 10,
+      "prerequisite_name": "Fortinet NSE 4 - FortiGate Security",
+      "validity_period_months": 24,
+      "relevant_roles": ["SD-WAN Architect", "Secure Networking Engineer"],
+      "kb_content": "NSE 7 Secure Networking validates advanced, hands-on ability to design, deploy, administer, and troubleshoot Fortinet Secure SD-WAN and Secure Networking solutions (FortiGate, FortiManager, FortiSwitch/FortiAP integration). Following Fortinet's July 2026 certification-program consolidation, SD-WAN competencies that were previously split into standalone NSE 6/NSE 7 SD-WAN exams and the NSE 6 SASE track were unified into this NSE 7 Secure Networking exam. Prerequisites are enforced: candidates must hold the NSE 4 FortiOS certification plus a qualifying NSE 5 or NSE 6 credential in the relevant track, and must pass the proctored NSE 7 exam within 2 years of that prerequisite. Fortinet also recommends at least one year of hands-on production experience with FortiGate and FortiManager. The written exam is delivered proctored via Pearson VUE (home.pearsonvue.com/fortinet) or PSI, bookable with a credit card or exam voucher from an Authorized Training Center. Preparation uses Fortinet's official NSE 7 self-paced or instructor-led courses. Certification is valid 2 years; passing it also recertifies still-active prerequisite NSE levels. This represents Fortinet's expert-adjacent, SD-WAN-focused rung in the NetSec + SDx ladder."
+    },
+    {
+      "name": "ISC2 Certified Information Systems Security Professional (CISSP)",
+      "provider": "ISC2",
+      "level": "Advanced / Expert",
+      "sequence_order": 11,
+      "prerequisite_name": "ISC2 Systems Security Certified Practitioner (SSCP)",
+      "validity_period_months": 36,
+      "relevant_roles": ["Security Architect", "CISO / Security Manager"],
+      "kb_content": "CISSP is ISC2's flagship, broadly considered the industry's senior/expert-level security management and architecture credential. It requires five cumulative years of full-time paid experience across two or more of the eight CISSP domains (Security & Risk Management, Asset Security, Security Architecture & Engineering, Communication & Network Security, IAM, Security Assessment & Testing, Security Operations, Software Development Security); a relevant degree or an approved additional credential (e.g., SSCP) can each satisfy up to one year of that requirement. Without full experience, candidates can pass the exam and become an 'Associate of ISC2,' with six years to complete the requirement. The exam uses Computerized Adaptive Testing (CAT): 125-175 questions, up to 3 hours, ending once 95% statistical confidence is reached, with a required scaled score of 700/1000. Cost is $749. Register via Pearson VUE. Maintenance requires 120 CPEs per 3-year cycle (minimum 40/year, at least 90 as Group A/security-specific credits). This is the capstone general-security credential in the path, complementing the more networking/SD-WAN-specific Cisco/Fortinet/Palo Alto expert tracks."
+    },
+    {
+      "name": "Cisco Certified Internetwork Expert (CCIE) Security",
+      "provider": "Cisco",
+      "level": "Expert",
+      "sequence_order": 12,
+      "prerequisite_name": "Cisco Certified Network Professional (CCNP) Security",
+      "validity_period_months": 36,
+      "relevant_roles": ["Principal Security Engineer", "Network Security Architect"],
+      "kb_content": "CCIE Security is Cisco's expert-level security credential, requiring two components: a qualifying core exam and a hands-on lab exam. The qualifying exam is the same 350-701 SCOR exam used for CCNP Security ($400), which is why CCNP Security is the natural prerequisite step in this path even though Cisco does not formally require the CCNP title itself. The CCIE Security Lab Exam (currently v6.1) is an eight-hour, hands-on practical exam in which candidates plan, design, deploy, operate, and optimize end-to-end security for a dual-stack (IPv4/IPv6) enterprise network; lab cost runs approximately $1,600-$1,900, and it must be passed within 3 years of passing the qualifying core exam. Cisco sets no strict formal prerequisites, but candidates realistically need several years of hands-on enterprise security engineering experience. Register both exams via Pearson VUE / Cisco's certification system; lab exams are delivered at dedicated Cisco facilities. Recertification is required every 3 years via Continuing Education credits, relevant work/teaching activities, or retaking exams - notably, unlike CCNA/CCNP, a missed CCIE recertification deadline makes the certification fully inactive rather than merely lapsed."
+    }
+  ],
+  "notes": "SDx naming: no vendor sells a certification literally branded 'SDx.' The closest real, currently-offered equivalents are software-defined networking (VMware/Broadcom NSX -> VCP-NV) and SD-WAN/SASE certifications (Cisco Certified Specialist - Enterprise SD-WAN Implementation via ENSDWI 300-415; Palo Alto Networks Certified SD-WAN Engineer; Fortinet NSE 7 - Secure Networking, which absorbed Fortinet's prior standalone SD-WAN exams in a July 2026 program consolidation). These three were used to fill the SDx portion of the path. Ordering rationale: foundational vendor-neutral certs (Network+, Security+) -> associate/practitioner certs (Cisco Cybersecurity Associate, ISC2 SSCP) -> professional/specialist certs mixing network security and SDN/SD-WAN (Fortinet NSE 4, VMware VCP-NV, Cisco CCNP Security, Cisco SD-WAN Specialist, Palo Alto SD-WAN Engineer, Fortinet NSE 7) -> capstone expert certs (ISC2 CISSP, Cisco CCIE Security). Caveats: (1) Palo Alto Networks retired its legacy PCCET/PCNSA/PCNSE line during 2024-2026 in favor of a new role-based framework; this path uses the current SD-WAN Engineer Specialist cert rather than the retired PCNSE. (2) Fortinet overhauled its NSE program (effective mid-2026), consolidating SD-WAN content into NSE 7 Secure Networking. (3) Cisco retired several CCNP Security concentration exams (SESA, SWSA, SVPN) around August 2026; SNCF/SISE/SAUTO remain current. (4) Most prerequisite_name values reflect this path's logical sequencing and vendor recommendations, not hard-enforced registration requirements - ISC2 (SSCP, CISSP) is the exception, enforcing real work-experience requirements. (5) Several numeric exam details were cross-referenced across multiple training-industry sources since vendors do not always publish exact cut scores; treat minor variations as approximate."
+}

@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L&D & Certification Agent</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --panel: #ffffff;
+    --border: #e3e3e6;
+    --text: #1c1c1e;
+    --muted: #6b6b70;
+    --accent: #c0392b;
+    --accent-soft: #fbe9e7;
+    --assistant-bubble: #f0f0f2;
+    --user-bubble: #c0392b;
+    --user-text: #ffffff;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; flex-shrink: 0; }
+  header .spacer { flex: 1; }
+  header label { font-size: 12px; color: var(--muted); margin-right: 6px; }
+  select, input, button, textarea { font-family: inherit; font-size: 14px; }
+  select#employeeSelect { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); }
+  #trackerToggle { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; }
+  #trackerToggle:hover { background: var(--bg); }
+
+  main { flex: 1; display: flex; overflow: hidden; }
+
+  #chatColumn { flex: 1; display: flex; flex-direction: column; max-width: 760px; margin: 0 auto; width: 100%; }
+  #chatLog { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .msg { max-width: 80%; padding: 10px 14px; border-radius: var(--radius); line-height: 1.45; font-size: 14.5px; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 4px; }
+  .msg.assistant { align-self: flex-start; background: var(--assistant-bubble); border-bottom-left-radius: 4px; }
+  .msg.assistant.pending { color: var(--muted); font-style: italic; }
+  .msg.error { align-self: flex-start; background: #fde8e8; color: #a12a2a; }
+
+  .form-card { align-self: stretch; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .form-card h3 { margin: 0 0 4px; font-size: 14px; }
+  .form-card .hint { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .form-row > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .form-row label { font-size: 12px; color: var(--muted); }
+  .form-row input, .form-row select { padding: 7px 8px; border-radius: 6px; border: 1px solid var(--border); }
+  .form-row input:disabled { background: var(--bg); color: var(--muted); }
+  .form-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .form-actions button { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+  .form-actions button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .form-actions button.secondary { background: var(--panel); }
+
+  #quickActions { display: flex; gap: 8px; padding: 0 20px 10px; flex-wrap: wrap; }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-size: 13px; color: var(--text); }
+  .chip:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  #chatForm { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
+  #chatInput { flex: 1; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--border); }
+  #chatForm button[type=submit] { padding: 10px 20px; border-radius: 999px; border: none; background: var(--accent); color: white; cursor: pointer; }
+  #chatForm button[type=submit]:disabled { opacity: 0.5; cursor: default; }
+
+  #trackerPanel {
+    width: 420px; max-width: 45vw; background: var(--panel); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+    transform: translateX(100%); transition: transform 0.15s ease-out; position: relative;
+  }
+  #trackerPanel.open { transform: translateX(0); }
+  #trackerPanel.hidden-fully { display: none; }
+  #trackerPanel .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  #trackerPanel .panel-head h2 { font-size: 15px; margin: 0; }
+  #trackerPanel .panel-head button { border: none; background: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+  #trackerContent { flex: 1; overflow-y: auto; padding: 12px 16px; font-size: 13px; }
+  #trackerContent h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 16px 0 6px; }
+  #trackerContent table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  #trackerContent th, #trackerContent td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .status-pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .status-verified { background: #e3f4e3; color: #1e6b1e; }
+  .status-pending, .status-in_progress { background: #fdf3d8; color: #8a6d1a; }
+  .status-exception, .status-gave_exam_but_failed { background: #fde8e8; color: #a12a2a; }
+  .status-not_applicable, .status-completed { background: #e5e7eb; color: #444; }
+  .data-as-of { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+  .empty-note { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>L&amp;D &amp; Certification Agent</h1>
+    <div class="spacer"></div>
+    <label for="employeeSelect">Acting as</label>
+    <select id="employeeSelect"></select>
+    <button id="trackerToggle" type="button">My Tracker</button>
+  </header>
+
+  <main>
+    <div id="chatColumn">
+      <div id="chatLog"></div>
+      <div id="quickActions"></div>
+      <form id="chatForm">
+        <input id="chatInput" autocomplete="off" placeholder="Ask about certifications, exam prep, your tracker status...">
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <aside id="trackerPanel" class="hidden-fully">
+      <div class="panel-head">
+        <h2>Tracker</h2>
+        <button id="trackerClose" type="button">&times;</button>
+      </div>
+      <div id="trackerContent">Loading…</div>
+    </aside>
+  </main>
+</div>
+
+<datalist id="catalogOptions"></datalist>
+
+<script>
+const state = {
+  employees: [],
+  selectedEmployeeId: null,
+  chatHistories: {},   // employee_id -> [{id, role, text, pending, formPrefill, formResult}]
+  nextMsgId: 1,
+  trackerOpen: false,
+  starterPrompts: [],  // from /api/agent/starter-prompts — see agent/adk_agent/prompts.py STARTER_PROMPTS (BR-A-14)
+};
+
+async function api(path, options) {
+  const resp = await fetch(path, options);
+  if (!resp.ok) {
+    let detail = resp.statusText;
+    try { detail = JSON.stringify(await resp.json()); } catch (e) {}
+    throw new Error(`${resp.status} ${detail}`);
+  }
+  return resp.json();
+}
+
+// --- bootstrap --------------------------------------------------------
+async function init() {
+  try {
+    state.employees = await api('/api/employees');
+  } catch (err) {
+    document.getElementById('chatLog').innerHTML =
+      `<div class="msg error">Can't reach the backend: ${err.message}. Is it running on the same origin as this page?</div>`;
+    return;
+  }
+  if (!state.employees.length) {
+    document.getElementById('chatLog').innerHTML =
+      `<div class="msg error">No employees yet — run scripts/seed_test_employees.py first.</div>`;
+    return;
+  }
+
+  const sel = document.getElementById('employeeSelect');
+  sel.innerHTML = state.employees
+    .map(e => `<option value="${e.employee_id}">${e.name} — ${e.employee_id} — ${e.practice}</option>`)
+    .join('');
+  sel.addEventListener('change', () => selectEmployee(sel.value));
+
+  document.getElementById('chatForm').addEventListener('submit', onSubmitChat);
+  document.getElementById('trackerToggle').addEventListener('click', toggleTracker);
+  document.getElementById('trackerClose').addEventListener('click', toggleTracker);
+
+  try {
+    const sp = await api('/api/agent/starter-prompts');
+    state.starterPrompts = sp.prompts || [];
+  } catch (err) { /* non-fatal — quick actions just skip the LLM-backed ones */ }
+
+  selectEmployee(state.employees[0].employee_id);
+}
+
+function currentEmployee() {
+  return state.employees.find(e => e.employee_id === state.selectedEmployeeId);
+}
+
+function selectEmployee(id) {
+  state.selectedEmployeeId = id;
+  document.getElementById('employeeSelect').value = id;
+  if (!state.chatHistories[id]) state.chatHistories[id] = [];
+  renderChat();
+  renderQuickActions();
+  if (state.trackerOpen) loadTracker();
+}
+
+// --- chat ---------------------------------------------------------------
+function addMessage(msg) {
+  const id = state.nextMsgId++;
+  state.chatHistories[state.selectedEmployeeId].push({ id, ...msg });
+  renderChat();
+  return id;
+}
+
+function updateMessage(id, patch) {
+  const history = state.chatHistories[state.selectedEmployeeId];
+  const m = history.find(x => x.id === id);
+  if (m) Object.assign(m, patch);
+  renderChat();
+}
+
+function renderChat() {
+  const log = document.getElementById('chatLog');
+  const history = state.chatHistories[state.selectedEmployeeId] || [];
+  log.innerHTML = history.map(renderOneMessage).join('');
+  log.scrollTop = log.scrollHeight;
+  history.forEach(m => {
+    if (m.role === 'form' && !m.formResult) wireFormCard(m.id);
+  });
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s ?? '';
+  return div.innerHTML;
+}
+
+function renderOneMessage(m) {
+  if (m.role === 'user') return `<div class="msg user">${escapeHtml(m.text)}</div>`;
+  if (m.role === 'error') return `<div class="msg error">${escapeHtml(m.text)}</div>`;
+  if (m.role === 'assistant') {
+    const cls = m.pending ? 'msg assistant pending' : 'msg assistant';
+    return `<div class="msg assistant ${m.pending ? 'pending' : ''}">${escapeHtml(m.text)}</div>`;
+  }
+  if (m.role === 'form') return renderFormCard(m);
+  return '';
+}
+
+function renderQuickActions() {
+  // "Submit a certification" bypasses the LLM entirely (instant, deterministic).
+  // The rest are the canonical starter prompts from agent/adk_agent/prompts.py
+  // (BR-A-14) — fetched once in init() so this list has one source of truth.
+  const actions = [
+    { label: 'Submit a certification', run: () => openCertificationForm() },
+    ...state.starterPrompts.map(p => ({ label: p, run: () => sendMessage(p) })),
+  ];
+  const el = document.getElementById('quickActions');
+  el.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.textContent = a.label;
+    btn.onclick = a.run;
+    el.appendChild(btn);
+  });
+}
+
+function onSubmitChat(e) {
+  e.preventDefault();
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  sendMessage(text);
+}
+
+async function sendMessage(text) {
+  addMessage({ role: 'user', text });
+  const pendingId = addMessage({ role: 'assistant', text: 'Thinking… (this can take a few seconds up to a couple of minutes on this network)', pending: true });
+  document.getElementById('chatInput').disabled = true;
+
+  try {
+    const data = await api('/api/agent/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_id: state.selectedEmployeeId, message: text }),
+    });
+    updateMessage(pendingId, { text: data.reply_text || '(no text in response)', pending: false });
+    for (const action of (data.actions || [])) {
+      if (action.action === 'open_certification_form') {
+        addMessage({ role: 'form', formPrefill: action.data || {} });
+      }
+    }
+  } catch (err) {
+    updateMessage(pendingId, { role: 'error', text: `Couldn't reach the agent: ${err.message}`, pending: false });
+  } finally {
+    document.getElementById('chatInput').disabled = false;
+    document.getElementById('chatInput').focus();
+  }
+}
+
+// --- inline certification form ------------------------------------------
+async function openCertificationForm() {
+  try {
+    const prefill = await api(`/api/employees/${state.selectedEmployeeId}/prefill`);
+    addMessage({ role: 'form', formPrefill: prefill });
+  } catch (err) {
+    addMessage({ role: 'error', text: `Couldn't load the form: ${err.message}` });
+  }
+}
+
+function renderFormCard(m) {
+  if (m.formResult) {
+    const r = m.formResult;
+    if (r.ok) {
+      const v = r.verification;
+      const vLine = v
+        ? `Verification: <span class="status-pill status-${v.status}">${v.status}</span>`
+        : 'Verification: <span class="status-pill status-not_applicable">not applicable</span>';
+      return `<div class="msg assistant">Submitted <strong>${escapeHtml(r.certName)}</strong> as ${escapeHtml(r.statusLabel)}. ${vLine}</div>`;
+    }
+    return `<div class="msg error">Submission failed: ${escapeHtml(r.error)}</div>`;
+  }
+
+  const p = m.formPrefill || {};
+  const practice = p.practice || currentEmployee()?.practice || '';
+  return `
+    <div class="form-card" id="form-${m.id}">
+      <h3>Submit a certification</h3>
+      <div class="hint">Practice is auto-filled from your profile — it's not something you set here.</div>
+      <div class="form-row">
+        <div>
+          <label>Cert name</label>
+          <input list="catalogOptions" id="f-certname-${m.id}" oninput="onCertNameInput('${m.id}')" placeholder="Start typing to search the catalog...">
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="f-status-${m.id}" onchange="onStatusChange('${m.id}')">
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="gave_exam_but_failed">Gave Exam but Failed</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Manager</label>
+          <input id="f-manager-${m.id}" value="${escapeHtml(p.manager_name || '')}">
+        </div>
+        <div>
+          <label>Practice Director</label>
+          <input id="f-pd-${m.id}" value="${escapeHtml(p.practice_director_name || '')}">
+        </div>
+        <div>
+          <label>Practice</label>
+          <input value="${escapeHtml(practice)}" disabled>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Prep start date</label>
+          <input type="date" id="f-prepstart-${m.id}">
+        </div>
+        <div>
+          <label>End date / exam date</label>
+          <input type="date" id="f-examend-${m.id}">
+        </div>
+        <div>
+          <label>Expiration date (optional)</label>
+          <input type="date" id="f-expiration-${m.id}">
+        </div>
+      </div>
+      <div class="form-row" id="f-credlyrow-${m.id}" style="display:none">
+        <div>
+          <label>Credly link (required for Completed — triggers verification)</label>
+          <input id="f-credly-${m.id}" placeholder="https://www.credly.com/badges/.../public_url">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="primary" onclick="submitFormCard('${m.id}')">Submit</button>
+        <button type="button" class="secondary" onclick="cancelFormCard('${m.id}')">Cancel</button>
+      </div>
+    </div>`;
+}
+
+function onStatusChange(id) {
+  const status = document.getElementById(`f-status-${id}`).value;
+  document.getElementById(`f-credlyrow-${id}`).style.display = status === 'completed' ? 'flex' : 'none';
+}
+
+let catalogDebounce = null;
+function onCertNameInput(id) {
+  clearTimeout(catalogDebounce);
+  const q = document.getElementById(`f-certname-${id}`).value.trim();
+  if (!q) return;
+  catalogDebounce = setTimeout(async () => {
+    try {
+      const matches = await api(`/api/catalog/certifications?q=${encodeURIComponent(q)}`);
+      const dl = document.getElementById('catalogOptions');
+      dl.innerHTML = matches.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+    } catch (e) { /* non-fatal */ }
+  }, 250);
+}
+
+function wireFormCard(id) {
+  onStatusChange(id); // set initial credly-row visibility
+}
+
+function cancelFormCard(id) {
+  const history = state.chatHistories[state.selectedEmployeeId];
+  const idx = history.findIndex(m => m.id === Number(id) || m.id === id);
+  if (idx >= 0) history.splice(idx, 1);
+  renderChat();
+}
+
+async function submitFormCard(id) {
+  const certName = document.getElementById(`f-certname-${id}`).value.trim();
+  const status = document.getElementById(`f-status-${id}`).value;
+  const statusLabels = { in_progress: 'In Progress', completed: 'Completed', gave_exam_but_failed: 'Gave Exam but Failed' };
+  const credlyLink = document.getElementById(`f-credly-${id}`)?.value.trim() || null;
+
+  if (!certName) { alert('Cert name is required.'); return; }
+  if (status === 'completed' && !credlyLink) { alert('Credly link is required when status is Completed.'); return; }
+
+  const payload = {
+    employee_id: state.selectedEmployeeId,
+    cert_name: certName,
+    submission_status: status,
+    manager_name: document.getElementById(`f-manager-${id}`).value.trim() || null,
+    practice_director_name: document.getElementById(`f-pd-${id}`).value.trim() || null,
+    prep_start_date: document.getElementById(`f-prepstart-${id}`).value || null,
+    exam_end_date: document.getElementById(`f-examend-${id}`).value || null,
+    credly_link: credlyLink,
+    expiration_date: document.getElementById(`f-expiration-${id}`).value || null,
+  };
+
+  try {
+    const resp = await fetch('/api/certifications/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await resp.json();
+    if (!resp.ok) {
+      updateFormResult(id, { ok: false, error: JSON.stringify(body.detail || body) });
+    } else {
+      updateFormResult(id, {
+        ok: true,
+        certName,
+        statusLabel: statusLabels[status],
+        verification: body.verification ? { status: body.verification.status } : null,
+      });
+    }
+  } catch (err) {
+    updateFormResult(id, { ok: false, error: err.message });
+  }
+}
+
+function updateFormResult(id, result) {
+  const history = state.chatHistories[state.selectedEmployeeId];
+  const m = history.find(x => x.id === Number(id) || x.id === id);
+  if (m) m.formResult = result;
+  renderChat();
+}
+
+// --- tracker panel (only fetches when opened) ---------------------------
+function toggleTracker() {
+  state.trackerOpen = !state.trackerOpen;
+  const panel = document.getElementById('trackerPanel');
+  panel.classList.remove('hidden-fully');
+  if (state.trackerOpen) {
+    requestAnimationFrame(() => panel.classList.add('open'));
+    loadTracker();
+  } else {
+    panel.classList.remove('open');
+  }
+}
+
+async function loadTracker() {
+  const el = document.getElementById('trackerContent');
+  el.innerHTML = 'Loading…';
+  const headers = { 'X-Employee-Id': state.selectedEmployeeId };
+  try {
+    const [records, atRisk] = await Promise.all([
+      api('/api/tracker/records', { headers }),
+      api('/api/tracker/at-risk?window_days=30', { headers }),
+    ]);
+    el.innerHTML = `
+      <div class="data-as-of">Data as of ${records.data_as_of}</div>
+      <h4>My tracker</h4>
+      ${renderRecordsTable(records.records)}
+      <h4>At risk (next 30 days)</h4>
+      ${renderRecordsTable(atRisk.records)}
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="msg error">Couldn't load the tracker: ${err.message}</div>`;
+  }
+}
+
+function renderRecordsTable(records) {
+  if (!records.length) return '<div class="empty-note">Nothing here.</div>';
+  const rows = records.map(r => `
+    <tr>
+      <td>${escapeHtml(r.cert_name)}</td>
+      <td><span class="status-pill status-${r.submission_status}">${r.submission_status}</span></td>
+      <td><span class="status-pill status-${r.verification_status}">${r.verification_status}</span></td>
+      <td>${r.expiration_date || '—'}</td>
+    </tr>`).join('');
+  return `<table><tr><th>Cert</th><th>Status</th><th>Verification</th><th>Expires</th></tr>${rows}</table>`;
+}
+
+init();
+</script>
+</body>
+</html>
