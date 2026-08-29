@@ -3,7 +3,7 @@ databases:
     databaseName: lnd_certification
     user: lnd_app
     plan: free
-    postgresMajorVersion: "16"
+    postgresMajorVersion: "18"
 
 services:
   # Free-tier note: Render's private-service type (no public URL at all)

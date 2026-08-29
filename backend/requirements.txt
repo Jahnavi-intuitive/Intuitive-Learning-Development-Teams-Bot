@@ -17,4 +17,4 @@ google-genai==0.3.0
 pgvector==0.3.6
 apscheduler==3.10.4
 pyjwt[crypto]==2.10.1
-google-auth==2.35.0
+google-auth>=2.47,<3
