@@ -2,31 +2,42 @@ databases:
   - name: lnd-db
     databaseName: lnd_certification
     user: lnd_app
-    plan: basic-256mb
+    plan: free
     postgresMajorVersion: "16"
 
 services:
-  # Private service — Render assigns it NO public URL at all. Only
-  # lnd-backend (below) can reach it, over Render's internal network.
-  # This is a stronger guarantee than anything achievable via application
-  # code: there is no address for an outside caller to even try.
+  # Free-tier note: Render's private-service type (no public URL at all)
+  # isn't eligible for a Free instance — only Web Service/Postgres/Key
+  # Value/static sites are. So this is a public `type: web` service on
+  # Free, same as lnd-backend. That's a real reduction in isolation vs.
+  # the paid-plan design (see DEPLOYMENT.md's GCP version and the
+  # `X-Internal-Service-Token` mechanism in backend/app/services/entra_auth.py) —
+  # mitigated, not eliminated, by the fact that this agent has no
+  # independent authority of its own: every sensitive check (who can see
+  # what) still happens on lnd-backend, which the agent calls into exactly
+  # like any other caller. Revisit `type: pserv` once this is on a paid plan.
   - name: lnd-agent
-    type: pserv
+    type: web
     runtime: docker
+    plan: free
     dockerfilePath: ./agent/Dockerfile
     dockerContext: ./agent
+    healthCheckPath: /health
     envVars:
       - key: GOOGLE_API_KEY
         sync: false
+      # Set manually after both services exist — see RENDER_DEPLOY.md.
+      # Not wired via fromService: free web services can't receive
+      # Render's private-network traffic, so this has to be each
+      # service's plain public https://...onrender.com URL instead.
       - key: BACKEND_URL
-        fromService:
-          name: lnd-backend
-          type: web
-          property: hostport
+        value: placeholder
+        sync: false
 
   - name: lnd-backend
     type: web
     runtime: docker
+    plan: free
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
     healthCheckPath: /health
@@ -37,11 +48,11 @@ services:
           property: connectionString
       - key: GEMINI_API_KEY
         sync: false
+      # Set manually after both services exist — see RENDER_DEPLOY.md
+      # (same reason as lnd-agent's BACKEND_URL above).
       - key: AGENT_URL
-        fromService:
-          name: lnd-agent
-          type: pserv
-          property: hostport
+        value: placeholder
+        sync: false
       - key: AUTH_MODE
         value: header
       # See the deployment doc's security note: "header" mode trusts
