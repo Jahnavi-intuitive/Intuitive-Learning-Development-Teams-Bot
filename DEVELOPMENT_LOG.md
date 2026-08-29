@@ -1037,3 +1037,24 @@ All five fixed identically: added `current: Employee = Depends(get_current_emplo
 - The Gemini API key currently sitting in `backend/.env` should be rotated before any shared deployment — it's been handled outside Secret Manager the whole time this project has existed.
 
 ---
+
+## 2026-08-28 — Render deployment: git repo created, render.yaml, real end-to-end plan
+
+User is done waiting on this machine's curl-subprocess latency and asked for this actually deployed to Render, with precise steps, right now — not another reference doc.
+
+**This project had no git repo at all until today.** `git init` + one commit, verified clean before pushing anywhere: no `.env` files, no venvs, no `pg0.exe`, no DB dump — `git grep`'d the committed tree for the literal real Gemini API key value afterward as a second check, zero matches.
+
+**Two Render-specific compatibility fixes** (neither needed for local dev or the earlier GCP work):
+- `backend/app/config.py` gained field validators normalizing `database_url` (Render hands you a bare `postgres://`/`postgresql://` URL; SQLAlchemy would then default to psycopg2, which isn't installed — only psycopg 3 is, per `requirements.txt`) and `agent_url` (Render's `fromService` env var wiring supplies a bare `host:port` for a private service, no scheme).
+- `agent/adk_agent/tools.py`'s `BACKEND_URL` handling gained the identical bare-host:port normalization for the same reason, the other direction.
+- Both verified directly (not just read): fed each a bare Render-shaped value, confirmed the rewritten output.
+
+**`render.yaml` (Blueprint)** — three resources: `lnd-db` (managed Postgres, confirmed via Render's own docs that pgvector + pgcrypto are both supported on Postgres 13+), `lnd-agent` as `type: pserv` (a **private service** — Render assigns it no public URL at all; stronger isolation than anything achievable in application code, and makes the GCP work's `X-Internal-Service-Token`/Google-ID-token mechanism moot here specifically, though harmless left in place — it just no-ops with a logged warning since Render isn't GCP), `lnd-backend` as the one public `type: web` service. Secrets (`GEMINI_API_KEY`, `GOOGLE_API_KEY` — the same real key value, two different env var names for two different libraries) marked `sync: false` so Render prompts for them at Blueprint-creation time rather than storing them in the file; `SWEEP_TRIGGER_SECRET` uses `generateValue: true`.
+
+**Data migration plan, worked through carefully because the naive order breaks**: the backend's Docker `CMD` runs `alembic upgrade head` on every start, so a fresh Render Postgres gets a real (empty) schema before any dump could be restored. Regenerated `scripts/db_dump/full_dump.sql` fresh (all 4 migrations, real data: 5 employees / 50 catalog / 48 KB rows with real embeddings) with `--clean --if-exists` added to the `pg_dump` invocation specifically so the restore step in `RENDER_DEPLOY.md` is safe to run *after* migrations already created the tables — drops and recreates rather than colliding on "already exists." Also added `scripts/db_dump/*.sql` to `.gitignore` (real employee PII via pg_dump — restore directly with `psql` against Render's external DB URL, never commit it) and corrected `export_db_dump.ps1`'s own stale "commit this if you want" comment, which predated that decision.
+
+**`RENDER_DEPLOY.md`** — precise, ordered steps (unlike `DEPLOYMENT.md`'s GCP reference framing, this one assumes the user is executing it immediately): push to a new GitHub repo (I don't have `gh` CLI or GitHub credentials in this sandbox — confirmed via `which gh`/`gh auth status`, both absent — so this is the one step only the user can do), create the Blueprint, verify `/health`, restore the dump, then a security note repeated from the GCP doc: `AUTH_MODE=header` is fine while the URL is private, not once it's shared — the same X-Employee-Id trust-at-face-value model, now reachable from the public internet instead of only `localhost`.
+
+**Not done, and said so rather than implied**: I have no Render account access, so nothing here has actually been clicked "Apply" on — this is the repo made deploy-ready plus a runbook, not a completed deployment. The user still needs to push to GitHub and run the Blueprint themselves.
+
+---
