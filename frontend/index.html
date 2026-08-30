@@ -555,12 +555,17 @@ function updateFormResult(id, result) {
 function toggleTracker() {
   state.trackerOpen = !state.trackerOpen;
   const panel = document.getElementById('trackerPanel');
-  panel.classList.remove('hidden-fully');
+  if (state.trackerHideTimer) { clearTimeout(state.trackerHideTimer); state.trackerHideTimer = null; }
   if (state.trackerOpen) {
+    panel.classList.remove('hidden-fully');
     requestAnimationFrame(() => panel.classList.add('open'));
     loadTracker();
   } else {
     panel.classList.remove('open');
+    // Wait for the slide-out transition (0.15s) to finish before dropping
+    // the panel out of the flex layout, otherwise the chat column would
+    // snap back to full width mid-animation instead of after it.
+    state.trackerHideTimer = setTimeout(() => panel.classList.add('hidden-fully'), 160);
   }
 }
 
