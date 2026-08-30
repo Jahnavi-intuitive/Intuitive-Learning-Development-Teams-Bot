@@ -6,83 +6,111 @@
 <title>L&D & Certification Agent</title>
 <style>
   :root {
-    --bg: #f7f7f8;
+    --bg: #f5f5f7;
     --panel: #ffffff;
-    --border: #e3e3e6;
+    --border: #e5e5e9;
     --text: #1c1c1e;
-    --muted: #6b6b70;
+    --muted: #6f6f76;
     --accent: #c0392b;
     --accent-soft: #fbe9e7;
-    --assistant-bubble: #f0f0f2;
+    --assistant-bubble: #ffffff;
     --user-bubble: #c0392b;
     --user-text: #ffffff;
-    --radius: 12px;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(20, 20, 25, 0.04), 0 4px 14px rgba(20, 20, 25, 0.06);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
   #app { display: flex; flex-direction: column; height: 100vh; }
 
   header {
     display: flex; align-items: center; gap: 16px;
-    padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+    padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--border);
+    flex-shrink: 0; box-shadow: 0 1px 0 rgba(0,0,0,0.02);
   }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; flex-shrink: 0; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 700; flex-shrink: 0; letter-spacing: -0.01em; }
   header .spacer { flex: 1; }
   header label { font-size: 12px; color: var(--muted); margin-right: 6px; }
   select, input, button, textarea { font-family: inherit; font-size: 14px; }
-  select#employeeSelect { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); }
-  #trackerToggle { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; }
-  #trackerToggle:hover { background: var(--bg); }
+  select#employeeSelect { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); }
+  #trackerToggle { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-weight: 500; transition: background 0.12s, border-color 0.12s; }
+  #trackerToggle:hover { background: var(--accent-soft); border-color: var(--accent); }
 
   main { flex: 1; display: flex; overflow: hidden; }
 
-  #chatColumn { flex: 1; display: flex; flex-direction: column; max-width: 760px; margin: 0 auto; width: 100%; }
-  #chatLog { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  #chatColumn { flex: 1; display: flex; flex-direction: column; max-width: 780px; margin: 0 auto; width: 100%; }
+  #chatLog { flex: 1; overflow-y: auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 16px; }
 
-  .msg { max-width: 80%; padding: 10px 14px; border-radius: var(--radius); line-height: 1.45; font-size: 14.5px; white-space: pre-wrap; }
-  .msg.user { align-self: flex-end; background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 4px; }
-  .msg.assistant { align-self: flex-start; background: var(--assistant-bubble); border-bottom-left-radius: 4px; }
-  .msg.assistant.pending { color: var(--muted); font-style: italic; }
-  .msg.error { align-self: flex-start; background: #fde8e8; color: #a12a2a; }
+  .msg { max-width: 82%; padding: 12px 16px; border-radius: var(--radius); line-height: 1.55; font-size: 14.5px; white-space: pre-wrap; box-shadow: var(--shadow); }
+  .msg.user { align-self: flex-end; background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 4px; box-shadow: 0 2px 8px rgba(192, 57, 43, 0.25); }
+  .msg.assistant { align-self: flex-start; background: var(--assistant-bubble); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg.assistant.pending { box-shadow: none; padding: 14px 18px; }
+  .typing-dots { display: inline-flex; gap: 4px; align-items: center; }
+  .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: typing-bounce 1.1s infinite ease-in-out; }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typing-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-4px); opacity: 1; } }
+  .msg.error { align-self: flex-start; background: #fde8e8; color: #a12a2a; border: 1px solid #f5c6c6; }
+
+  /* Rendered-markdown elements inside an assistant bubble (see renderMarkdown) */
+  .msg.assistant p { margin: 0 0 10px; }
+  .msg.assistant p:last-child { margin-bottom: 0; }
+  .msg.assistant ul, .msg.assistant ol { margin: 2px 0 12px; padding-left: 22px; }
+  .msg.assistant ul:last-child, .msg.assistant ol:last-child { margin-bottom: 0; }
+  .msg.assistant li { margin-bottom: 5px; }
+  .msg.assistant li:last-child { margin-bottom: 0; }
+  .msg.assistant strong { font-weight: 700; }
+  .msg.assistant .md-heading { font-weight: 700; font-size: 1.04em; margin: 2px 0 8px; }
+  .msg.assistant .md-heading:first-child { margin-top: 0; }
+  .msg.assistant code { background: rgba(0,0,0,0.055); padding: 2px 6px; border-radius: 5px; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 0.92em; }
+  .msg.assistant a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-soft); text-underline-offset: 2px; word-break: break-word; }
+  .msg.assistant a:hover { text-decoration-color: var(--accent); }
 
   .form-card { align-self: stretch; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-  .form-card h3 { margin: 0 0 4px; font-size: 14px; }
-  .form-card .hint { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-  .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
-  .form-row > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  .form-row label { font-size: 12px; color: var(--muted); }
-  .form-row input, .form-row select { padding: 7px 8px; border-radius: 6px; border: 1px solid var(--border); }
+  .form-card h3 { margin: 0 0 4px; font-size: 15px; }
+  .form-card .hint { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .form-row > div { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .form-row label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .form-row input, .form-row select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); transition: border-color 0.12s; }
+  .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent); }
   .form-row input:disabled { background: var(--bg); color: var(--muted); }
-  .form-actions { display: flex; gap: 8px; margin-top: 10px; }
-  .form-actions button { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+  .form-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .form-actions button { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); cursor: pointer; font-weight: 500; transition: filter 0.12s; }
   .form-actions button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .form-actions button:hover { filter: brightness(0.96); }
   .form-actions button.secondary { background: var(--panel); }
 
-  #quickActions { display: flex; gap: 8px; padding: 0 20px 10px; flex-wrap: wrap; }
-  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-size: 13px; color: var(--text); }
+  #quickActions { display: flex; gap: 8px; padding: 0 20px 14px; flex-wrap: wrap; }
+  .chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.12s, border-color 0.12s, transform 0.08s; }
   .chip:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .chip:active { transform: scale(0.97); }
 
-  #chatForm { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
-  #chatInput { flex: 1; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--border); }
-  #chatForm button[type=submit] { padding: 10px 20px; border-radius: 999px; border: none; background: var(--accent); color: white; cursor: pointer; }
+  #chatForm { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
+  #chatInput { flex: 1; padding: 11px 16px; border-radius: 999px; border: 1px solid var(--border); transition: border-color 0.12s; }
+  #chatInput:focus { outline: none; border-color: var(--accent); }
+  #chatForm button[type=submit] { padding: 11px 22px; border-radius: 999px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: filter 0.12s; }
+  #chatForm button[type=submit]:hover:not(:disabled) { filter: brightness(1.08); }
   #chatForm button[type=submit]:disabled { opacity: 0.5; cursor: default; }
 
   #trackerPanel {
     width: 420px; max-width: 45vw; background: var(--panel); border-left: 1px solid var(--border);
     display: flex; flex-direction: column; flex-shrink: 0;
     transform: translateX(100%); transition: transform 0.15s ease-out; position: relative;
+    box-shadow: -8px 0 24px rgba(0,0,0,0.05);
   }
   #trackerPanel.open { transform: translateX(0); }
   #trackerPanel.hidden-fully { display: none; }
-  #trackerPanel .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-  #trackerPanel .panel-head h2 { font-size: 15px; margin: 0; }
-  #trackerPanel .panel-head button { border: none; background: none; font-size: 18px; cursor: pointer; color: var(--muted); }
-  #trackerContent { flex: 1; overflow-y: auto; padding: 12px 16px; font-size: 13px; }
-  #trackerContent h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 16px 0 6px; }
+  #trackerPanel .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  #trackerPanel .panel-head h2 { font-size: 15px; margin: 0; font-weight: 700; }
+  #trackerPanel .panel-head button { border: none; background: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px; border-radius: 6px; }
+  #trackerPanel .panel-head button:hover { background: var(--bg); color: var(--text); }
+  #trackerContent { flex: 1; overflow-y: auto; padding: 14px 18px; font-size: 13px; }
+  #trackerContent h4 { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 18px 0 8px; font-weight: 700; }
+  #trackerContent h4:first-child { margin-top: 0; }
   #trackerContent table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-  #trackerContent th, #trackerContent td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
-  .status-pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  #trackerContent th, #trackerContent td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .status-pill { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
   .status-verified { background: #e3f4e3; color: #1e6b1e; }
   .status-pending, .status-in_progress { background: #fdf3d8; color: #8a6d1a; }
   .status-exception, .status-gave_exam_but_failed { background: #fde8e8; color: #a12a2a; }
@@ -220,12 +248,84 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
+// Small, self-contained markdown-lite renderer for the agent's replies —
+// no external library (this frontend has always been a no-build-step,
+// no-dependency single file, and adding one just for this felt like the
+// wrong tradeoff). Escapes the raw text FIRST, then applies markdown
+// substitutions on top of the already-escaped string — none of the
+// markdown marker characters (*, _, `, [, ], (, )) are touched by HTML
+// escaping, and no raw HTML can ever get injected regardless of what the
+// model outputs, since angle brackets/quotes are neutralized before any
+// substitution runs. Supports: **bold**, *italic*, `inline code`,
+// [text](url) links, bare https:// links (auto-linked, e.g. a SharePoint
+// URL the agent includes), "#"-style heading lines, "-"/"*" bullet
+// lists, "1." numbered lists, and blank-line-separated paragraphs.
+function inlineMarkdown(escapedLine) {
+  const tokens = [];
+  const stash = (html) => {
+    const token = ` T${tokens.length} `;
+    tokens.push(html);
+    return token;
+  };
+  let s = escapedLine;
+  // Links first (so their URL text doesn't get re-processed by the bare-
+  // URL autolinker below), then bare URLs — both stashed as opaque
+  // tokens so later bold/italic/code passes can't corrupt the HTML.
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, text, url) =>
+    stash(`<a href="${url}" target="_blank" rel="noopener">${text}</a>`));
+  s = s.replace(/(https?:\/\/[^\s<]+)/g, (url) =>
+    stash(`<a href="${url}" target="_blank" rel="noopener">${url}</a>`));
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  s = s.replace(/(^|\s)\*([^*\n]+)\*(?=\s|$)/g, '$1<em>$2</em>');
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/ T(\d+) /g, (_, i) => tokens[Number(i)]);
+  return s;
+}
+
+function renderMarkdown(raw) {
+  const lines = escapeHtml(raw ?? '').split('\n');
+  const out = [];
+  let listType = null;
+  let para = [];
+  const flushPara = () => { if (para.length) { out.push(`<p>${para.join('<br>')}</p>`); para = []; } };
+  const closeList = () => { if (listType) { out.push(`</${listType}>`); listType = null; } };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) { flushPara(); closeList(); continue; }
+
+    const heading = trimmed.match(/^#{1,6}\s+(.*)$/);
+    const bullet = trimmed.match(/^[-*]\s+(.*)$/);
+    const numbered = trimmed.match(/^\d+\.\s+(.*)$/);
+
+    if (heading) {
+      flushPara(); closeList();
+      out.push(`<div class="md-heading">${inlineMarkdown(heading[1])}</div>`);
+    } else if (bullet) {
+      flushPara();
+      if (listType !== 'ul') { closeList(); out.push('<ul>'); listType = 'ul'; }
+      out.push(`<li>${inlineMarkdown(bullet[1])}</li>`);
+    } else if (numbered) {
+      flushPara();
+      if (listType !== 'ol') { closeList(); out.push('<ol>'); listType = 'ol'; }
+      out.push(`<li>${inlineMarkdown(numbered[1])}</li>`);
+    } else {
+      closeList();
+      para.push(inlineMarkdown(line));
+    }
+  }
+  flushPara();
+  closeList();
+  return out.join('') || '&nbsp;';
+}
+
 function renderOneMessage(m) {
   if (m.role === 'user') return `<div class="msg user">${escapeHtml(m.text)}</div>`;
   if (m.role === 'error') return `<div class="msg error">${escapeHtml(m.text)}</div>`;
   if (m.role === 'assistant') {
-    const cls = m.pending ? 'msg assistant pending' : 'msg assistant';
-    return `<div class="msg assistant ${m.pending ? 'pending' : ''}">${escapeHtml(m.text)}</div>`;
+    if (m.pending) return `<div class="msg assistant pending"><span class="typing-dots"><span></span><span></span><span></span></span></div>`;
+    return `<div class="msg assistant">${renderMarkdown(m.text)}</div>`;
   }
   if (m.role === 'form') return renderFormCard(m);
   return '';
@@ -262,7 +362,7 @@ function onSubmitChat(e) {
 
 async function sendMessage(text) {
   addMessage({ role: 'user', text });
-  const pendingId = addMessage({ role: 'assistant', text: 'Thinking… (this can take a few seconds up to a couple of minutes on this network)', pending: true });
+  const pendingId = addMessage({ role: 'assistant', text: '…', pending: true });
   document.getElementById('chatInput').disabled = true;
 
   try {
@@ -288,7 +388,9 @@ async function sendMessage(text) {
 // --- inline certification form ------------------------------------------
 async function openCertificationForm() {
   try {
-    const prefill = await api(`/api/employees/${state.selectedEmployeeId}/prefill`);
+    const prefill = await api(`/api/employees/${state.selectedEmployeeId}/prefill`, {
+      headers: { 'X-Employee-Id': state.selectedEmployeeId },
+    });
     addMessage({ role: 'form', formPrefill: prefill });
   } catch (err) {
     addMessage({ role: 'error', text: `Couldn't load the form: ${err.message}` });
@@ -423,7 +525,7 @@ async function submitFormCard(id) {
   try {
     const resp = await fetch('/api/certifications/submit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Employee-Id': state.selectedEmployeeId },
       body: JSON.stringify(payload),
     });
     const body = await resp.json();
