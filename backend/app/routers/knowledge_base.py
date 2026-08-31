@@ -51,7 +51,6 @@ class KBItemIn(BaseModel):
     tags: list[str] | None = None
     owner: str
     status: str = "active"
-    last_reviewed_date: date | None = None
 
 
 def _resolve_certification_id(db: Session, certification_name: str | None) -> object | None:
@@ -61,6 +60,28 @@ def _resolve_certification_id(db: Session, certification_name: str | None) -> ob
         select(CertificationCatalog).where(CertificationCatalog.name.ilike(certification_name.strip()))
     )
     return entry.id if entry else None
+
+
+def _kb_item_to_out(item: KnowledgeBaseItem, certification_name: str | None) -> dict:
+    return {
+        "id": item.id,
+        "certification_id": item.certification_id,
+        "certification_name": certification_name,
+        "content": item.content,
+        "tags": item.tags,
+        "status": item.status,
+        "owner": item.owner,
+        "last_reviewed_date": item.last_reviewed_date,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+    }
+
+
+def _certification_name_for(db: Session, certification_id: object | None) -> str | None:
+    if not certification_id:
+        return None
+    cert = db.get(CertificationCatalog, certification_id)
+    return cert.name if cert else None
 
 
 @router.post("/items")
@@ -91,7 +112,7 @@ def create_kb_entry(
         tags=payload.tags,
         status=payload.status,
         owner=payload.owner,
-        last_reviewed_date=payload.last_reviewed_date,
+        last_reviewed_date=date.today(),
     )
     db.commit()
     db.refresh(item)
@@ -114,7 +135,15 @@ def list_kb_entries(
         cert_id = _resolve_certification_id(db, certification_name)
         stmt = stmt.where(KnowledgeBaseItem.certification_id == cert_id)
     stmt = stmt.order_by(KnowledgeBaseItem.updated_at.desc())
-    return db.scalars(stmt).all()
+    rows = db.scalars(stmt).all()
+
+    cert_ids = {r.certification_id for r in rows if r.certification_id}
+    cert_names: dict[object, str] = {}
+    if cert_ids:
+        for cert in db.scalars(select(CertificationCatalog).where(CertificationCatalog.id.in_(cert_ids))):
+            cert_names[cert.id] = cert.name
+
+    return [_kb_item_to_out(r, cert_names.get(r.certification_id)) for r in rows]
 
 
 @router.patch("/items/{item_id}", response_model=KBItemOut)
@@ -124,29 +153,29 @@ def update_kb_entry(
     db: Session = Depends(get_db),
     admin: Employee = Depends(require_admin),
 ):
-    """update_kb_entry. Only content changes cost an embedding call — see
-    services/rag_content.py embed_if_changed(). A save that only touches
-    owner/status/last_reviewed_date leaves the stored embedding and
-    content_hash untouched and makes zero embedding-model calls."""
+    """update_kb_entry. content is the only thing an existing entry's edit
+    can change (certification/tags/owner/status are fixed at creation —
+    see KBItemUpdateIn). Re-embeds only if the content hash actually
+    changed (services/rag_content.py embed_if_changed()), but
+    last_reviewed_date always advances to today, since submitting this
+    edit is itself the review event."""
     item = db.get(KnowledgeBaseItem, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Knowledge base item not found")
 
-    changes = payload.model_dump(exclude_unset=True, exclude={"certification_name", "content"})
-    if payload.certification_name is not None:
-        changes["certification_id"] = _resolve_certification_id(db, payload.certification_name)
-
-    if payload.content is not None:
-        new_hash, embedding = embed_if_changed(previous_hash=item.content_hash, text=payload.content)
-        changes["content"] = payload.content
-        changes["content_hash"] = new_hash
-        if embedding is not None:
-            changes["embedding"] = embedding
+    new_hash, embedding = embed_if_changed(previous_hash=item.content_hash, text=payload.content)
+    changes: dict = {
+        "content": payload.content,
+        "content_hash": new_hash,
+        "last_reviewed_date": date.today(),
+    }
+    if embedding is not None:
+        changes["embedding"] = embedding
 
     update_with_audit(db, item, actor=admin.employee_id, changes=changes)
     db.commit()
     db.refresh(item)
-    return item
+    return _kb_item_to_out(item, _certification_name_for(db, item.certification_id))
 
 
 @router.post("/items/{item_id}/deprecate", response_model=KBItemOut)
@@ -163,4 +192,4 @@ def deprecate_kb_entry(
     update_with_audit(db, item, actor=admin.employee_id, changes={"status": "deprecated"})
     db.commit()
     db.refresh(item)
-    return item
+    return _kb_item_to_out(item, _certification_name_for(db, item.certification_id))

@@ -68,6 +68,43 @@
   .toast-ok { background: var(--ok-bg); color: var(--ok-text); }
   .toast-err { background: var(--bad-bg); color: var(--bad-text); }
   .empty-state { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+  /* ---- modal (used for the KB content-only edit dialog) ---- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,20,25,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 24px; }
+  .modal-overlay.hidden-fully { display: none; }
+  .modal-card { background: var(--panel); border-radius: 12px; width: 100%; max-width: 720px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .modal-head h2 { font-size: 15px; margin: 0; }
+  .modal-head button { border: none; background: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px; border-radius: 6px; }
+  .modal-head button:hover { background: var(--bg); color: var(--text); }
+  .modal-body { padding: 16px 20px; overflow-y: auto; }
+  .modal-foot { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border); justify-content: flex-end; }
+
+  .kb-meta { display: flex; flex-wrap: wrap; gap: 14px 28px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--border); }
+  .kb-meta div { display: flex; flex-direction: column; gap: 3px; }
+  .kb-meta label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .kb-meta span { font-size: 13px; }
+
+  /* file-like content editor: a title bar plus a synced line-number
+     gutter, so editing KB content reads like editing a file, not
+     filling in a form field. */
+  .file-editor { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .file-editor .file-titlebar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+  .file-editor .file-dots { display: flex; gap: 5px; }
+  .file-editor .file-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
+  .file-editor .file-name { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-weight: 600; color: var(--text); }
+  .file-editor .file-titlebar .spacer { flex: 1; }
+  .file-editor .file-body { display: flex; }
+  .file-editor .file-linenos {
+    flex-shrink: 0; padding: 12px 10px; background: var(--bg); color: var(--muted);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6;
+    text-align: right; user-select: none; overflow: hidden; white-space: pre;
+  }
+  .file-editor textarea {
+    flex: 1; border: none; resize: vertical; padding: 12px 14px;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6;
+    min-height: 240px; outline: none;
+  }
 </style>
 </head>
 <body>
@@ -193,9 +230,8 @@
     </div>
 
     <div class="card">
-      <h2 id="kbFormTitle">Add a knowledge-base entry</h2>
-      <p class="hint">Editing only owner/status/last-reviewed-date never re-embeds — only a content change does. Leave certification blank for general content.</p>
-      <input type="hidden" id="kbEditId">
+      <h2>Add a knowledge-base entry</h2>
+      <p class="hint">Leave certification blank for general content. Certification, tags, owner, and status are only set here at creation — editing an existing entry later can only fix its content (see the Edit button above).</p>
       <div class="row">
         <div style="flex:2"><label>Content *</label><textarea id="kbContent"></textarea></div>
       </div>
@@ -203,16 +239,13 @@
         <div><label>Certification name (optional)</label><input id="kbCertName"></div>
         <div><label>Tags (comma-separated)</label><input id="kbTags"></div>
         <div><label>Owner *</label><input id="kbOwner"></div>
-      </div>
-      <div class="row">
         <div><label>Status</label>
           <select id="kbStatus"><option value="active">active</option><option value="pending_review">pending_review</option><option value="deprecated">deprecated</option></select>
         </div>
-        <div><label>Last reviewed date</label><input id="kbLastReviewed" type="date"></div>
       </div>
       <div class="actions">
-        <button class="btn primary" onclick="saveKbEntry()">Save</button>
-        <button class="btn" onclick="clearKbForm()">Clear / new entry</button>
+        <button class="btn primary" onclick="saveKbEntry()">Add entry</button>
+        <button class="btn" onclick="clearKbForm()">Clear form</button>
       </div>
     </div>
   </section>
@@ -271,6 +304,40 @@
   </section>
 
 </main>
+
+<div id="kbEditOverlay" class="modal-overlay hidden-fully">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Edit knowledge-base entry</h2>
+      <button onclick="closeKbEditModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="kb-meta">
+        <div><label>Certification</label><span id="kbEditCert"></span></div>
+        <div><label>Tags</label><span id="kbEditTags"></span></div>
+        <div><label>Owner</label><span id="kbEditOwner"></span></div>
+        <div><label>Status</label><span id="kbEditStatus"></span></div>
+        <div><label>Last reviewed</label><span id="kbEditReviewed"></span></div>
+      </div>
+      <p class="hint" style="margin-top:0;">Only the content below can be changed here — certification, tags, owner, and status are fixed at creation (deprecate an entry instead of reclassifying it). Last reviewed date updates automatically when you save.</p>
+      <div class="file-editor">
+        <div class="file-titlebar">
+          <span class="file-dots"><span></span><span></span><span></span></span>
+          <span class="file-name">kb-entry.txt</span>
+          <span class="spacer"></span>
+        </div>
+        <div class="file-body">
+          <div class="file-linenos" id="kbEditLineNos">1</div>
+          <textarea id="kbEditContent" oninput="updateKbLineNumbers()" onscroll="syncKbLineScroll()" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeKbEditModal()">Cancel</button>
+      <button class="btn primary" onclick="saveKbEditModal()">Save changes</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -472,14 +539,15 @@ async function loadKb() {
     if (cert) params.set('certification_name', cert);
     const rows = await api('GET', '/api/kb/items?' + params.toString());
     if (!rows.length) { wrap.innerHTML = '<div class="empty-state">No matching entries.</div>'; return; }
-    wrap.innerHTML = `<table><thead><tr><th>Content</th><th>Tags</th><th>Status</th><th>Owner</th><th>Actions</th></tr></thead><tbody>
+    wrap.innerHTML = `<table><thead><tr><th>Content</th><th>Certification</th><th>Tags</th><th>Status</th><th>Owner</th><th>Actions</th></tr></thead><tbody>
       ${rows.map(r => `<tr>
         <td class="truncate" title="${esc(r.content)}">${esc(r.content)}</td>
+        <td>${r.certification_name ? esc(r.certification_name) : '<span class="empty-state" style="padding:0;">General</span>'}</td>
         <td>${(r.tags || []).map(esc).join(', ')}</td>
         <td>${pill(r.status)}</td>
         <td>${esc(r.owner)}</td>
         <td>
-          <button class="btn" onclick='editKbEntry(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Edit</button>
+          <button class="btn" onclick='openKbEditModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Edit</button>
           ${r.status !== 'deprecated' ? `<button class="btn danger" onclick="deprecateKbEntry('${r.id}')">Deprecate</button>` : ''}
         </td>
       </tr>`).join('')}
@@ -487,50 +555,66 @@ async function loadKb() {
   } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
 }
 
-function editKbEntry(r) {
-  document.getElementById('kbFormTitle').textContent = 'Edit knowledge-base entry';
-  document.getElementById('kbEditId').value = r.id;
-  document.getElementById('kbContent').value = r.content;
-  document.getElementById('kbTags').value = (r.tags || []).join(', ');
-  document.getElementById('kbOwner').value = r.owner || '';
-  document.getElementById('kbStatus').value = r.status;
-  document.getElementById('kbLastReviewed').value = r.last_reviewed_date || '';
-  document.getElementById('kbCertName').value = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+// ---- edit modal: content is the only field this dialog can change (see
+// backend/app/schemas.py KBItemUpdateIn) — everything else is display-only,
+// fixed at creation, shown here just for context. ----
+const kbEditState = { id: null };
+
+function openKbEditModal(r) {
+  kbEditState.id = r.id;
+  document.getElementById('kbEditCert').textContent = r.certification_name || 'General content (no certification)';
+  document.getElementById('kbEditTags').textContent = (r.tags || []).length ? r.tags.join(', ') : '—';
+  document.getElementById('kbEditOwner').textContent = r.owner || '—';
+  document.getElementById('kbEditStatus').innerHTML = pill(r.status);
+  document.getElementById('kbEditReviewed').textContent = r.last_reviewed_date || 'Never reviewed';
+  document.getElementById('kbEditContent').value = r.content;
+  updateKbLineNumbers();
+  document.getElementById('kbEditOverlay').classList.remove('hidden-fully');
+}
+
+function closeKbEditModal() {
+  document.getElementById('kbEditOverlay').classList.add('hidden-fully');
+  kbEditState.id = null;
+}
+
+function updateKbLineNumbers() {
+  const lineCount = document.getElementById('kbEditContent').value.split('\n').length;
+  document.getElementById('kbEditLineNos').textContent =
+    Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+}
+
+function syncKbLineScroll() {
+  document.getElementById('kbEditLineNos').scrollTop = document.getElementById('kbEditContent').scrollTop;
+}
+
+async function saveKbEditModal() {
+  const content = document.getElementById('kbEditContent').value.trim();
+  if (!content) { toast('Content is required.', false); return; }
+  try {
+    await api('PATCH', `/api/kb/items/${kbEditState.id}`, { content });
+    toast('Updated.', true);
+    closeKbEditModal();
+    loadKb();
+  } catch (e) { toast(e.message, false); }
 }
 
 function clearKbForm() {
-  document.getElementById('kbFormTitle').textContent = 'Add a knowledge-base entry';
-  document.getElementById('kbEditId').value = '';
-  for (const id of ['kbContent','kbCertName','kbTags','kbOwner','kbLastReviewed']) document.getElementById(id).value = '';
+  for (const id of ['kbContent','kbCertName','kbTags','kbOwner']) document.getElementById(id).value = '';
   document.getElementById('kbStatus').value = 'active';
 }
 
 async function saveKbEntry() {
-  const id = document.getElementById('kbEditId').value;
   const content = document.getElementById('kbContent').value.trim();
   const tags = document.getElementById('kbTags').value.split(',').map(t => t.trim()).filter(Boolean);
   const owner = document.getElementById('kbOwner').value.trim();
   const status = document.getElementById('kbStatus').value;
-  const last_reviewed_date = document.getElementById('kbLastReviewed').value || null;
+  if (!content || !owner) { toast('Content and owner are required.', false); return; }
   try {
-    if (id) {
-      // certification_name is left alone on edit unless explicitly typed —
-      // avoids accidentally clearing it since the edit form doesn't reload it.
-      const certName = document.getElementById('kbCertName').value.trim();
-      const payload = { content, tags, owner, status, last_reviewed_date };
-      if (certName) payload.certification_name = certName;
-      await api('PATCH', `/api/kb/items/${id}`, payload);
-      toast('Updated.', true);
-    } else {
-      if (!content || !owner) { toast('Content and owner are required.', false); return; }
-      await api('POST', '/api/kb/items', {
-        content, owner, status, tags,
-        certification_name: document.getElementById('kbCertName').value.trim() || null,
-        last_reviewed_date,
-      });
-      toast('Created.', true);
-    }
+    await api('POST', '/api/kb/items', {
+      content, owner, status, tags,
+      certification_name: document.getElementById('kbCertName').value.trim() || null,
+    });
+    toast('Created.', true);
     clearKbForm();
     loadKb();
   } catch (e) { toast(e.message, false); }

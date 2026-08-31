@@ -318,22 +318,21 @@ class PrerequisiteEdgeDeleteIn(BaseModel):
 
 # --- Admin: knowledge base CRUD -------------------------------------------
 class KBItemUpdateIn(BaseModel):
-    """All fields optional — only the ones provided are changed. Editing
-    only owner/status/last_reviewed_date costs zero embedding calls (see
-    services/rag_content.py); editing content re-embeds because the
-    content hash actually changed."""
+    """Editing an existing entry only ever touches its content — the
+    certification it's attached to, its tags, owner, and status are fixed
+    at creation time (status still has its own dedicated deprecate
+    endpoint). last_reviewed_date is never client-supplied; the server
+    stamps it with today's date on every save, since saving is itself the
+    review event. content re-embeds only if the hash actually changed —
+    see services/rag_content.py."""
 
-    content: str | None = None
-    certification_name: str | None = None
-    tags: list[str] | None = None
-    owner: str | None = None
-    status: str | None = None
-    last_reviewed_date: date | None = None
+    content: str
 
 
 class KBItemOut(BaseModel):
     id: uuid.UUID
     certification_id: uuid.UUID | None
+    certification_name: str | None = None
     content: str
     tags: list | None
     status: str
