@@ -57,6 +57,13 @@
   tr.clickable:hover { background: var(--bg); }
   .truncate { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  /* Scrollable results list: the card's own filters/add-entry sections
+     stay put regardless of how many rows load — only this box scrolls. */
+  #kbTableWrap.scroll-list { max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+  #kbTableWrap.scroll-list table { margin: 0; }
+  #kbTableWrap.scroll-list th { position: sticky; top: 0; background: var(--panel); box-shadow: 0 1px 0 var(--border); }
+  #kbTableWrap.scroll-list th, #kbTableWrap.scroll-list td { padding-left: 12px; }
+
   .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: inline-block; }
   .pill-active, .pill-completed, .pill-verified { background: var(--ok-bg); color: var(--ok-text); }
   .pill-pending_setup, .pill-pending_review, .pill-draft, .pill-in_progress, .pill-not_started { background: var(--warn-bg); color: var(--warn-text); }
@@ -530,6 +537,7 @@ async function removeEdge() {
 // ============ KNOWLEDGE BASE ============
 async function loadKb() {
   const wrap = document.getElementById('kbTableWrap');
+  wrap.classList.remove('scroll-list');
   wrap.innerHTML = '<div class="empty-state">Loading…</div>';
   try {
     const status = document.getElementById('kbFilterStatus').value;
@@ -552,6 +560,9 @@ async function loadKb() {
         </td>
       </tr>`).join('')}
     </tbody></table>`;
+    // Only the loaded rows scroll inside their own box — the filters card
+    // above and the Add-entry card below never move as the list grows.
+    wrap.classList.add('scroll-list');
   } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
 }
 
