@@ -173,6 +173,14 @@
         <div><label>Prerequisites (display only, comma-separated)</label><input id="catPrereqs"></div>
         <div><label>Relevant roles (comma-separated)</label><input id="catRoles"></div>
       </div>
+      <div class="row">
+        <div style="flex:2">
+          <label>Knowledge base content (optional)</label>
+          <textarea id="catKbContent" placeholder="Exam-prep / reference content for this certification. Leave blank to skip for now — come back later, click Edit above on this certification, and fill this in then."></textarea>
+        </div>
+        <div><label>Knowledge base tags (comma-separated, optional)</label><input id="catKbTags"></div>
+      </div>
+      <p class="hint" style="margin: -4px 0 12px;">A knowledge-base entry can only ever belong to a certification that already exists, so it's created here alongside it — same real-content rule applies, no placeholder text.</p>
       <div class="actions">
         <button class="btn primary" onclick="saveCatalogEntry()">Save</button>
         <button class="btn" onclick="clearCatalogForm()">Clear form</button>
@@ -221,6 +229,7 @@
   <section id="section-kb" class="section">
     <div class="card">
       <h2>Knowledge base entries</h2>
+      <p class="hint">New entries are added from the Certification Catalog tab, in the "Add / update a certification" form — a knowledge-base entry always belongs to a certification, so it's created alongside one. Existing entries can only have their content edited here (click Edit below).</p>
       <div class="row">
         <div><label>Status</label>
           <select id="kbFilterStatus">
@@ -234,26 +243,6 @@
       </div>
       <div class="actions"><button class="btn primary" onclick="loadKb()">Load / Refresh</button></div>
       <div id="kbTableWrap"><div class="empty-state">Not loaded yet — click Load.</div></div>
-    </div>
-
-    <div class="card">
-      <h2>Add a knowledge-base entry</h2>
-      <p class="hint">Leave certification blank for general content. Certification, tags, owner, and status are only set here at creation — editing an existing entry later can only fix its content (see the Edit button above).</p>
-      <div class="row">
-        <div style="flex:2"><label>Content *</label><textarea id="kbContent"></textarea></div>
-      </div>
-      <div class="row">
-        <div><label>Certification name (optional)</label><input id="kbCertName"></div>
-        <div><label>Tags (comma-separated)</label><input id="kbTags"></div>
-        <div><label>Owner *</label><input id="kbOwner"></div>
-        <div><label>Status</label>
-          <select id="kbStatus"><option value="active">active</option><option value="pending_review">pending_review</option><option value="deprecated">deprecated</option></select>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn primary" onclick="saveKbEntry()">Add entry</button>
-        <button class="btn" onclick="clearKbForm()">Clear form</button>
-      </div>
     </div>
   </section>
 
@@ -450,14 +439,26 @@ function editCatalogEntry(c) {
   document.getElementById('catValidity').value = c.validity_period_months ?? '';
   document.getElementById('catPrereqs').value = (c.prerequisites || []).join(', ');
   document.getElementById('catRoles').value = (c.relevant_roles || []).join(', ');
+  // Knowledge-base content is a one-shot "add while I'm here" field, not
+  // something this certification "has" a single value of (it can have many
+  // KB entries) — so re-opening a certification for edit never prefills
+  // it. Leave blank to just update the certification; fill it in to also
+  // add a new KB entry for it.
+  document.getElementById('catKbContent').value = '';
+  document.getElementById('catKbTags').value = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function clearCatalogForm() {
   document.getElementById('catFormTitle').textContent = 'Add / update a certification';
-  for (const id of ['catName','catProvider','catLevel','catValidity','catPrereqs','catRoles']) document.getElementById(id).value = '';
+  for (const id of ['catName','catProvider','catLevel','catValidity','catPrereqs','catRoles','catKbContent','catKbTags']) document.getElementById(id).value = '';
   document.getElementById('catStatus').value = 'active';
   document.getElementById('catPrereqLogic').value = 'any';
+}
+
+function actingAsName() {
+  const emp = state.employees.find(e => e.employee_id === actingAs());
+  return emp ? emp.name : actingAs();
 }
 
 async function saveCatalogEntry() {
@@ -475,8 +476,20 @@ async function saveCatalogEntry() {
     relevant_roles: csv(document.getElementById('catRoles').value),
   };
   try {
-    await api('POST', '/api/admin/catalog-entries', payload);
-    toast('Saved: ' + name, true);
+    const entry = await api('POST', '/api/admin/catalog-entries', payload);
+    let message = 'Saved: ' + name;
+    const kbContent = document.getElementById('catKbContent').value.trim();
+    if (kbContent) {
+      await api('POST', '/api/kb/items', {
+        content: kbContent,
+        certification_name: entry.name,
+        tags: csv(document.getElementById('catKbTags').value),
+        owner: actingAsName(),
+        status: 'active',
+      });
+      message += ' — added a knowledge-base entry too.';
+    }
+    toast(message, true);
     clearCatalogForm();
     loadCatalog();
   } catch (e) { toast(e.message, false); }
@@ -605,28 +618,6 @@ async function saveKbEditModal() {
     await api('PATCH', `/api/kb/items/${kbEditState.id}`, { content });
     toast('Updated.', true);
     closeKbEditModal();
-    loadKb();
-  } catch (e) { toast(e.message, false); }
-}
-
-function clearKbForm() {
-  for (const id of ['kbContent','kbCertName','kbTags','kbOwner']) document.getElementById(id).value = '';
-  document.getElementById('kbStatus').value = 'active';
-}
-
-async function saveKbEntry() {
-  const content = document.getElementById('kbContent').value.trim();
-  const tags = document.getElementById('kbTags').value.split(',').map(t => t.trim()).filter(Boolean);
-  const owner = document.getElementById('kbOwner').value.trim();
-  const status = document.getElementById('kbStatus').value;
-  if (!content || !owner) { toast('Content and owner are required.', false); return; }
-  try {
-    await api('POST', '/api/kb/items', {
-      content, owner, status, tags,
-      certification_name: document.getElementById('kbCertName').value.trim() || null,
-    });
-    toast('Created.', true);
-    clearKbForm();
     loadKb();
   } catch (e) { toast(e.message, false); }
 }
