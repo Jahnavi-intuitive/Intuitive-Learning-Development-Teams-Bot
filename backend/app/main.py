@@ -254,6 +254,61 @@ def seed_learning_path(
     return path
 
 
+@app.get("/api/admin/learning-paths/{practice}/graph")
+def learning_path_graph(
+    practice: str,
+    db: Session = Depends(get_db),
+    admin: Employee = Depends(require_admin),
+):
+    """Pure structural view of one practice's learning path — every
+    certification on the path plus every real prerequisite edge between
+    them, with no employee-specific overlay (that's
+    routers/learning_paths.py's /overview, which is self-only and
+    per-employee). Built for the admin dashboard's visual path diagram —
+    edges are only included when both ends are on this same path, so a
+    prerequisite living in a different practice's path never shows up as
+    a dangling reference here."""
+    path = db.scalar(select(LearningPath).where(LearningPath.practice == practice))
+    if not path:
+        return {"practice": practice, "path_id": None, "path_name": None, "nodes": [], "edges": []}
+
+    cert_ids = {item.certification_id for item in path.items}
+    edges = db.scalars(
+        select(CertificationPrerequisite).where(
+            CertificationPrerequisite.certification_id.in_(cert_ids),
+            CertificationPrerequisite.prerequisite_certification_id.in_(cert_ids),
+        )
+    ).all()
+
+    return {
+        "practice": practice,
+        "path_id": str(path.id),
+        "path_name": path.name,
+        "nodes": [
+            {
+                "id": str(item.certification_id),
+                "name": item.certification.name,
+                "provider": item.certification.provider,
+                "level": item.certification.level,
+                "status": item.certification.status,
+                "is_required": item.is_required,
+                "prerequisite_logic": item.certification.prerequisite_logic,
+            }
+            for item in path.items
+        ],
+        "edges": [
+            {
+                "certification_id": str(e.certification_id),
+                "prerequisite_certification_id": str(e.prerequisite_certification_id),
+                "certification_name": e.certification.name,
+                "prerequisite_certification_name": e.prerequisite.name,
+                "track_label": e.track_label,
+            }
+            for e in edges
+        ],
+    }
+
+
 # Mounted last, deliberately: FastAPI/Starlette match routes in the order
 # they're registered, so every /api/... route above gets first look. This
 # catch-all StaticFiles mount at "/" only serves what nothing above already

@@ -59,10 +59,10 @@
 
   /* Scrollable results list: the card's own filters/add-entry sections
      stay put regardless of how many rows load — only this box scrolls. */
-  #kbTableWrap.scroll-list { max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
-  #kbTableWrap.scroll-list table { margin: 0; }
-  #kbTableWrap.scroll-list th { position: sticky; top: 0; background: var(--panel); box-shadow: 0 1px 0 var(--border); }
-  #kbTableWrap.scroll-list th, #kbTableWrap.scroll-list td { padding-left: 12px; }
+  #kbTableWrap.scroll-list, #catalogTableWrap.scroll-list { max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+  #kbTableWrap.scroll-list table, #catalogTableWrap.scroll-list table { margin: 0; }
+  #kbTableWrap.scroll-list th, #catalogTableWrap.scroll-list th { position: sticky; top: 0; background: var(--panel); box-shadow: 0 1px 0 var(--border); }
+  #kbTableWrap.scroll-list th, #kbTableWrap.scroll-list td, #catalogTableWrap.scroll-list th, #catalogTableWrap.scroll-list td { padding-left: 12px; }
 
   .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: inline-block; }
   .pill-active, .pill-completed, .pill-verified { background: var(--ok-bg); color: var(--ok-text); }
@@ -70,7 +70,7 @@
   .pill-deprecated, .pill-closed, .pill-exception { background: var(--bad-bg); color: var(--bad-text); }
   .pill-exempted, .pill-organization { background: var(--neutral-bg); color: var(--neutral-text); }
 
-  #toast { position: fixed; bottom: 16px; right: 16px; max-width: 360px; }
+  #toast { position: fixed; bottom: 16px; right: 16px; max-width: 360px; z-index: 100; }
   .toast-msg { padding: 10px 14px; border-radius: 8px; margin-top: 8px; font-size: 13px; }
   .toast-ok { background: var(--ok-bg); color: var(--ok-text); }
   .toast-err { background: var(--bad-bg); color: var(--bad-text); }
@@ -92,6 +92,10 @@
   .kb-meta label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
   .kb-meta span { font-size: 13px; }
 
+  /* short, plain-language clarifier under a field — smaller and quieter
+     than .hint, which is used for whole-card-level notes */
+  .field-hint { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+
   /* file-like content editor: a title bar plus a synced line-number
      gutter, so editing KB content reads like editing a file, not
      filling in a form field. */
@@ -99,19 +103,30 @@
   .file-editor .file-titlebar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); }
   .file-editor .file-dots { display: flex; gap: 5px; }
   .file-editor .file-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
-  .file-editor .file-name { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-weight: 600; color: var(--text); }
   .file-editor .file-titlebar .spacer { flex: 1; }
   .file-editor .file-body { display: flex; }
-  .file-editor .file-linenos {
-    flex-shrink: 0; padding: 12px 10px; background: var(--bg); color: var(--muted);
-    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6;
-    text-align: right; user-select: none; overflow: hidden; white-space: pre;
-  }
   .file-editor textarea {
     flex: 1; border: none; resize: vertical; padding: 12px 14px;
     font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6;
     min-height: 240px; outline: none;
   }
+
+  /* ---- learning-path diagram ---- */
+  #pathGraphWrap { overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); margin-top: 8px; }
+  #pathCanvas { position: relative; }
+  #pathSvgLayer { position: absolute; top: 0; left: 0; pointer-events: none; }
+  .path-node {
+    position: absolute; min-height: 70px; background: var(--panel); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: border-color 0.12s, box-shadow 0.12s, transform 0.08s;
+  }
+  .path-node:hover { border-color: var(--accent); box-shadow: 0 3px 12px rgba(192,57,43,0.15); transform: translateY(-1px); }
+  .path-node.optional { border-style: dashed; }
+  .path-node .pn-name { font-size: 13px; font-weight: 600; line-height: 1.3; margin-bottom: 4px; }
+  .path-node .pn-meta { font-size: 11px; color: var(--muted); }
+  .path-node .pn-badges { margin-top: 7px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .path-node .pn-badges .pill { font-size: 10px; padding: 1px 7px; }
+  .path-empty-hint { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -129,6 +144,7 @@
   <button id="navCatalog" class="active" onclick="showSection('catalog')">Certification Catalog</button>
   <button id="navKb" onclick="showSection('kb')">Knowledge Base / Q&amp;A</button>
   <button id="navDrives" onclick="showSection('drives')">Certification Drives</button>
+  <button id="navPaths" onclick="showSection('paths')">Learning Paths</button>
 </nav>
 
 <main>
@@ -153,8 +169,8 @@
     </div>
 
     <div class="card">
-      <h2 id="catFormTitle">Add / update a certification</h2>
-      <p class="hint">Saving upserts by name — editing an existing name updates it in place. Real catalog content only; ask before filling this in with placeholder data.</p>
+      <h2>Add certification</h2>
+      <p class="hint">Real catalog content only; ask before filling this in with placeholder data. To attach this to a learning path or set up prerequisites, use the Learning Paths tab once it's created. To edit an existing certification, click Edit in the list above instead of re-adding it here.</p>
       <div class="row">
         <div><label>Name *</label><input id="catName"></div>
         <div><label>Provider</label><input id="catProvider"></div>
@@ -174,53 +190,26 @@
         <div><label>Relevant roles (comma-separated)</label><input id="catRoles"></div>
       </div>
       <div class="row">
-        <div style="flex:2">
-          <label>Knowledge base content (optional)</label>
-          <textarea id="catKbContent" placeholder="Exam-prep / reference content for this certification. Leave blank to skip for now — come back later, click Edit above on this certification, and fill this in then."></textarea>
-        </div>
         <div><label>Knowledge base tags (comma-separated, optional)</label><input id="catKbTags"></div>
       </div>
-      <p class="hint" style="margin: -4px 0 12px;">A knowledge-base entry can only ever belong to a certification that already exists, so it's created here alongside it — same real-content rule applies, no placeholder text.</p>
+      <div class="row">
+        <div style="flex:1">
+          <label>Knowledge base content (optional)</label>
+          <div class="file-editor">
+            <div class="file-titlebar">
+              <span class="file-dots"><span></span><span></span><span></span></span>
+              <span class="spacer"></span>
+            </div>
+            <div class="file-body">
+              <textarea id="catKbContent" spellcheck="false" placeholder="Exam-prep / reference content for this certification — can run as long as it needs to, essay-length included. Leave blank to skip for now — you can add it later by clicking Edit on this certification in the list above."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint" style="margin: 8px 0 12px;">A knowledge-base entry can only ever belong to a certification that already exists, so it's created here alongside it — same real-content rule applies, no placeholder text.</p>
       <div class="actions">
-        <button class="btn primary" onclick="saveCatalogEntry()">Save</button>
+        <button class="btn primary" onclick="saveCatalogEntry()">Add certification</button>
         <button class="btn" onclick="clearCatalogForm()">Clear form</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Learning-path membership</h2>
-      <p class="hint">Attach a certification to one practice's path, or every path at once.</p>
-      <div class="row">
-        <div><label>Certification name</label><input id="pathCertName"></div>
-        <div><label>Practice (single-path add)</label>
-          <select id="pathPractice">
-            <option value="App + DB Mod">App + DB Mod</option>
-            <option value="Data+AI">Data+AI</option>
-            <option value="NetSec + SDx">NetSec + SDx</option>
-            <option value="Cloud & Platform Engineer">Cloud & Platform Engineer</option>
-          </select>
-        </div>
-        <div><label>Required?</label>
-          <select id="pathIsRequired"><option value="true">Yes</option><option value="false">No</option></select>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn primary" onclick="addCertToPath()">Add to this practice's path</button>
-        <button class="btn" onclick="addCertToAllPaths()">Add to ALL paths</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Prerequisite edges</h2>
-      <p class="hint">certification requires prerequisite_certification. any/all evaluation is set on the certification itself, above.</p>
-      <div class="row">
-        <div><label>Certification</label><input id="edgeCert"></div>
-        <div><label>Prerequisite</label><input id="edgePrereq"></div>
-        <div><label>Track label (optional)</label><input id="edgeTrack"></div>
-      </div>
-      <div class="actions">
-        <button class="btn primary" onclick="addEdge()">Add / update edge</button>
-        <button class="btn danger" onclick="removeEdge()">Remove edge</button>
       </div>
     </div>
   </section>
@@ -299,7 +288,80 @@
     </div>
   </section>
 
+  <!-- ================= LEARNING PATHS (VISUAL) ================= -->
+  <section id="section-paths" class="section">
+    <div class="card">
+      <h2>Learning path diagram</h2>
+      <p class="hint">Click any certification in the diagram to add a new one directly before or after it on this practice's path — no need to know IDs or names by heart. The text-based tools on the Certification Catalog tab (path membership, prerequisite edges) still work the same as before; this is just a visual way to do the same thing.</p>
+      <div class="row">
+        <div><label>Practice</label>
+          <select id="pathGraphPractice">
+            <option value="App + DB Mod">App + DB Mod</option>
+            <option value="Data+AI">Data+AI</option>
+            <option value="NetSec + SDx">NetSec + SDx</option>
+            <option value="Cloud & Platform Engineer">Cloud & Platform Engineer</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="loadPathGraph()">Load / Refresh</button>
+        <button class="btn" onclick="openPathNodeModal(null)">+ Add starting certification</button>
+      </div>
+      <div id="pathGraphWrap"><div class="empty-state">Select a practice and click Load.</div></div>
+    </div>
+  </section>
+
 </main>
+
+<div id="catEditOverlay" class="modal-overlay hidden-fully">
+  <div class="modal-card" style="max-width:640px;">
+    <div class="modal-head">
+      <h2>Edit: <span id="catEditName"></span></h2>
+      <button onclick="closeCatEditModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <div><label>Provider</label><input id="catEditProvider"></div>
+        <div><label>Level</label><input id="catEditLevel"></div>
+      </div>
+      <div class="row">
+        <div><label>Status</label>
+          <select id="catEditStatus"><option value="active">active</option><option value="pending_setup">pending_setup</option><option value="deprecated">deprecated</option></select>
+        </div>
+        <div><label>Prerequisite logic</label>
+          <select id="catEditPrereqLogic"><option value="any">any</option><option value="all">all</option></select>
+        </div>
+        <div><label>Validity (months)</label><input id="catEditValidity" type="number"></div>
+      </div>
+      <div class="row">
+        <div><label>Prerequisites (display only, comma-separated)</label><input id="catEditPrereqs"></div>
+        <div><label>Relevant roles (comma-separated)</label><input id="catEditRoles"></div>
+      </div>
+      <p class="hint" style="margin: 0 0 4px;">To attach this certification to a learning path or set up real prerequisite edges, use the Learning Paths tab instead — those aren't edited here.</p>
+      <div class="row">
+        <div><label>Knowledge base tags (comma-separated, optional)</label><input id="catEditKbTags"></div>
+      </div>
+      <div class="row">
+        <div style="flex:1">
+          <label>Add knowledge base content (optional)</label>
+          <div class="file-editor">
+            <div class="file-titlebar">
+              <span class="file-dots"><span></span><span></span><span></span></span>
+              <span class="spacer"></span>
+            </div>
+            <div class="file-body">
+              <textarea id="catEditKbContent" spellcheck="false" placeholder="Add exam-prep / reference content now if this certification doesn't have any yet, or add another entry — can run as long as it needs to. Leave blank to skip."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeCatEditModal()">Cancel</button>
+      <button class="btn primary" onclick="saveCatEditModal()">Save changes</button>
+    </div>
+  </div>
+</div>
 
 <div id="kbEditOverlay" class="modal-overlay hidden-fully">
   <div class="modal-card">
@@ -319,18 +381,66 @@
       <div class="file-editor">
         <div class="file-titlebar">
           <span class="file-dots"><span></span><span></span><span></span></span>
-          <span class="file-name">kb-entry.txt</span>
           <span class="spacer"></span>
         </div>
         <div class="file-body">
-          <div class="file-linenos" id="kbEditLineNos">1</div>
-          <textarea id="kbEditContent" oninput="updateKbLineNumbers()" onscroll="syncKbLineScroll()" spellcheck="false"></textarea>
+          <textarea id="kbEditContent" spellcheck="false"></textarea>
         </div>
       </div>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeKbEditModal()">Cancel</button>
       <button class="btn primary" onclick="saveKbEditModal()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="pathNodeOverlay" class="modal-overlay hidden-fully">
+  <div class="modal-card" style="max-width:520px;">
+    <div class="modal-head">
+      <h2 id="pathNodeModalTitle">Add a certification</h2>
+      <button onclick="closePathNodeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint" id="pathNodeContext" style="margin-top:0;"></p>
+      <div class="row" id="pathNodeRelationRow" style="display:none;">
+        <div>
+          <label>Position relative to <span id="pathNodeRefName"></span></label>
+          <select id="pathNodeRelation" onchange="updatePathNodeRelationHint()">
+            <option value="after">Comes after it</option>
+            <option value="before">Comes before it</option>
+          </select>
+          <div class="field-hint" id="pathNodeRelationHint"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Certification source</label>
+          <select id="pathNodeSource" onchange="togglePathNodeSource()">
+            <option value="existing">Use an existing certification</option>
+            <option value="new">Create a new certification</option>
+          </select>
+          <div class="field-hint">"Existing" picks one already in the catalog. "New" creates a fresh catalog entry right now.</div>
+        </div>
+      </div>
+      <div class="row" id="pathNodeExistingRow">
+        <div style="flex:2">
+          <label>Certification name</label>
+          <input id="pathNodeExistingName" list="pathNodeCertList" placeholder="Start typing to search the catalog...">
+          <datalist id="pathNodeCertList"></datalist>
+          <div class="field-hint">Must match a certification that's already in the catalog — this only attaches it, it doesn't create one.</div>
+        </div>
+      </div>
+      <div class="row" id="pathNodeNewRow" style="display:none;">
+        <div><label>Name *</label><input id="pathNodeNewName"></div>
+        <div><label>Provider</label><input id="pathNodeNewProvider"></div>
+        <div><label>Level</label><input id="pathNodeNewLevel"></div>
+      </div>
+      <p class="field-hint" id="pathNodeNewHint" style="display:none; margin-top:-6px;">Creates a brand-new certification in the catalog. Only the name is required — provider/level and everything else can be filled in later from the Certification Catalog tab.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closePathNodeModal()">Cancel</button>
+      <button class="btn primary" onclick="savePathNode()">Add to path</button>
     </div>
   </div>
 </div>
@@ -398,7 +508,7 @@ async function loadEmployees() {
 
 // ---------- nav ----------
 function showSection(name) {
-  for (const s of ['catalog', 'kb', 'drives']) {
+  for (const s of ['catalog', 'kb', 'drives', 'paths']) {
     document.getElementById('section-' + s).classList.toggle('active', s === name);
     document.getElementById('nav' + s[0].toUpperCase() + s.slice(1)).classList.toggle('active', s === name);
   }
@@ -407,6 +517,7 @@ function showSection(name) {
 // ============ CATALOG ============
 async function loadCatalog() {
   const wrap = document.getElementById('catalogTableWrap');
+  wrap.classList.remove('scroll-list');
   wrap.innerHTML = '<div class="empty-state">Loading…</div>';
   try {
     const q = document.getElementById('catFilterName').value.trim();
@@ -421,36 +532,78 @@ async function loadCatalog() {
         <td>${esc(c.name)}</td><td>${esc(c.provider)}</td><td>${esc(c.level)}</td>
         <td>${pill(c.status)}</td><td>${esc(c.prerequisite_logic)}</td>
         <td>
-          <button class="btn" onclick='editCatalogEntry(${JSON.stringify(c).replace(/'/g, "&#39;")})'>Edit</button>
+          <button class="btn" onclick='openCatEditModal(${JSON.stringify(c).replace(/'/g, "&#39;")})'>Edit</button>
           ${c.status !== 'deprecated' ? `<button class="btn danger" onclick="deprecateCatalogEntry('${c.id}')">Deprecate</button>` : ''}
         </td>
       </tr>`).join('')}
     </tbody></table>`;
+    wrap.classList.add('scroll-list');
   } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
 }
 
-function editCatalogEntry(c) {
-  document.getElementById('catFormTitle').textContent = 'Edit: ' + c.name;
-  document.getElementById('catName').value = c.name;
-  document.getElementById('catProvider').value = c.provider || '';
-  document.getElementById('catLevel').value = c.level || '';
-  document.getElementById('catStatus').value = c.status;
-  document.getElementById('catPrereqLogic').value = c.prerequisite_logic;
-  document.getElementById('catValidity').value = c.validity_period_months ?? '';
-  document.getElementById('catPrereqs').value = (c.prerequisites || []).join(', ');
-  document.getElementById('catRoles').value = (c.relevant_roles || []).join(', ');
+// ---- edit modal: name is fixed (it's the upsert key — changing it here
+// would create a new row instead of renaming this one), everything else
+// is editable. Reuses the same upsert-by-name endpoint the Add form uses. ----
+const catEditState = { name: null };
+
+function openCatEditModal(c) {
+  catEditState.name = c.name;
+  document.getElementById('catEditName').textContent = c.name;
+  document.getElementById('catEditProvider').value = c.provider || '';
+  document.getElementById('catEditLevel').value = c.level || '';
+  document.getElementById('catEditStatus').value = c.status;
+  document.getElementById('catEditPrereqLogic').value = c.prerequisite_logic;
+  document.getElementById('catEditValidity').value = c.validity_period_months ?? '';
+  document.getElementById('catEditPrereqs').value = (c.prerequisites || []).join(', ');
+  document.getElementById('catEditRoles').value = (c.relevant_roles || []).join(', ');
   // Knowledge-base content is a one-shot "add while I'm here" field, not
   // something this certification "has" a single value of (it can have many
-  // KB entries) — so re-opening a certification for edit never prefills
-  // it. Leave blank to just update the certification; fill it in to also
-  // add a new KB entry for it.
-  document.getElementById('catKbContent').value = '';
-  document.getElementById('catKbTags').value = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // KB entries) — so opening a certification for edit never prefills it.
+  // Leave blank to just update the certification; fill it in to also add
+  // a new KB entry for it.
+  document.getElementById('catEditKbContent').value = '';
+  document.getElementById('catEditKbTags').value = '';
+  document.getElementById('catEditOverlay').classList.remove('hidden-fully');
+}
+
+function closeCatEditModal() {
+  document.getElementById('catEditOverlay').classList.add('hidden-fully');
+}
+
+async function saveCatEditModal() {
+  const csv = s => s.split(',').map(x => x.trim()).filter(Boolean);
+  const name = catEditState.name;
+  const payload = {
+    name,
+    provider: document.getElementById('catEditProvider').value.trim() || null,
+    level: document.getElementById('catEditLevel').value.trim() || null,
+    status: document.getElementById('catEditStatus').value,
+    prerequisite_logic: document.getElementById('catEditPrereqLogic').value,
+    validity_period_months: document.getElementById('catEditValidity').value ? Number(document.getElementById('catEditValidity').value) : null,
+    prerequisites: csv(document.getElementById('catEditPrereqs').value),
+    relevant_roles: csv(document.getElementById('catEditRoles').value),
+  };
+  try {
+    await api('POST', '/api/admin/catalog-entries', payload);
+    let message = 'Saved: ' + name;
+    const kbContent = document.getElementById('catEditKbContent').value.trim();
+    if (kbContent) {
+      await api('POST', '/api/kb/items', {
+        content: kbContent,
+        certification_name: name,
+        tags: csv(document.getElementById('catEditKbTags').value),
+        owner: actingAsName(),
+        status: 'active',
+      });
+      message += ' — added a knowledge-base entry too.';
+    }
+    toast(message, true);
+    closeCatEditModal();
+    loadCatalog();
+  } catch (e) { toast(e.message, false); }
 }
 
 function clearCatalogForm() {
-  document.getElementById('catFormTitle').textContent = 'Add / update a certification';
   for (const id of ['catName','catProvider','catLevel','catValidity','catPrereqs','catRoles','catKbContent','catKbTags']) document.getElementById(id).value = '';
   document.getElementById('catStatus').value = 'active';
   document.getElementById('catPrereqLogic').value = 'any';
@@ -504,49 +657,6 @@ async function deprecateCatalogEntry(id) {
   } catch (e) { toast(e.message, false); }
 }
 
-async function addCertToPath() {
-  const certName = document.getElementById('pathCertName').value.trim();
-  const practice = document.getElementById('pathPractice').value;
-  const isRequired = document.getElementById('pathIsRequired').value === 'true';
-  if (!certName) { toast('Certification name is required.', false); return; }
-  try {
-    const path = await api('GET', `/api/learning-paths/${encodeURIComponent(practice)}`);
-    const result = await api('POST', `/api/learning-paths/${path.id}/certifications`, { certification_name: certName, is_required: isRequired });
-    toast(result.already_member ? `${certName} is already on the ${practice} path.` : `Added ${certName} to the ${practice} path.`, true);
-  } catch (e) { toast(e.message, false); }
-}
-
-async function addCertToAllPaths() {
-  const certName = document.getElementById('pathCertName').value.trim();
-  if (!certName) { toast('Certification name is required.', false); return; }
-  try {
-    const result = await api('POST', `/api/learning-paths/certifications/${encodeURIComponent(certName)}/add-to-paths`, { all: true });
-    toast(`Added to ${result.added_to_paths.length} path(s), already on ${result.already_member_paths.length}.`, true);
-  } catch (e) { toast(e.message, false); }
-}
-
-async function addEdge() {
-  const certification_name = document.getElementById('edgeCert').value.trim();
-  const prerequisite_certification_name = document.getElementById('edgePrereq').value.trim();
-  const track_label = document.getElementById('edgeTrack').value.trim() || null;
-  if (!certification_name || !prerequisite_certification_name) { toast('Both certification names are required.', false); return; }
-  try {
-    await api('POST', '/api/admin/certification-prerequisites', { certification_name, prerequisite_certification_name, track_label });
-    toast(`Edge saved: ${certification_name} <- ${prerequisite_certification_name}`, true);
-  } catch (e) { toast(e.message, false); }
-}
-
-async function removeEdge() {
-  const certification_name = document.getElementById('edgeCert').value.trim();
-  const prerequisite_certification_name = document.getElementById('edgePrereq').value.trim();
-  if (!certification_name || !prerequisite_certification_name) { toast('Both certification names are required.', false); return; }
-  if (!confirm('Remove this prerequisite edge?')) return;
-  try {
-    await api('DELETE', '/api/admin/certification-prerequisites', { certification_name, prerequisite_certification_name });
-    toast('Edge removed.', true);
-  } catch (e) { toast(e.message, false); }
-}
-
 // ============ KNOWLEDGE BASE ============
 async function loadKb() {
   const wrap = document.getElementById('kbTableWrap');
@@ -592,23 +702,12 @@ function openKbEditModal(r) {
   document.getElementById('kbEditStatus').innerHTML = pill(r.status);
   document.getElementById('kbEditReviewed').textContent = r.last_reviewed_date || 'Never reviewed';
   document.getElementById('kbEditContent').value = r.content;
-  updateKbLineNumbers();
   document.getElementById('kbEditOverlay').classList.remove('hidden-fully');
 }
 
 function closeKbEditModal() {
   document.getElementById('kbEditOverlay').classList.add('hidden-fully');
   kbEditState.id = null;
-}
-
-function updateKbLineNumbers() {
-  const lineCount = document.getElementById('kbEditContent').value.split('\n').length;
-  document.getElementById('kbEditLineNos').textContent =
-    Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
-}
-
-function syncKbLineScroll() {
-  document.getElementById('kbEditLineNos').scrollTop = document.getElementById('kbEditContent').scrollTop;
 }
 
 async function saveKbEditModal() {
@@ -763,6 +862,213 @@ async function exemptEnrollment(driveId, employeeId) {
     await api('POST', `/api/admin/drives/${driveId}/enrollments/${employeeId}/exempt`, { reason });
     toast('Enrollment exempted.', true);
     viewDrive(driveId);
+  } catch (e) { toast(e.message, false); }
+}
+
+// ============ LEARNING PATHS (VISUAL) ============
+const pathGraphState = { practice: null, pathId: null, nodes: [], edges: [], refNode: null };
+
+async function loadPathGraph() {
+  const practice = document.getElementById('pathGraphPractice').value;
+  pathGraphState.practice = practice;
+  const wrap = document.getElementById('pathGraphWrap');
+  wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const graph = await api('GET', `/api/admin/learning-paths/${encodeURIComponent(practice)}/graph`);
+    pathGraphState.pathId = graph.path_id;
+    pathGraphState.nodes = graph.nodes;
+    pathGraphState.edges = graph.edges;
+    renderPathGraph();
+  } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
+}
+
+function renderPathGraph() {
+  const wrap = document.getElementById('pathGraphWrap');
+  const { nodes, edges } = pathGraphState;
+  if (!nodes.length) {
+    wrap.innerHTML = '<div class="path-empty-hint">No certifications on this path yet. Click "+ Add starting certification" above to begin.</div>';
+    return;
+  }
+
+  // Longest-path layering: a node's column = 1 + the deepest of its own
+  // prerequisites' columns (0 if it has none within this path) — gives a
+  // left-to-right diagram where every prerequisite sits strictly left of
+  // what it unlocks. seen guards against a cycle turning this recursive
+  // walk into an infinite loop (shouldn't exist in real data, but a
+  // rendering bug must never hang the tab over it).
+  const incoming = {};
+  for (const n of nodes) incoming[n.id] = [];
+  for (const e of edges) {
+    if (incoming[e.certification_id]) incoming[e.certification_id].push(e.prerequisite_certification_id);
+  }
+  const levelCache = {};
+  function levelOf(id, seen) {
+    if (levelCache[id] !== undefined) return levelCache[id];
+    if (seen.has(id)) return 0;
+    seen.add(id);
+    const preqs = incoming[id] || [];
+    const lvl = preqs.length ? 1 + Math.max(...preqs.map(p => levelOf(p, seen))) : 0;
+    levelCache[id] = lvl;
+    return lvl;
+  }
+  for (const n of nodes) levelOf(n.id, new Set());
+
+  const columns = {};
+  for (const n of nodes) (columns[levelCache[n.id]] = columns[levelCache[n.id]] || []).push(n);
+
+  const NODE_W = 200, NODE_H = 74, COL_GAP = 90, ROW_GAP = 22, PAD = 30;
+  const colWidth = NODE_W + COL_GAP;
+  const rowHeight = NODE_H + ROW_GAP;
+  const levels = Object.keys(columns).map(Number);
+  const maxLevel = Math.max(...levels);
+  const maxRows = Math.max(...Object.values(columns).map(c => c.length));
+  const canvasW = PAD * 2 + (maxLevel + 1) * colWidth - COL_GAP;
+  const canvasH = PAD * 2 + maxRows * rowHeight - ROW_GAP;
+
+  const positions = {};
+  let nodesHtml = '';
+  for (const [lvlStr, colNodes] of Object.entries(columns)) {
+    const lvl = Number(lvlStr);
+    colNodes.forEach((n, i) => {
+      const x = PAD + lvl * colWidth;
+      const y = PAD + i * rowHeight;
+      positions[n.id] = { x, y, w: NODE_W, h: NODE_H };
+      nodesHtml += `
+        <div class="path-node${n.is_required ? '' : ' optional'}" style="left:${x}px; top:${y}px; width:${NODE_W}px;" onclick='openPathNodeModal(${JSON.stringify(n).replace(/'/g, "&#39;")})'>
+          <div class="pn-name">${esc(n.name)}</div>
+          <div class="pn-meta">${[n.provider, n.level].filter(Boolean).map(esc).join(' · ')}</div>
+          <div class="pn-badges">${pill(n.status)}${n.is_required ? '' : '<span class="pill" style="background:var(--neutral-bg);color:var(--neutral-text);">optional</span>'}</div>
+        </div>`;
+    });
+  }
+
+  let edgesSvg = '';
+  for (const e of edges) {
+    const from = positions[e.prerequisite_certification_id];
+    const to = positions[e.certification_id];
+    if (!from || !to) continue;
+    const x1 = from.x + from.w, y1 = from.y + from.h / 2;
+    const x2 = to.x, y2 = to.y + to.h / 2;
+    const midX = (x1 + x2) / 2;
+    edgesSvg += `<path d="M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}" style="stroke:var(--muted); stroke-width:1.5px; fill:none;" />`;
+    if (e.track_label) {
+      edgesSvg += `<text x="${midX}" y="${(y1 + y2) / 2 - 6}" style="font-size:10px; fill:var(--muted);" text-anchor="middle">${esc(e.track_label)}</text>`;
+    }
+  }
+
+  wrap.innerHTML = `<div id="pathCanvas" style="width:${canvasW}px; height:${canvasH}px;">
+    <svg id="pathSvgLayer" width="${canvasW}" height="${canvasH}">${edgesSvg}</svg>
+    ${nodesHtml}
+  </div>`;
+}
+
+function openPathNodeModal(node) {
+  pathGraphState.refNode = node;
+  document.getElementById('pathNodeModalTitle').textContent = node ? 'Add a certification' : 'Add a starting certification';
+  const relRow = document.getElementById('pathNodeRelationRow');
+  if (node) {
+    document.getElementById('pathNodeContext').textContent =
+      `Adding a new certification connected to "${node.name}" on the ${pathGraphState.practice} path.`;
+    document.getElementById('pathNodeRefName').textContent = node.name;
+    relRow.style.display = '';
+  } else {
+    document.getElementById('pathNodeContext').textContent =
+      `Adding a new starting certification (no prerequisite) to the ${pathGraphState.practice} path.`;
+    relRow.style.display = 'none';
+  }
+  document.getElementById('pathNodeSource').value = 'existing';
+  document.getElementById('pathNodeExistingName').value = '';
+  document.getElementById('pathNodeNewName').value = '';
+  document.getElementById('pathNodeNewProvider').value = '';
+  document.getElementById('pathNodeNewLevel').value = '';
+  document.getElementById('pathNodeRelation').value = 'after';
+  updatePathNodeRelationHint();
+  togglePathNodeSource();
+  populatePathNodeCertList();
+  document.getElementById('pathNodeOverlay').classList.remove('hidden-fully');
+}
+
+function updatePathNodeRelationHint() {
+  const node = pathGraphState.refNode;
+  if (!node) return;
+  const hint = document.getElementById('pathNodeRelation').value === 'after'
+    ? `Employees must finish "${node.name}" first, then this new certification unlocks.`
+    : `This new certification must be finished first, then "${node.name}" unlocks.`;
+  document.getElementById('pathNodeRelationHint').textContent = hint;
+}
+
+function closePathNodeModal() {
+  document.getElementById('pathNodeOverlay').classList.add('hidden-fully');
+}
+
+function togglePathNodeSource() {
+  const isNew = document.getElementById('pathNodeSource').value === 'new';
+  document.getElementById('pathNodeExistingRow').style.display = isNew ? 'none' : '';
+  document.getElementById('pathNodeNewRow').style.display = isNew ? '' : 'none';
+  document.getElementById('pathNodeNewHint').style.display = isNew ? '' : 'none';
+}
+
+async function populatePathNodeCertList() {
+  try {
+    const rows = await api('GET', '/api/catalog/certifications?status=active');
+    document.getElementById('pathNodeCertList').innerHTML = rows.map(c => `<option value="${esc(c.name)}">`).join('');
+  } catch (e) { /* non-fatal — the field still accepts free text */ }
+}
+
+async function savePathNode() {
+  const isNew = document.getElementById('pathNodeSource').value === 'new';
+  const refNode = pathGraphState.refNode;
+  const relation = refNode ? document.getElementById('pathNodeRelation').value : null;
+
+  try {
+    let certName;
+    if (isNew) {
+      const name = document.getElementById('pathNodeNewName').value.trim();
+      if (!name) { toast('Certification name is required.', false); return; }
+      const created = await api('POST', '/api/admin/catalog-entries', {
+        name,
+        provider: document.getElementById('pathNodeNewProvider').value.trim() || null,
+        level: document.getElementById('pathNodeNewLevel').value.trim() || null,
+        status: 'active',
+        prerequisite_logic: 'any',
+        validity_period_months: null,
+        prerequisites: [],
+        relevant_roles: [],
+      });
+      certName = created.name;
+    } else {
+      certName = document.getElementById('pathNodeExistingName').value.trim();
+      if (!certName) { toast('Pick or type a certification name.', false); return; }
+    }
+
+    let pathId = pathGraphState.pathId;
+    if (!pathId) {
+      // No path exists for this practice yet — create an (initially
+      // empty) one now so this node has somewhere to attach to.
+      const newPath = await api('POST', '/api/admin/learning-paths', {
+        practice: pathGraphState.practice, name: pathGraphState.practice, items: [],
+      });
+      pathId = newPath.id;
+      pathGraphState.pathId = pathId;
+    }
+
+    // Anything added through the path diagram is required for that path —
+    // there's no separate "optional" toggle here, unlike the older
+    // text-based path-membership tool on the Catalog tab.
+    await api('POST', `/api/learning-paths/${pathId}/certifications`, {
+      certification_name: certName, is_required: true,
+    });
+
+    if (refNode) {
+      const edgePayload = relation === 'after'
+        ? { certification_name: certName, prerequisite_certification_name: refNode.name }
+        : { certification_name: refNode.name, prerequisite_certification_name: certName };
+      await api('POST', '/api/admin/certification-prerequisites', edgePayload);
+    }
+
+    toast(`Added ${certName} to the ${pathGraphState.practice} path.`, true);
+    closePathNodeModal();
+    loadPathGraph();
   } catch (e) { toast(e.message, false); }
 }
 
