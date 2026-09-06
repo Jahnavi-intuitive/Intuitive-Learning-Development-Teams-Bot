@@ -70,6 +70,11 @@
   .pill-deprecated, .pill-closed, .pill-exception { background: var(--bad-bg); color: var(--bad-text); }
   .pill-exempted, .pill-organization { background: var(--neutral-bg); color: var(--neutral-text); }
 
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 6px 3px 10px; border-radius: 999px; background: var(--neutral-bg); color: var(--neutral-text); font-size: 12px; }
+  .chip button { border: none; background: none; cursor: pointer; color: inherit; font-size: 14px; line-height: 1; padding: 2px; opacity: 0.7; }
+  .chip button:hover { opacity: 1; }
+
   #toast { position: fixed; bottom: 16px; right: 16px; max-width: 360px; z-index: 100; }
   .toast-msg { padding: 10px 14px; border-radius: 8px; margin-top: 8px; font-size: 13px; }
   .toast-ok { background: var(--ok-bg); color: var(--ok-text); }
@@ -262,21 +267,27 @@
       </div>
       <div class="row">
         <div><label>Target scope</label>
-          <select id="drvScope"><option value="practice">practice</option><option value="department">department</option><option value="organization">organization</option></select>
+          <select id="drvScope" onchange="toggleDriveScopeValue()"><option value="practice">practice</option><option value="organization">organization</option></select>
         </div>
-        <div><label>Target scope value *</label><input id="drvScopeValue" placeholder="e.g. Data+AI"></div>
-        <div><label>Metric type</label>
-          <select id="drvMetric"><option value="percentage">percentage</option><option value="count">count</option></select>
+        <div id="drvScopeValueWrap"><label>Practice *</label>
+          <select id="drvScopeValue">
+            <option value="App + DB Mod">App + DB Mod</option>
+            <option value="Data+AI">Data+AI</option>
+            <option value="NetSec + SDx">NetSec + SDx</option>
+            <option value="Cloud & Platform Engineer">Cloud & Platform Engineer</option>
+          </select>
         </div>
-        <div><label>Target value *</label><input id="drvTargetValue" type="number"></div>
-      </div>
-      <div class="row">
-        <div><label>Start date *</label><input id="drvStart" type="date"></div>
         <div><label>Deadline *</label><input id="drvDeadline" type="date"></div>
         <div><label>Reminder cadence (days before, comma-sep)</label><input id="drvReminders" placeholder="30,14,7,1"></div>
       </div>
       <div class="row">
-        <div style="flex:2"><label>Required certifications (comma-separated names) *</label><input id="drvCerts"></div>
+        <div style="flex:2">
+          <label>Certifications included in this drive *</label>
+          <div id="drvCertChips" class="chip-row"></div>
+          <div class="actions" style="margin-top:6px;">
+            <button type="button" class="btn" onclick="openDriveCertModal()">+ Add certification</button>
+          </div>
+        </div>
         <div class="checkbox-row" style="align-self:center; margin-top:18px;"><input type="checkbox" id="drvIsTest"><label for="drvIsTest">Test data (not a real campaign)</label></div>
       </div>
       <div class="actions"><button class="btn primary" onclick="createDrive()">Create drive (as draft)</button></div>
@@ -338,19 +349,20 @@
         <div><label>Relevant roles (comma-separated)</label><input id="catEditRoles"></div>
       </div>
       <p class="hint" style="margin: 0 0 4px;">To attach this certification to a learning path or set up real prerequisite edges, use the Learning Paths tab instead — those aren't edited here.</p>
-      <div class="row">
+      <p class="hint" id="catEditKbStatusHint" style="margin: 0 0 4px;"></p>
+      <div class="row" id="catEditKbTagsRow">
         <div><label>Knowledge base tags (comma-separated, optional)</label><input id="catEditKbTags"></div>
       </div>
       <div class="row">
         <div style="flex:1">
-          <label>Add knowledge base content (optional)</label>
+          <label id="catEditKbLabel">Add knowledge base content (optional)</label>
           <div class="file-editor">
             <div class="file-titlebar">
               <span class="file-dots"><span></span><span></span><span></span></span>
               <span class="spacer"></span>
             </div>
             <div class="file-body">
-              <textarea id="catEditKbContent" spellcheck="false" placeholder="Add exam-prep / reference content now if this certification doesn't have any yet, or add another entry — can run as long as it needs to. Leave blank to skip."></textarea>
+              <textarea id="catEditKbContent" spellcheck="false" placeholder="Add exam-prep / reference content now if this certification doesn't have any yet — can run as long as it needs to. Leave blank to skip."></textarea>
             </div>
           </div>
         </div>
@@ -441,6 +453,62 @@
     <div class="modal-foot">
       <button class="btn" onclick="closePathNodeModal()">Cancel</button>
       <button class="btn primary" onclick="savePathNode()">Add to path</button>
+    </div>
+  </div>
+</div>
+
+<div id="driveCertOverlay" class="modal-overlay hidden-fully">
+  <div class="modal-card" style="max-width:520px;">
+    <div class="modal-head">
+      <h2>Add a certification to this drive</h2>
+      <button onclick="closeDriveCertModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <div>
+          <label>Certification source</label>
+          <select id="drvCertSource" onchange="toggleDriveCertSource()">
+            <option value="existing">Use an existing certification</option>
+            <option value="new">Create a new certification</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" id="drvCertExistingRow">
+        <div style="flex:2">
+          <label>Certification name</label>
+          <input id="drvCertExistingName" list="drvCertList" placeholder="Start typing to search the catalog...">
+          <datalist id="drvCertList"></datalist>
+        </div>
+      </div>
+      <div id="drvCertNewFields" style="display:none;">
+        <p class="field-hint" style="margin-top:0;">Creates a brand-new, active catalog entry — same fields as "Add certification" on the Certification Catalog tab. It isn't attached to any learning path yet; attach it from the Learning Paths tab later if it needs to be part of one.</p>
+        <div class="row">
+          <div><label>Name *</label><input id="drvCertNewName"></div>
+          <div><label>Provider</label><input id="drvCertNewProvider"></div>
+          <div><label>Level</label><input id="drvCertNewLevel"></div>
+        </div>
+        <div class="row">
+          <div><label>Knowledge base tags (comma-separated, optional)</label><input id="drvCertNewKbTags"></div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Knowledge base content (optional)</label>
+            <div class="file-editor">
+              <div class="file-titlebar">
+                <span class="file-dots"><span></span><span></span><span></span></span>
+                <span class="spacer"></span>
+              </div>
+              <div class="file-body">
+                <textarea id="drvCertNewKbContent" spellcheck="false" placeholder="Exam-prep / reference content for this certification — optional, can be added later from the Certification Catalog tab instead."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeDriveCertModal()">Cancel</button>
+      <button class="btn primary" onclick="saveDriveCertModal()">Add to drive</button>
     </div>
   </div>
 </div>
@@ -544,10 +612,11 @@ async function loadCatalog() {
 // ---- edit modal: name is fixed (it's the upsert key — changing it here
 // would create a new row instead of renaming this one), everything else
 // is editable. Reuses the same upsert-by-name endpoint the Add form uses. ----
-const catEditState = { name: null };
+const catEditState = { name: null, kbItemId: null };
 
-function openCatEditModal(c) {
+async function openCatEditModal(c) {
   catEditState.name = c.name;
+  catEditState.kbItemId = null;
   document.getElementById('catEditName').textContent = c.name;
   document.getElementById('catEditProvider').value = c.provider || '';
   document.getElementById('catEditLevel').value = c.level || '';
@@ -556,14 +625,36 @@ function openCatEditModal(c) {
   document.getElementById('catEditValidity').value = c.validity_period_months ?? '';
   document.getElementById('catEditPrereqs').value = (c.prerequisites || []).join(', ');
   document.getElementById('catEditRoles').value = (c.relevant_roles || []).join(', ');
-  // Knowledge-base content is a one-shot "add while I'm here" field, not
-  // something this certification "has" a single value of (it can have many
-  // KB entries) — so opening a certification for edit never prefills it.
-  // Leave blank to just update the certification; fill it in to also add
-  // a new KB entry for it.
   document.getElementById('catEditKbContent').value = '';
   document.getElementById('catEditKbTags').value = '';
+  document.getElementById('catEditKbLabel').textContent = 'Add knowledge base content (optional)';
+  document.getElementById('catEditKbTagsRow').style.display = '';
+  document.getElementById('catEditKbStatusHint').textContent = 'Checking for existing knowledge-base content…';
   document.getElementById('catEditOverlay').classList.remove('hidden-fully');
+
+  // A cert can technically have more than one KB entry, but this is not a
+  // full multi-entry manager — it surfaces the most recently updated
+  // non-deprecated one (list_kb_entries already orders by updated_at
+  // desc) so the field isn't misleadingly blank when content actually
+  // exists. Anything else stays reachable from the Knowledge Base tab.
+  try {
+    const items = await api('GET', `/api/kb/items?certification_name=${encodeURIComponent(c.name)}`);
+    const existing = items.find(i => i.status !== 'deprecated');
+    if (existing) {
+      catEditState.kbItemId = existing.id;
+      document.getElementById('catEditKbContent').value = existing.content;
+      document.getElementById('catEditKbTags').value = (existing.tags || []).join(', ');
+      document.getElementById('catEditKbLabel').textContent = 'Knowledge base content';
+      document.getElementById('catEditKbTagsRow').style.display = 'none';
+      document.getElementById('catEditKbStatusHint').textContent =
+        'This certification already has a knowledge-base entry, shown below — saving here updates its content in place. Tags/owner/status for it are managed from the Knowledge Base tab.';
+    } else {
+      document.getElementById('catEditKbStatusHint').textContent =
+        "No knowledge-base entry exists for this certification yet — fill this in to create one.";
+    }
+  } catch (e) {
+    document.getElementById('catEditKbStatusHint').textContent = "Couldn't check for existing knowledge-base content: " + e.message;
+  }
 }
 
 function closeCatEditModal() {
@@ -588,14 +679,19 @@ async function saveCatEditModal() {
     let message = 'Saved: ' + name;
     const kbContent = document.getElementById('catEditKbContent').value.trim();
     if (kbContent) {
-      await api('POST', '/api/kb/items', {
-        content: kbContent,
-        certification_name: name,
-        tags: csv(document.getElementById('catEditKbTags').value),
-        owner: actingAsName(),
-        status: 'active',
-      });
-      message += ' — added a knowledge-base entry too.';
+      if (catEditState.kbItemId) {
+        await api('PATCH', `/api/kb/items/${catEditState.kbItemId}`, { content: kbContent });
+        message += ' — updated its knowledge-base entry too.';
+      } else {
+        await api('POST', '/api/kb/items', {
+          content: kbContent,
+          certification_name: name,
+          tags: csv(document.getElementById('catEditKbTags').value),
+          owner: actingAsName(),
+          status: 'active',
+        });
+        message += ' — added a knowledge-base entry too.';
+      }
     }
     toast(message, true);
     closeCatEditModal();
@@ -740,11 +836,10 @@ async function loadDrives() {
     if (status) params.set('status', status);
     const rows = await api('GET', '/api/admin/drives?' + params.toString());
     if (!rows.length) { wrap.innerHTML = '<div class="empty-state">No drives yet.</div>'; return; }
-    wrap.innerHTML = `<table><thead><tr><th>Name</th><th>Scope</th><th>Metric target</th><th>Deadline</th><th>Status</th><th></th></tr></thead><tbody>
+    wrap.innerHTML = `<table><thead><tr><th>Name</th><th>Scope</th><th>Deadline</th><th>Status</th><th></th></tr></thead><tbody>
       ${rows.map(d => `<tr class="clickable" onclick="viewDrive('${d.id}')">
         <td>${esc(d.name)}${d.is_test_data ? ' <span class="pill pill-draft">test</span>' : ''}</td>
-        <td>${esc(d.target_scope)}: ${esc(d.target_scope_value)}</td>
-        <td>${d.target_value}${d.target_metric_type === 'percentage' ? '%' : ' certs'}</td>
+        <td>${esc(d.target_scope)}${d.target_scope_value ? ': ' + esc(d.target_scope_value) : ''}</td>
         <td>${esc(d.deadline)}</td>
         <td>${pill(d.status)}</td>
         <td><button class="btn">View</button></td>
@@ -753,33 +848,124 @@ async function loadDrives() {
   } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
 }
 
+function toggleDriveScopeValue() {
+  const isOrg = document.getElementById('drvScope').value === 'organization';
+  document.getElementById('drvScopeValueWrap').style.display = isOrg ? 'none' : '';
+}
+
+// ---- certifications-for-this-drive chip list --------------------------
+// Free-typed comma-separated names were too easy to get wrong (had to
+// exactly match a name already in the catalog, entered on a different
+// tab). This picks from the real catalog instead, and — mirroring the
+// same "existing vs new" pattern the Learning Path diagram already uses
+// (see pathNodeOverlay/savePathNode) — can create a brand-new catalog
+// entry on the spot without leaving this form.
+let driveCertNames = [];
+
+function renderDriveCertChips() {
+  document.getElementById('drvCertChips').innerHTML = driveCertNames.map(name => `
+    <span class="chip">${esc(name)}<button type="button" onclick="removeDriveCertChip('${name.replace(/'/g, "\\'")}')" title="Remove">&times;</button></span>
+  `).join('') || '<span class="hint" style="margin:0;">None added yet.</span>';
+}
+
+function removeDriveCertChip(name) {
+  driveCertNames = driveCertNames.filter(n => n !== name);
+  renderDriveCertChips();
+}
+
+function openDriveCertModal() {
+  document.getElementById('drvCertSource').value = 'existing';
+  document.getElementById('drvCertExistingName').value = '';
+  for (const id of ['drvCertNewName','drvCertNewProvider','drvCertNewLevel','drvCertNewKbTags','drvCertNewKbContent']) {
+    document.getElementById(id).value = '';
+  }
+  toggleDriveCertSource();
+  populateDriveCertList();
+  document.getElementById('driveCertOverlay').classList.remove('hidden-fully');
+}
+
+function closeDriveCertModal() {
+  document.getElementById('driveCertOverlay').classList.add('hidden-fully');
+}
+
+function toggleDriveCertSource() {
+  const isNew = document.getElementById('drvCertSource').value === 'new';
+  document.getElementById('drvCertExistingRow').style.display = isNew ? 'none' : '';
+  document.getElementById('drvCertNewFields').style.display = isNew ? '' : 'none';
+}
+
+async function populateDriveCertList() {
+  try {
+    const rows = await api('GET', '/api/catalog/certifications?status=active');
+    document.getElementById('drvCertList').innerHTML = rows.map(c => `<option value="${esc(c.name)}">`).join('');
+  } catch (e) { /* non-fatal — the field still accepts free text */ }
+}
+
+async function saveDriveCertModal() {
+  const isNew = document.getElementById('drvCertSource').value === 'new';
+  const csv = s => s.split(',').map(x => x.trim()).filter(Boolean);
+  try {
+    let certName;
+    if (isNew) {
+      const name = document.getElementById('drvCertNewName').value.trim();
+      if (!name) { toast('Certification name is required.', false); return; }
+      const created = await api('POST', '/api/admin/catalog-entries', {
+        name,
+        provider: document.getElementById('drvCertNewProvider').value.trim() || null,
+        level: document.getElementById('drvCertNewLevel').value.trim() || null,
+        status: 'active',
+        prerequisite_logic: 'any',
+        validity_period_months: null,
+        prerequisites: [],
+        relevant_roles: [],
+      });
+      certName = created.name;
+      const kbContent = document.getElementById('drvCertNewKbContent').value.trim();
+      if (kbContent) {
+        await api('POST', '/api/kb/items', {
+          content: kbContent,
+          certification_name: certName,
+          tags: csv(document.getElementById('drvCertNewKbTags').value),
+          owner: actingAsName(),
+          status: 'active',
+        });
+      }
+    } else {
+      certName = document.getElementById('drvCertExistingName').value.trim();
+      if (!certName) { toast('Pick or type a certification name.', false); return; }
+    }
+    if (!driveCertNames.includes(certName)) driveCertNames.push(certName);
+    renderDriveCertChips();
+    closeDriveCertModal();
+    toast((isNew ? 'Created and added: ' : 'Added: ') + certName, true);
+  } catch (e) { toast(e.message, false); }
+}
+
 async function createDrive() {
   const name = document.getElementById('drvName').value.trim();
-  const target_scope_value = document.getElementById('drvScopeValue').value.trim();
-  const target_value = document.getElementById('drvTargetValue').value;
-  const start_date = document.getElementById('drvStart').value;
+  const target_scope = document.getElementById('drvScope').value;
+  const target_scope_value = target_scope === 'organization' ? null : document.getElementById('drvScopeValue').value;
   const deadline = document.getElementById('drvDeadline').value;
-  const certNames = document.getElementById('drvCerts').value.split(',').map(s => s.trim()).filter(Boolean);
-  if (!name || !target_scope_value || !target_value || !start_date || !deadline || !certNames.length) {
-    toast('Name, scope value, target value, dates, and at least one certification are required.', false);
+  if (!name || (target_scope !== 'organization' && !target_scope_value) || !deadline || !driveCertNames.length) {
+    toast('Name, scope (with a practice, unless organization-wide), deadline, and at least one certification are required.', false);
     return;
   }
   const remindersRaw = document.getElementById('drvReminders').value.trim();
   const payload = {
     name,
     description: document.getElementById('drvDescription').value.trim() || null,
-    target_scope: document.getElementById('drvScope').value,
+    target_scope,
     target_scope_value,
-    target_metric_type: document.getElementById('drvMetric').value,
-    target_value: Number(target_value),
-    start_date, deadline,
+    deadline,
     reminder_cadence: remindersRaw ? remindersRaw.split(',').map(n => Number(n.trim())).filter(n => !isNaN(n)) : null,
-    certification_names: certNames,
+    certification_names: driveCertNames,
     is_test_data: document.getElementById('drvIsTest').checked,
   };
   try {
     const drive = await api('POST', '/api/admin/drives', payload);
     toast('Drive created as draft: ' + drive.name, true);
+    driveCertNames = [];
+    renderDriveCertChips();
     loadDrives();
     viewDrive(drive.id);
   } catch (e) { toast(e.message, false); }
@@ -804,7 +990,7 @@ function renderDriveDetail(detail) {
   document.getElementById('driveDetailBody').innerHTML = `
     <p class="hint">${esc(d.description || '')}</p>
     <div class="row">
-      <div><label>Required certifications</label><div>${detail.required_certifications.map(esc).join(', ')}</div></div>
+      <div><label>Certifications included in this drive</label><div>${detail.required_certifications.map(esc).join(', ')}</div></div>
       <div><label>Deadline</label><div>${esc(d.deadline)}</div></div>
       <div><label>Compliance</label><div><strong>${detail.compliance_pct}%</strong> (${detail.compliant_count} compliant / ${detail.enrolled_count} enrolled, ${detail.exempted_count} exempted)</div></div>
     </div>
@@ -1073,6 +1259,7 @@ async function savePathNode() {
 }
 
 loadEmployees();
+renderDriveCertChips();
 </script>
 </body>
 </html>
