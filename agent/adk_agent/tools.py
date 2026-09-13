@@ -103,6 +103,14 @@ async def get_next_certification_for_practice(as_employee_id: str) -> dict:
     results down to "pick one" on the user's behalf; present all of them
     (grouped by track_label where present) and let the user choose.
 
+    If the response has practice_missing=true, this employee has no
+    practice on file yet (e.g. a brand-new Teams user, auto-provisioned on
+    first contact, before any directory sync or admin has filled it in) —
+    say so plainly ("I don't have your practice on file yet, so I can't
+    recommend a path — L&D can add it") and stop there. Never guess a
+    practice or default to one; this is different from an empty
+    next_certifications list with a real practice set.
+
     Args:
         as_employee_id: The employee_id of the person asking.
 
@@ -146,7 +154,9 @@ async def get_learning_path_overview(as_employee_id: str) -> dict:
         certifications (a list — each with the certification's catalog
         details, is_required, employee_status, prerequisite_logic, and
         incoming_prerequisites: the exact named edges required to unlock
-        it) plus a data-as-of timestamp.
+        it) plus a data-as-of timestamp. If practice_missing=true, this
+        employee has no practice on file yet — say so plainly rather than
+        guessing one; same meaning as on get_next_certification_for_practice.
     """
     resp = await _client.get(
         "/api/learning-paths/overview",

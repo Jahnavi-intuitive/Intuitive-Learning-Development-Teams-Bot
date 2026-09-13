@@ -13,7 +13,21 @@ def run_curl(
 ) -> tuple[int, list[tuple[str, str]], bytes]:
     cmd = ["curl", "-s", "-i", "-L", "--max-time", str(int(timeout)), "-X", method, url]
     for k, v in headers:
+        # requests sets "Accept-Encoding: gzip, deflate" by default and
+        # that header gets forwarded here verbatim — the server then
+        # gzip-compresses the response, but plain curl (no --compressed
+        # flag) never decompresses it, so the caller gets raw gzip bytes
+        # back as if they were the plain response body. Confirmed
+        # directly: login.botframework.com's OpenID metadata endpoint
+        # compresses its response and this silently broke JSON parsing on
+        # it — a real, previously-undiscovered bug, not a network issue.
+        # Dropping the incoming header and forcing "identity" below means
+        # the server never compresses in the first place, which is
+        # simpler and more robust than teaching this parser to gunzip.
+        if k.lower() == "accept-encoding":
+            continue
         cmd += ["-H", f"{k}: {v}"]
+    cmd += ["-H", "Accept-Encoding: identity"]
     if body:
         cmd += ["--data-binary", "@-"]
 

@@ -368,7 +368,7 @@ async function sendMessage(text) {
   try {
     const data = await api('/api/agent/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Employee-Id': state.selectedEmployeeId },
       body: JSON.stringify({ employee_id: state.selectedEmployeeId, message: text }),
     });
     updateMessage(pendingId, { text: data.reply_text || '(no text in response)', pending: false });

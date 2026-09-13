@@ -1,0 +1,5 @@
+# Test-only dependencies — deliberately separate from requirements.txt so
+# the Docker image (which only ever runs `pip install -r requirements.txt`,
+# see Dockerfile) never carries a test framework it doesn't need.
+-r requirements.txt
+pytest==8.3.4

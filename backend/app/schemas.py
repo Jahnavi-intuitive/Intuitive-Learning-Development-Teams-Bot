@@ -8,13 +8,15 @@ class EmployeeOut(BaseModel):
     id: uuid.UUID
     employee_id: str
     name: str
-    email: str
+    email: str | None
     role: str | None
     manager_name: str | None
     practice_director_name: str | None
-    practice: str
+    practice: str | None
     is_test_data: bool
     is_admin: bool
+    aad_object_id: str | None
+    is_directory_synced: bool
 
     class Config:
         from_attributes = True
@@ -34,6 +36,7 @@ class EmployeeCreateIn(BaseModel):
 class CatalogEntryOut(BaseModel):
     id: uuid.UUID
     name: str
+    short_name: str | None  # the real name<->short_name mapping (services/short_name.py) — see DEVELOPMENT_LOG.md 2026-09-13
     provider: str | None
     level: str | None
     prerequisites: list | None
@@ -131,12 +134,22 @@ class LearningPathNextOut(BaseModel):
     the agent guessing. The agent may reason about which of these to
     recommend first (using LearningPathOverviewOut + the employee's
     history), but must never treat a certification as available unless
-    it appears here."""
+    it appears here.
 
-    practice: str
+    practice_missing=True means the employee has no practice on file yet
+    (always false with a real one — routers/teams.py can auto-provision an
+    employee with practice=None on first Teams contact, before any
+    directory sync or admin has filled it in). Distinct from an empty
+    next_certifications list with a real practice set (which means "path
+    complete" or "nothing configured") — this means "can't compute a path
+    at all, the practice itself isn't known." The agent must say so
+    plainly, never guess or default a practice."""
+
+    practice: str | None
     path_name: str | None
     next_certifications: list[NextCertificationCandidate]
     data_as_of: datetime
+    practice_missing: bool = False
 
 
 class PathPrerequisiteEdgeOut(BaseModel):
@@ -169,12 +182,17 @@ class LearningPathOverviewOut(BaseModel):
     reason about a real recommendation — which locked certs are close,
     which track someone's furthest along in, why something isn't
     available yet — grounded in real graph facts it was handed, never
-    inferred or guessed."""
+    inferred or guessed.
 
-    practice: str
+    practice_missing=True — same meaning as LearningPathNextOut's field of
+    the same name: this employee has no practice on file yet, say so
+    plainly rather than guessing one."""
+
+    practice: str | None
     path_name: str | None
     certifications: list[PathCertificationStatusOut]
     data_as_of: datetime
+    practice_missing: bool = False
 
 
 class SubmissionIn(BaseModel):
@@ -371,10 +389,11 @@ class DriveCreateIn(BaseModel):
     name: str
     description: str | None = None
     target_scope: str  # practice | department | organization
-    target_scope_value: str
-    target_metric_type: str  # count | percentage
-    target_value: float
-    start_date: date
+    # Required for practice/department scope (which practice); left unset
+    # for organization scope, which targets every employee and has nothing
+    # to name. Enforced in routers/drives.py, not here, so the 422 message
+    # can name the offending scope.
+    target_scope_value: str | None = None
     deadline: date
     reminder_cadence: ReminderCadenceIn | None = None
     certification_names: list[str] = Field(..., min_length=1)
@@ -386,9 +405,6 @@ class DriveUpdateIn(BaseModel):
     description: str | None = None
     target_scope: str | None = None
     target_scope_value: str | None = None
-    target_metric_type: str | None = None
-    target_value: float | None = None
-    start_date: date | None = None
     deadline: date | None = None
     reminder_cadence: ReminderCadenceIn | None = None
 
@@ -398,10 +414,8 @@ class DriveOut(BaseModel):
     name: str
     description: str | None
     target_scope: str
-    target_scope_value: str
-    target_metric_type: str
-    target_value: float
-    start_date: date
+    target_scope_value: str | None
+    start_date: date | None  # null until enroll_population activates the drive
     deadline: date
     reminder_cadence: ReminderCadenceIn | None
     status: str

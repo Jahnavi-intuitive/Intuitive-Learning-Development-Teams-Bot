@@ -1,0 +1,33 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "8cf11519-fd1e-4b83-acd8-11054b55ec45",
+  "developer": {
+    "name": "Intuitive Technology Partners",
+    "websiteUrl": "https://claude.ai/code/artifact/1d200d82-5dcb-42b3-a4df-4bc00a85f27f",
+    "privacyUrl": "https://claude.ai/code/artifact/1d200d82-5dcb-42b3-a4df-4bc00a85f27f",
+    "termsOfUseUrl": "https://claude.ai/code/artifact/988d8479-bf94-4ff1-944a-0919ce402906"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Learning and Development Bot",
+    "full": "Learning and Development Bot"
+  },
+  "description": {
+    "short": "Quick support for certifications, exam prep, and learning path questions.",
+    "full": "This is a Learning and Development Teams bot made to help you smoothly get your certification-related details, providing immediate and quick support for any of your certification and competency-related queries."
+  },
+  "accentColor": "#C0392B",
+  "bots": [
+    {
+      "botId": "8cf11519-fd1e-4b83-acd8-11054b55ec45",
+      "scopes": ["personal"],
+      "supportsFiles": false,
+      "isNotificationOnly": false
+    }
+  ]
+}

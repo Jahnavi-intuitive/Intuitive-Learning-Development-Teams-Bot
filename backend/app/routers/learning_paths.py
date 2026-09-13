@@ -68,10 +68,15 @@ def next_certification(
     if employee_id != current.employee_id:
         raise HTTPException(status_code=403, detail="Can only query your own next certifications.")
     employee = current
+    now = datetime.now(timezone.utc)
 
     practice = employee.practice
+    if practice is None:
+        return LearningPathNextOut(
+            practice=None, path_name=None, next_certifications=[], data_as_of=now, practice_missing=True
+        )
+
     path = _get_path(db, practice)
-    now = datetime.now(timezone.utc)
     if not path or not path.items:
         return LearningPathNextOut(
             practice=practice, path_name=path.name if path else None, next_certifications=[], data_as_of=now
@@ -171,10 +176,15 @@ def learning_path_overview(
     if employee_id != current.employee_id:
         raise HTTPException(status_code=403, detail="Can only query your own learning path overview.")
     employee = current
+    now = datetime.now(timezone.utc)
 
     practice = employee.practice
+    if practice is None:
+        return LearningPathOverviewOut(
+            practice=None, path_name=None, certifications=[], data_as_of=now, practice_missing=True
+        )
+
     path = _get_path(db, practice)
-    now = datetime.now(timezone.utc)
     if not path or not path.items:
         return LearningPathOverviewOut(practice=practice, path_name=path.name if path else None, certifications=[], data_as_of=now)
 

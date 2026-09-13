@@ -56,7 +56,14 @@ kb_status_enum = PGEnum(*KB_STATUS_VALUES, name="kb_status_enum")
 ESCALATION_STATUS_VALUES = ("open", "in_progress", "resolved")
 escalation_status_enum = PGEnum(*ESCALATION_STATUS_VALUES, name="escalation_status_enum")
 
-AUDIT_ACTION_VALUES = ("created", "status_changed", "verified", "field_updated", "deleted")
+AUDIT_ACTION_VALUES = (
+    "created",
+    "status_changed",
+    "verified",
+    "field_updated",
+    "deleted",
+    "employee_auto_created",
+)
 audit_action_enum = PGEnum(*AUDIT_ACTION_VALUES, name="audit_action_enum")
 
 # --- Certification drives (mandatory campaigns) -------------------------
@@ -68,9 +75,6 @@ audit_action_enum = PGEnum(*AUDIT_ACTION_VALUES, name="audit_action_enum")
 DRIVE_TARGET_SCOPE_VALUES = ("practice", "department", "organization")
 drive_target_scope_enum = PGEnum(*DRIVE_TARGET_SCOPE_VALUES, name="drive_target_scope_enum")
 
-DRIVE_TARGET_METRIC_VALUES = ("count", "percentage")
-drive_target_metric_enum = PGEnum(*DRIVE_TARGET_METRIC_VALUES, name="drive_target_metric_enum")
-
 DRIVE_STATUS_VALUES = ("draft", "active", "closed")
 drive_status_enum = PGEnum(*DRIVE_STATUS_VALUES, name="drive_status_enum")
 
@@ -78,7 +82,12 @@ ENROLLMENT_STATUS_VALUES = ("not_started", "in_progress", "completed", "exempted
 enrollment_status_enum = PGEnum(*ENROLLMENT_STATUS_VALUES, name="enrollment_status_enum")
 
 # --- Notifications (reminder sweep) --------------------------------------
-NOTIFICATION_TYPE_VALUES = ("drive_reminder", "drive_escalation", "cert_expiry_reminder")
+NOTIFICATION_TYPE_VALUES = (
+    "drive_reminder",
+    "drive_escalation",
+    "cert_expiry_reminder",
+    "new_certification_added",
+)
 notification_type_enum = PGEnum(*NOTIFICATION_TYPE_VALUES, name="notification_type_enum")
 
 NOTIFICATION_CHANNEL_VALUES = ("teams",)  # SEAM: only channel until a real Teams bot integration exists
@@ -99,6 +108,10 @@ escalation_level_enum = PGEnum(*ESCALATION_LEVEL_VALUES, name="escalation_level_
 PREREQUISITE_LOGIC_VALUES = ("any", "all")
 prerequisite_logic_enum = PGEnum(*PREREQUISITE_LOGIC_VALUES, name="prerequisite_logic_enum")
 
+# --- Conversation memory (Teams bot session continuity) -----------------
+CONVERSATION_ROLE_VALUES = ("user", "agent")
+conversation_role_enum = PGEnum(*CONVERSATION_ROLE_VALUES, name="conversation_role_enum")
+
 
 def uuid_pk():
     return mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -110,22 +123,47 @@ class Employee(Base):
 
     SEAM: in production this table is populated/kept in sync from Microsoft
     Graph (Entra ID User + manager relationship), not edited by hand. Until
-    that sync exists, rows are seeded via scripts/seed_test_employees.py or
-    entered by L&D admins. See services/excel_sync.py `resolve_employee`
-    for the one place that would be swapped for a Graph lookup.
+    that sync exists, rows are seeded via scripts/seed_test_employees.py,
+    entered by L&D admins, or auto-provisioned on first Teams contact (see
+    routers/teams.py) — see services/excel_sync.py `resolve_employee` for
+    the one place that would be swapped for a Graph lookup.
     """
 
     __tablename__ = "employees"
 
     id: Mapped[uuid.UUID] = uuid_pk()
     employee_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    # The Teams/Bot Framework identity join key (activity.from.aad_object_id)
+    # — nullable because the local test roster predates any real tenant and
+    # has no real AAD object IDs yet; populated once the directory sync job
+    # (services/excel_sync.py resolve_employee, same SEAM as practice above)
+    # starts writing real Entra object IDs, or immediately on first contact
+    # for an auto-provisioned row (routers/teams.py). Unique so two
+    # employees can never resolve to the same Teams identity by accident.
+    aad_object_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    # Nullable: an auto-provisioned employee (routers/teams.py) has no email
+    # at all — Bot Framework's ChannelAccount carries only id/name/
+    # aad_object_id, nothing else — until directory sync fills it in.
+    email: Mapped[str | None] = mapped_column(String(255), unique=True)
     role: Mapped[str | None] = mapped_column(String(255))
     manager_name: Mapped[str | None] = mapped_column(String(255))
     practice_director_name: Mapped[str | None] = mapped_column(String(255))
-    practice: Mapped[str] = mapped_column(practice_enum, nullable=False)
+    # Nullable for the same reason as email — an auto-provisioned employee's
+    # practice isn't knowable from a Teams activity alone. Every
+    # practice-dependent feature (routers/learning_paths.py's /next and
+    # /overview) must treat None as "not set up yet, say so plainly" rather
+    # than crashing or guessing a default practice.
+    practice: Mapped[str | None] = mapped_column(practice_enum)
     is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Data-provenance flag, not an access gate: False for an auto-provisioned
+    # row (routers/teams.py) until a real Entra/HRIS directory sync confirms
+    # and enriches it (still a SEAM — that sync doesn't exist yet). Never
+    # read anywhere as a permission check; it only tells an admin which
+    # records still need enriching. Existing pre-auto-provisioning rows are
+    # backfilled to True in migration 0007 — they're already fully seeded,
+    # not stubs waiting on enrichment.
+    is_directory_synced: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # SEAM: local stand-in for a real Entra app-role check. Every admin-
     # gated endpoint (drives, catalog CRUD, KB CRUD) reads this one flag
     # through services/admin_auth.py's require_admin — that is the single
@@ -143,6 +181,15 @@ class CertificationCatalog(Base):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    # The real Excel sheet name for this cert's tab — distinct from `name`
+    # because Excel sheet names are capped at 31 chars and can't contain
+    # \ / ? * [ ] : , while a real cert name routinely exceeds that (see
+    # services/short_name.py, which generates this). Which SharePoint file
+    # a cert's sheet lives in is determined by `provider` below, not by
+    # short_name itself — one file per provider, one sheet per cert.
+    # Nullable only because a not-yet-backfilled pre-2026-09-13 row may not
+    # have one yet; every row created after that migration always does.
+    short_name: Mapped[str | None] = mapped_column(String(31), unique=True)
     provider: Mapped[str | None] = mapped_column(String(255))
     level: Mapped[str | None] = mapped_column(String(100))
     prerequisites: Mapped[list | None] = mapped_column(JSONB)  # informational display only — the
@@ -257,8 +304,11 @@ class CertificateRecord(Base):
 
     employee_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employees.id", ondelete="SET NULL"))
     employee_name: Mapped[str] = mapped_column(String(255), nullable=False)  # snapshot
+    employee_email: Mapped[str | None] = mapped_column(String(255))  # snapshot; also an alt match key, see excel_sync.resolve_employee
     manager_name: Mapped[str | None] = mapped_column(String(255))
+    manager_email: Mapped[str | None] = mapped_column(String(255))
     practice_director_name: Mapped[str | None] = mapped_column(String(255))
+    practice_director_email: Mapped[str | None] = mapped_column(String(255))
     practice: Mapped[str | None] = mapped_column(practice_enum)  # auto-populated from employees, not the sheet
 
     certification_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -375,10 +425,15 @@ class CertificationDrive(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     target_scope: Mapped[str] = mapped_column(drive_target_scope_enum, nullable=False)
-    target_scope_value: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g. a practice name
-    target_metric_type: Mapped[str] = mapped_column(drive_target_metric_enum, nullable=False)
-    target_value: Mapped[float] = mapped_column(nullable=False)  # a count, or a percentage 0-100
-    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    # Nullable: only meaningful (and required, see DriveCreateIn) for a
+    # practice-scoped drive — an organization-scoped drive targets every
+    # employee, so there's no value to record.
+    target_scope_value: Mapped[str | None] = mapped_column(String(255))  # e.g. a practice name
+    # Nullable at creation — a drive starts as a "draft" with no start date
+    # yet. Set automatically (to the activation date) the moment
+    # enroll_population promotes it to "active" (see routers/drives.py) —
+    # never admin-entered, per the 2026-09-02 drives-form simplification.
+    start_date: Mapped[date | None] = mapped_column(Date)
     deadline: Mapped[date] = mapped_column(Date, nullable=False)
     reminder_cadence: Mapped[list | None] = mapped_column(JSONB)  # e.g. [30, 14, 7, 1] days-before-deadline
     status: Mapped[str] = mapped_column(drive_status_enum, default="draft", nullable=False)
@@ -395,8 +450,7 @@ class CertificationDrive(Base):
 
 class DriveCertification(Base):
     """Join table: a drive can require more than one certification (e.g.
-    "AWS cert OR either of two Azure certs" — target_metric_type/target_value
-    on the drive itself decides how "compliant" is defined across these)."""
+    "AWS cert OR either of two Azure certs")."""
 
     __tablename__ = "drive_certifications"
     __table_args__ = (
@@ -517,3 +571,71 @@ class AuditLog(Base):
     old_value: Mapped[dict | None] = mapped_column(JSONB)
     new_value: Mapped[dict | None] = mapped_column(JSONB)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# --- Conversation memory (Teams bot session continuity) -------------------
+class ConversationTurn(Base):
+    """Append-only raw log of every chat turn — same audit posture as the
+    rest of the system (nothing here is ever edited or deleted in place).
+    This is tier 1 of two-tier conversation memory: services/conversation_memory.py
+    replays only the most recent N of these per employee as live context,
+    trimming/folding older ones into ConversationMemory.summary_text instead
+    of ever replaying the full history on every message.
+
+    conversation_id is the Teams activity's conversationId — kept even
+    though today's schema assumes one active thread per employee (see
+    ConversationMemory below), so a future multi-thread-per-person design
+    doesn't need a migration to retrofit it."""
+
+    __tablename__ = "conversation_turns"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    employee_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("employees.id", ondelete="CASCADE"), nullable=False
+    )
+    conversation_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(conversation_role_enum, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    employee: Mapped["Employee"] = relationship()
+
+
+class ConversationMemory(Base):
+    """Tier 2: one row per employee, folding everything older than the
+    live raw-turn window into a running summary. Updated by
+    services/conversation_memory.py's summarization pass — every ~15 turns
+    (SUMMARIZE_EVERY_N_TURNS) or when the raw window's token estimate
+    crosses SUMMARIZE_TOKEN_BUDGET, whichever comes first — via a single
+    LLM call that folds the turns being trimmed into summary_text, never by
+    replaying the entire raw history.
+
+    The summary itself isn't kept forever: turns_folded_since_reset tracks
+    how many turns have been folded into the *current* summary lineage,
+    and once that crosses conversation_summary_max_age_turns, the summary
+    is discarded outright (not truncated) rather than left to grow without
+    bound — see conversation_memory.py's _summarize. This never touches
+    conversation_turns, which stays a permanent, untrimmed raw log either
+    way; it only bounds what the long-term-memory tier carries forward.
+
+    last_summarize_attempt_at is set on every attempt, success or failure —
+    used to back off after a failure instead of retrying the same failing
+    LLM call on every subsequent turn."""
+
+    __tablename__ = "conversation_memory"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    employee_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("employees.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    summary_text: Mapped[str | None] = mapped_column(Text)
+    last_summarized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    turns_since_last_summary: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    turns_folded_since_reset: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_summarize_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    employee: Mapped["Employee"] = relationship()

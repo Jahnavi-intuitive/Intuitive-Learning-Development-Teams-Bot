@@ -92,5 +92,71 @@ class Settings(BaseSettings):
     google_cloud_project: str = ""
     google_cloud_location: str = "us-central1"
 
+    # --- Microsoft Teams / Bot Framework -------------------------------
+    # Empty by default — every value here is a real credential/tenant fact
+    # that must come from the person doing the Azure setup (see
+    # teams-app/AZURE_BOT_SETUP.md), never invented. routers/teams.py
+    # refuses to authenticate any request while teams_bot_app_id is unset.
+    teams_bot_app_id: str = ""
+    teams_bot_app_password: str = ""
+    # The Entra/M365 tenant this bot is allowed to serve — checked against
+    # every incoming activity's channelData.tenant.id server-side (belt-
+    # and-suspenders alongside Teams' own app-catalog scoping, and the
+    # bot registration's own "Single Tenant" app type).
+    teams_tenant_id: str = ""
+
+    # --- Microsoft Graph (app-only, services/graph_client.py + services/sharepoint_client.py) -
+    # A separate Entra app registration from the bot's own (teams_bot_app_id
+    # above needs no Graph permissions at all). Two application permissions
+    # on this same app registration, for two different purposes:
+    # - User.Read.All (graph_client.py): look up *any* employee's directory
+    #   profile, not just a signed-in one, for Teams auto-provisioning.
+    # - Sites.Selected (sharepoint_client.py): read/write exactly one
+    #   SharePoint site's document library — the "Certification Trackers"
+    #   library — granted via a one-time site-specific permission call, not
+    #   tenant-wide access (see DEVELOPMENT_LOG.md's 2026-09-13 entry for the
+    #   exact grant steps).
+    # Reuses teams_tenant_id as the token-issuing tenant, since it's the
+    # same organization. Empty by default; routers/teams.py's auto-
+    # provisioning path treats "not configured" as a normal, gracefully-
+    # handled Graph lookup failure, not a startup-time refusal — an
+    # already-recognized employee's messages never need Graph at all.
+    graph_client_id: str = ""
+    graph_client_secret: str = ""
+
+    # The SharePoint site + document library holding one Excel file per
+    # certification provider (services/sharepoint_client.py). Both are
+    # real, tenant-specific Graph IDs resolved once during setup — not
+    # something to guess or reconstruct from a URL, so they're stored
+    # directly rather than re-resolved by path on every sync.
+    sharepoint_site_id: str = ""
+    sharepoint_drive_id: str = ""  # the "Certification Trackers" library's drive id specifically
+
+    # --- Two-tier conversation memory (services/conversation_memory.py) -
+    # Tier 1 (conversation_turns) is never replayed in full — only the
+    # most recent N turns are read as live context per message.
+    conversation_recent_turns: int = 10
+    # Tier 2 (conversation_memory.summary_text) is refreshed by folding
+    # everything older than the live window into one LLM-summarized
+    # paragraph, triggered by whichever of these two comes first:
+    conversation_summarize_every_n_turns: int = 15
+    conversation_summarize_token_budget: int = 4000  # rough chars/4 estimate, not a real tokenizer count
+    # The running summary isn't kept forever: once the turns folded into it
+    # since it was last reset exceed this, it's discarded (not truncated —
+    # the raw conversation_turns rows are untouched either way, this only
+    # bounds what stays folded into the live long-term-memory tier). Tuned
+    # for this bot's actual use (short, transactional Q&A) where content
+    # from well beyond this many turns back isn't worth carrying forward.
+    conversation_summary_max_age_turns: int = 50
+    # After a summarization LLM call fails, wait at least this long before
+    # trying again, instead of retrying on every single subsequent turn.
+    conversation_summarize_retry_cooldown_seconds: int = 900
+
+    # --- Per-employee rate limiting (services/rate_limit.py) ------------
+    # Defense-in-depth against one misbehaving client or a retry-loop bug —
+    # deliberately independent of whatever the hosting platform's own edge
+    # protection provides. Applies per employee_id, not globally.
+    rate_limit_per_minute: int = 20
+
 
 settings = Settings()

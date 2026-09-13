@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certification Leadership Dashboard</title>
+<style>
+  :root {
+    --bg: #f7f7f8; --panel: #ffffff; --border: #e3e3e6; --text: #1c1c1e; --muted: #6b6b70;
+    --accent: #c0392b; --accent-soft: #fbe9e7; --radius: 10px;
+    --ok-bg: #e3f4e3; --ok-text: #1e6b1e; --warn-bg: #fdf3d8; --warn-text: #8a6d1a;
+    --bad-bg: #fde8e8; --bad-text: #a12a2a; --neutral-bg: #e5e7eb; --neutral-text: #444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 17px; margin: 0; }
+  header .spacer { flex: 1; }
+  header .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ea043; display: inline-block; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  #statusLine { font-size: 12px; color: var(--muted); }
+
+  main { padding: 20px 24px 60px; max-width: 1200px; margin: 0 auto; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-card .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .stat-card .stat-value { font-size: 26px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat-card.ok .stat-value { color: var(--ok-text); }
+  .stat-card.warn .stat-value { color: var(--warn-text); }
+  .stat-card.bad .stat-value { color: var(--bad-text); }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card .hint { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+  th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
+  .pill-completed, .pill-verified { background: var(--ok-bg); color: var(--ok-text); }
+  .pill-in_progress, .pill-pending_review, .pill-not_started { background: var(--warn-bg); color: var(--warn-text); }
+  .pill-gave_exam_but_failed { background: var(--bad-bg); color: var(--bad-text); }
+  .pill-exempted { background: var(--neutral-bg); color: var(--neutral-text); }
+
+  .mapping-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .mapping-grid h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 8px; }
+  .mapping-grid table td:first-child { font-weight: 600; white-space: nowrap; }
+
+  .provider-block { margin-bottom: 26px; }
+  .provider-block:last-child { margin-bottom: 0; }
+  .provider-block > h3 { font-size: 14px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--accent-soft); }
+  .cert-pivot { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .cert-pivot .cert-title { padding: 8px 12px; background: var(--bg); font-size: 12.5px; font-weight: 600; border-bottom: 1px solid var(--border); }
+  .cert-pivot .cert-title .short { color: var(--muted); font-weight: 400; }
+  .cert-pivot table { margin: 0; }
+  .cert-pivot tr.grand-total td { font-weight: 700; border-top: 2px solid var(--border); border-bottom: none; }
+
+  .empty-state { color: var(--muted); font-size: 13px; padding: 10px 0; }
+  .error-state { color: var(--bad-text); font-size: 13px; padding: 10px 0; }
+  .compliance-bar-track { background: var(--bg); border-radius: 999px; height: 6px; width: 100px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  .compliance-bar-fill { height: 100%; background: #2ea043; }
+  .compliance-bar-fill.warn { background: #c9950f; }
+  .compliance-bar-fill.bad { background: #c0392b; }
+</style>
+</head>
+<body>
+<header>
+  <span class="live-dot"></span>
+  <h1>Certification Leadership Dashboard</h1>
+  <div class="spacer"></div>
+  <div id="statusLine">Loading…</div>
+</header>
+
+<main>
+
+  <div id="statGrid" class="stat-grid"></div>
+
+  <div class="card">
+    <h2>Certification Health by Practice</h2>
+    <p class="hint">Org-wide counts, broken down by practice and by submission / verification status.</p>
+    <div id="orgCertHealthWrap"><div class="empty-state">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Certification Drives — Compliance &amp; Escalation Standing</h2>
+    <p class="hint">Every active drive: enrollment, live compliance %, and how many enrollments currently sit at each escalation level.</p>
+    <div id="driveComplianceWrap"><div class="empty-state">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>PD / Leader Pivot — by Provider &amp; Certification</h2>
+    <p class="hint">Certified / In Progress / Attempted&nbsp;-&nbsp;Not&nbsp;Cleared, bucketed by PD/Leader, one table per certification — the same shape kept in each provider's SharePoint workbook (a "Summary" tab).</p>
+    <div id="pdPivotWrap"><div class="empty-state">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Certification Short Name Reference</h2>
+    <p class="hint">Short name → full certification name → provider, for reading the pivot tables above.</p>
+    <div id="mappingWrap"><div class="empty-state">Loading…</div></div>
+  </div>
+
+</main>
+
+<script>
+const REFRESH_MS = 60000;
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pill(status) { return `<span class="pill pill-${esc(status)}">${esc(status)}</span>`; }
+
+async function api(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`${path} -> ${res.status}`);
+  return res.json();
+}
+
+function complianceBar(pct) {
+  const cls = pct >= 80 ? '' : pct >= 50 ? 'warn' : 'bad';
+  return `<span class="compliance-bar-track"><span class="compliance-bar-fill ${cls}" style="width:${Math.min(100, pct)}%"></span></span>${pct}%`;
+}
+
+async function loadStats(orgHealth, drives) {
+  const totals = { completed: 0, in_progress: 0, gave_exam_but_failed: 0 };
+  for (const p of [...orgHealth.practices, orgHealth.unassigned]) {
+    for (const [k, v] of Object.entries(p.by_submission_status)) {
+      totals[k] = (totals[k] || 0) + v;
+    }
+  }
+  const totalRecords = totals.completed + totals.in_progress + totals.gave_exam_but_failed +
+    Object.entries(totals).filter(([k]) => !['completed', 'in_progress', 'gave_exam_but_failed'].includes(k))
+      .reduce((s, [, v]) => s + v, 0);
+  const activeDrives = drives.drives.length;
+  const avgCompliance = activeDrives
+    ? Math.round(drives.drives.reduce((s, d) => s + d.compliance_pct, 0) / activeDrives)
+    : null;
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total cert records</div><div class="stat-value">${totalRecords}</div></div>
+    <div class="stat-card ok"><div class="stat-label">Certified</div><div class="stat-value">${totals.completed || 0}</div></div>
+    <div class="stat-card warn"><div class="stat-label">In progress</div><div class="stat-value">${totals.in_progress || 0}</div></div>
+    <div class="stat-card bad"><div class="stat-label">Attempted - not cleared</div><div class="stat-value">${totals.gave_exam_but_failed || 0}</div></div>
+    <div class="stat-card"><div class="stat-label">Active drives</div><div class="stat-value">${activeDrives}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg. drive compliance</div><div class="stat-value">${avgCompliance === null ? '—' : avgCompliance + '%'}</div></div>
+  `;
+}
+
+async function loadOrgCertHealth() {
+  const wrap = document.getElementById('orgCertHealthWrap');
+  const data = await api('/api/dashboards/org-cert-health');
+  const rows = data.unassigned.total > 0 ? [...data.practices, data.unassigned] : data.practices;
+  if (!rows.length) { wrap.innerHTML = '<div class="empty-state">No certification records yet.</div>'; return data; }
+  const statusPills = (obj) => Object.entries(obj).map(([k, v]) => `${pill(k)} ${v}`).join(' &nbsp; ');
+  wrap.innerHTML = `<table><thead><tr><th>Practice</th><th class="num">Total</th><th>By submission status</th><th>By verification status</th></tr></thead><tbody>
+    ${rows.map(p => `<tr>
+      <td>${esc(p.practice)}</td>
+      <td class="num">${p.total}</td>
+      <td>${statusPills(p.by_submission_status)}</td>
+      <td>${statusPills(p.by_verification_status)}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  return data;
+}
+
+async function loadDriveCompliance() {
+  const wrap = document.getElementById('driveComplianceWrap');
+  const data = await api('/api/dashboards/drive-compliance');
+  if (!data.drives.length) { wrap.innerHTML = '<div class="empty-state">No active drives.</div>'; return data; }
+  const escLabel = (counts) => Object.keys(counts).length
+    ? Object.entries(counts).map(([lvl, n]) => `${esc(lvl)}: ${n}`).join(', ')
+    : '—';
+  wrap.innerHTML = `<table><thead><tr><th>Drive</th><th>Scope</th><th>Deadline</th><th>Status</th>
+    <th class="num">Enrolled</th><th class="num">Compliant</th><th class="num">Exempted</th><th>Compliance</th><th>Escalation standing</th></tr></thead><tbody>
+    ${data.drives.map(d => `<tr>
+      <td>${esc(d.name)}</td>
+      <td>${esc(d.target_scope)}${d.target_scope_value ? ' (' + esc(d.target_scope_value) + ')' : ''}</td>
+      <td>${esc(d.deadline.slice(0, 10))}</td>
+      <td>${pill(d.status)}</td>
+      <td class="num">${d.enrolled_count}</td>
+      <td class="num">${d.compliant_count}</td>
+      <td class="num">${d.exempted_count}</td>
+      <td>${complianceBar(d.compliance_pct)}</td>
+      <td>${escLabel(d.escalation_counts)}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  return data;
+}
+
+async function loadPdPivot() {
+  const wrap = document.getElementById('pdPivotWrap');
+  const data = await api('/api/dashboards/pd-pivot');
+  if (!data.providers.length) { wrap.innerHTML = '<div class="empty-state">No certification records yet.</div>'; return; }
+  const cols = data.status_columns;
+  wrap.innerHTML = data.providers.map(p => `
+    <div class="provider-block">
+      <h3>${esc(p.provider)}</h3>
+      ${p.certifications.map(c => {
+        const pdNames = Object.keys(c.rows).sort();
+        const colTotals = cols.map(col => pdNames.reduce((sum, pd) => sum + (c.rows[pd][col] || 0), 0));
+        return `<div class="cert-pivot">
+          <div class="cert-title">${esc(c.certification_name)} <span class="short">(${esc(c.short_name || '—')})</span></div>
+          <table>
+            <thead><tr><th>PD / Leader</th>${cols.map(col => `<th class="num">${esc(col)}</th>`).join('')}<th class="num">Grand Total</th></tr></thead>
+            <tbody>
+              ${pdNames.map(pd => `<tr><td>${esc(pd)}</td>${cols.map(col => `<td class="num">${c.rows[pd][col] || ''}</td>`).join('')}<td class="num">${cols.reduce((s, col) => s + (c.rows[pd][col] || 0), 0)}</td></tr>`).join('')}
+              <tr class="grand-total"><td>Grand Total</td>${colTotals.map(t => `<td class="num">${t}</td>`).join('')}<td class="num">${colTotals.reduce((a, b) => a + b, 0)}</td></tr>
+            </tbody>
+          </table>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+async function loadMapping() {
+  const wrap = document.getElementById('mappingWrap');
+  const entries = await api('/api/catalog/certifications');
+  if (!entries.length) { wrap.innerHTML = '<div class="empty-state">No certifications in the catalog yet.</div>'; return; }
+  const byProvider = {};
+  for (const e of entries) {
+    const key = e.provider || 'Other';
+    (byProvider[key] = byProvider[key] || []).push(e);
+  }
+  wrap.innerHTML = `<div class="mapping-grid">${Object.keys(byProvider).sort().map(provider => `
+    <div>
+      <h3>${esc(provider)}</h3>
+      <table><thead><tr><th>Short name</th><th>Full name</th></tr></thead><tbody>
+        ${byProvider[provider].sort((a, b) => a.name.localeCompare(b.name)).map(e => `<tr><td>${esc(e.short_name || '—')}</td><td>${esc(e.name)}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+  `).join('')}</div>`;
+}
+
+let refreshTimer = null;
+
+async function loadAll() {
+  document.getElementById('statusLine').textContent = 'Refreshing…';
+  try {
+    const [orgHealth, drives] = await Promise.all([loadOrgCertHealth(), loadDriveCompliance()]);
+    await Promise.all([loadPdPivot(), loadMapping(), loadStats(orgHealth, drives)]);
+    document.getElementById('statusLine').textContent =
+      `Last updated ${new Date().toLocaleTimeString()} · auto-refreshes every ${REFRESH_MS / 1000}s`;
+  } catch (e) {
+    document.getElementById('statusLine').textContent = `Failed to refresh: ${e.message}`;
+  }
+  if (refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(loadAll, REFRESH_MS);
+}
+
+loadAll();
+</script>
+</body>
+</html>

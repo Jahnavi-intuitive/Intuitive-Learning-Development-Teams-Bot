@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import CertificationCatalog, DriveCertification, DriveEnrollment, Employee
 from app.schemas import CertificateRecordOut, SubmissionIn, SubmissionOut, VerificationResultOut
+from app.services import catalog_provisioning, excel_sync
 from app.services.access_scope import get_current_employee
 from app.services.audited_crud import update_with_audit
 from app.services.repository import certificate_record_repo
@@ -73,7 +74,15 @@ def submit_certification(
     catalog_entry = db.scalar(
         select(CertificationCatalog).where(CertificationCatalog.name.ilike(payload.cert_name.strip()))
     )
-    needs_setup = catalog_entry is None
+    if catalog_entry is None:
+        # Before 2026-09-13, an unmatched submission just left
+        # certificate_records.certification_id NULL forever — a real gap,
+        # since services/excel_sync.py already auto-created a catalog
+        # entry for the equivalent case (an unrecognized name found in a
+        # synced spreadsheet row). Both paths now go through the same
+        # shared provisioning (short_name assigned, admins notified).
+        catalog_entry, _ = catalog_provisioning.get_or_create_by_name(db, payload.cert_name)
+    needs_setup = catalog_entry.status == "pending_setup"
 
     verification_status = "not_applicable"
     if payload.submission_status == "completed" and payload.credly_link:
@@ -84,6 +93,7 @@ def submit_certification(
         actor=payload.employee_id,
         employee_id=employee.id,
         employee_name=employee.name,
+        employee_email=employee.email,
         manager_name=payload.manager_name,
         practice_director_name=payload.practice_director_name,
         practice=employee.practice,
@@ -106,6 +116,7 @@ def submit_certification(
 
     if catalog_entry:
         _link_drive_enrollments(db, employee, catalog_entry, record)
+        excel_sync.write_back_to_sheet(db, record, catalog_entry)
 
     db.commit()
     db.refresh(record)

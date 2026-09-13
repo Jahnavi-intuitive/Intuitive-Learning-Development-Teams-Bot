@@ -43,7 +43,22 @@ _TIMEOUT_SECONDS = 120
 def _run_curl(method: str, url: str, headers, body: bytes | None) -> tuple[int, list[tuple[str, str]], bytes]:
     cmd = ["curl", "-s", "-i", "-L", "--max-time", str(_TIMEOUT_SECONDS), "-X", method, url]
     for k, v in headers:
+        # httpx sets its own Accept-Encoding (gzip/deflate/br) by default,
+        # forwarded here verbatim — the server may then compress the
+        # response, but plain curl (no --compressed) never decompresses
+        # it, silently handing back raw compressed bytes as if they were
+        # the plain body. Confirmed as a real bug (not a hypothetical) in
+        # the backend's twin of this module: login.botframework.com's
+        # metadata endpoint compresses and this broke JSON parsing on it.
+        # Hasn't been observed against Gemini's API specifically, but
+        # nothing guarantees it never will — fixed here too rather than
+        # left as a latent landmine. Dropping the incoming header and
+        # forcing "identity" means the server never compresses in the
+        # first place.
+        if k.lower() == "accept-encoding":
+            continue
         cmd += ["-H", f"{k}: {v}"]
+    cmd += ["-H", "Accept-Encoding: identity"]
     if body:
         cmd += ["--data-binary", "@-"]
 

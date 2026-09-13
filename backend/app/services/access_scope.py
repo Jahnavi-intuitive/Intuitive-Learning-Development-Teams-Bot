@@ -87,12 +87,35 @@ class Scope:
 
 
 def resolve_scope(db: Session, requester: Employee) -> Scope:
+    """2026-09-14: the manager side of this was one level deep only (direct
+    reports, matched by manager_name == requester.name) — a manager could
+    not see their reports' own reports at all. Fixed to walk the full
+    manager_name chain recursively (BFS by name, since manager_name is a
+    plain string, not a real self-referential FK): a manager now sees
+    everyone under them, direct or indirect, not just people who list them
+    by name specifically. led_practice is deliberately NOT re-walked the
+    same way — practice_director_name is already set directly on every
+    employee in a practice (not just the practice director's own direct
+    reports), so a flat match already captures the whole practice; there's
+    no second level to recurse into there.
+
+    Terminates by construction: each round of the while loop only adds
+    employee_ids not already in `visible`, so it can add at most once per
+    employee and must reach a fixed point within a bounded number of
+    rounds — no separate iteration cap needed."""
     visible = {requester.employee_id}
 
-    direct_reports = db.scalars(
-        select(Employee.employee_id).where(Employee.manager_name == requester.name)
-    ).all()
-    visible.update(direct_reports)
+    frontier_names = {requester.name}
+    while frontier_names:
+        rows = db.execute(
+            select(Employee.employee_id, Employee.name).where(Employee.manager_name.in_(frontier_names))
+        ).all()
+        next_frontier_names: set[str] = set()
+        for employee_id, name in rows:
+            if employee_id not in visible:
+                visible.add(employee_id)
+                next_frontier_names.add(name)
+        frontier_names = next_frontier_names
 
     led_practice = db.scalars(
         select(Employee.employee_id).where(Employee.practice_director_name == requester.name)

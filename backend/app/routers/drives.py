@@ -9,7 +9,7 @@ never has to wonder whether a cached number is stale (Section 2 of the
 2026-08-25 drives spec — see DEVELOPMENT_LOG.md).
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -36,6 +36,7 @@ from app.schemas import (
 from app.services.access_scope import get_current_employee
 from app.services.admin_auth import require_admin
 from app.services.audited_crud import create_with_audit, delete_with_audit, update_with_audit
+from app.services.drive_compliance import compute_enrollment_counts, is_enrollment_compliant
 
 router = APIRouter(tags=["drives"])
 
@@ -63,6 +64,16 @@ def create_drive(
     db: Session = Depends(get_db),
     admin: Employee = Depends(require_admin),
 ):
+    if payload.target_scope == "organization":
+        target_scope_value = None
+    elif payload.target_scope_value:
+        target_scope_value = payload.target_scope_value
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail=f"target_scope_value is required for target_scope '{payload.target_scope}'.",
+        )
+
     certs = _resolve_certifications(db, payload.certification_names)
 
     drive = create_with_audit(
@@ -72,10 +83,7 @@ def create_drive(
         name=payload.name,
         description=payload.description,
         target_scope=payload.target_scope,
-        target_scope_value=payload.target_scope_value,
-        target_metric_type=payload.target_metric_type,
-        target_value=payload.target_value,
-        start_date=payload.start_date,
+        target_scope_value=target_scope_value,
         deadline=payload.deadline,
         reminder_cadence=payload.reminder_cadence.model_dump() if payload.reminder_cadence else None,
         status="draft",
@@ -129,41 +137,32 @@ def _compute_detail(db: Session, drive: CertificationDrive) -> DriveDetailOut:
         .options(selectinload(DriveEnrollment.employee), selectinload(DriveEnrollment.certificate_record))
     ).all()
 
-    enrolled_count = len(enrollments)
-    exempted_count = sum(1 for e in enrollments if e.enrollment_status == "exempted")
-    compliant_count = 0
-    enrollment_rows = []
-    for e in enrollments:
-        # Live-computed, never trusting the cached enrollment_status column
-        # for the compliance figure itself (Section 2 of the drives spec).
-        is_compliant = (
-            e.certificate_record is not None and e.certificate_record.submission_status == "completed"
+    # Live-computed, never trusting the cached enrollment_status column for
+    # the compliance figure itself (Section 2 of the drives spec) — shared
+    # with routers/dashboards.py's org-wide aggregate view via
+    # services/drive_compliance.py, so the two views can never diverge.
+    enrollment_rows = [
+        DriveEnrollmentOut(
+            id=e.id,
+            employee_id=e.employee.employee_id,
+            employee_name=e.employee.name,
+            enrollment_status=e.enrollment_status,
+            is_compliant=is_enrollment_compliant(e),
+            certificate_record_id=e.certificate_record_id,
+            exemption_reason=e.exemption_reason,
+            enrolled_at=e.enrolled_at,
         )
-        if is_compliant:
-            compliant_count += 1
-        enrollment_rows.append(
-            DriveEnrollmentOut(
-                id=e.id,
-                employee_id=e.employee.employee_id,
-                employee_name=e.employee.name,
-                enrollment_status=e.enrollment_status,
-                is_compliant=is_compliant,
-                certificate_record_id=e.certificate_record_id,
-                exemption_reason=e.exemption_reason,
-                enrolled_at=e.enrolled_at,
-            )
-        )
-
-    denominator = enrolled_count - exempted_count
-    compliance_pct = (compliant_count / denominator * 100) if denominator > 0 else 0.0
+        for e in enrollments
+    ]
+    counts = compute_enrollment_counts(enrollments)
 
     return DriveDetailOut(
         drive=DriveOut.model_validate(drive),
         required_certifications=[c.name for c in required_certs],
-        enrolled_count=enrolled_count,
-        compliant_count=compliant_count,
-        exempted_count=exempted_count,
-        compliance_pct=round(compliance_pct, 1),
+        enrolled_count=counts["enrolled_count"],
+        compliant_count=counts["compliant_count"],
+        exempted_count=counts["exempted_count"],
+        compliance_pct=counts["compliance_pct"],
         enrollments=enrollment_rows,
         data_as_of=datetime.now(timezone.utc),
     )
@@ -218,7 +217,11 @@ def enroll_population(drive_id: str, db: Session = Depends(get_db), admin: Emplo
         newly_enrolled += 1
 
     if drive.status == "draft":
-        update_with_audit(db, drive, actor=admin.employee_id, changes={"status": "active"})
+        # start_date is never admin-entered (see DriveCreateIn) — it's
+        # recorded as the day the drive actually goes live, i.e. right now.
+        update_with_audit(
+            db, drive, actor=admin.employee_id, changes={"status": "active", "start_date": date.today()}
+        )
 
     db.commit()
     db.refresh(drive)

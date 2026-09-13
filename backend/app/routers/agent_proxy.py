@@ -8,19 +8,42 @@ services/access_scope.py, enforced when the agent calls back into this
 same backend as a tool). It only translates the request/response shapes so
 the frontend has one simple `POST /api/agent/chat` to call instead of
 juggling ADK's session-create-then-run two-step REST flow directly.
+
+`run_agent_chat` is the shared core, called from two places: this file's
+own HTTP endpoint (local test UI / admin dashboard, employee_id taken from
+the request body — self-only enforced below) and routers/teams.py's Bot
+Framework webhook (employee_id is never taken from the request there at
+all — it's resolved server-side from the activity's aad_object_id, exactly
+the identity-spoofing gap this shared function closes for both callers at
+once). Found and fixed during the 2026-09-02 Teams-integration work: this
+endpoint had no `Depends(get_current_employee)` at all until now — the
+same shape of gap the 2026-08-27 security pass fixed on five other
+endpoints (see DEVELOPMENT_LOG.md), just missed here since this route was
+added afterward.
 """
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.config import settings
+from app.models import Employee
 from app.services import gcp_id_token
+from app.services.access_scope import get_current_employee
+from app.services.rate_limit import check_rate_limit
 
 router = APIRouter(prefix="/api/agent", tags=["agent_proxy"])
 
 _AGENT_APP_NAME = "adk_agent"
-_client = httpx.Client(base_url=settings.agent_url, timeout=240.0)
+# 240s wasn't always enough on this dev machine's own documented slow
+# network path (see DEVELOPMENT_LOG.md's curl_transport.py history) —
+# confirmed directly: a real request took ~4.5 minutes just to get from
+# "session created" to "sending the request to Gemini" (before Gemini's
+# own response time even starts counting), and got cut off by this
+# timeout mid-flight. Raised, not eliminated — this is inherent to this
+# one machine's environment, not something a longer timeout "fixes" so
+# much as tolerates.
+_client = httpx.Client(base_url=settings.agent_url, timeout=480.0)
 
 # Canonical copy is agent/adk_agent/prompts.py's STARTER_PROMPTS (BR-A-14:
 # "the agent offers suggested starter prompts on first use"). Duplicated
@@ -63,18 +86,23 @@ class ChatOut(BaseModel):
     raw_events: list[dict]
 
 
-@router.post("/chat", response_model=ChatOut)
-def chat(payload: ChatIn):
-    _ensure_session(payload.employee_id)
+def run_agent_chat(employee_id: str, message: str) -> ChatOut:
+    """The actual agent call, shared by every caller — always called with
+    an already-resolved, already-trusted employee_id, never with one taken
+    from a request body/query param at this layer. Rate-limited per
+    employee_id regardless of which surface (local UI, Teams) triggered
+    the call."""
+    check_rate_limit(employee_id)
+    _ensure_session(employee_id)
 
     try:
         resp = _client.post(
             "/run",
             json={
                 "appName": _AGENT_APP_NAME,
-                "userId": payload.employee_id,
-                "sessionId": payload.employee_id,
-                "newMessage": {"role": "user", "parts": [{"text": payload.message}]},
+                "userId": employee_id,
+                "sessionId": employee_id,
+                "newMessage": {"role": "user", "parts": [{"text": message}]},
             },
             headers=gcp_id_token.fetch_auth_header(settings.agent_url),
         )
@@ -113,3 +141,10 @@ def chat(payload: ChatIn):
         actions=actions,
         raw_events=events,
     )
+
+
+@router.post("/chat", response_model=ChatOut)
+def chat(payload: ChatIn, current: Employee = Depends(get_current_employee)):
+    if payload.employee_id != current.employee_id:
+        raise HTTPException(status_code=403, detail="Can only chat as yourself.")
+    return run_agent_chat(payload.employee_id, payload.message)

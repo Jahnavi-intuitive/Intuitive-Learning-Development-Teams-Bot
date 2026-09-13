@@ -18,6 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY adk_agent ./adk_agent
+COPY services.py .
 
 RUN useradd --create-home --uid 1000 appuser
 USER appuser
@@ -31,4 +32,12 @@ RUN adk telemetry disable 2>/dev/null || true
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["sh", "-c", "adk api_server --host 0.0.0.0 --port ${PORT} ."]
+# --session_service_uri=teamsmemory:// wires in the custom two-tier
+# conversation-memory SessionService (services.py registers the
+# "teamsmemory" scheme — see that file and
+# adk_agent/conversation_memory_service.py) instead of ADK's plain
+# in-memory default, so a conversation survives a container restart and a
+# reopened Teams chat, not just a live process. Degrades gracefully (logs
+# and continues with no history) if the backend is briefly unreachable —
+# never blocks startup or crashes a request over it.
+CMD ["sh", "-c", "adk api_server --host 0.0.0.0 --port ${PORT} --session_service_uri=teamsmemory://local ."]
