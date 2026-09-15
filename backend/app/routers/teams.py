@@ -76,7 +76,7 @@ blocking function directly from code running on the shared loop."""
 import asyncio
 import logging
 
-from botbuilder.schema import Activity
+from botbuilder.schema import Activity, Attachment
 from botframework.connector import ConnectorClient
 from botframework.connector.auth import (
     JwtTokenValidation,
@@ -84,6 +84,7 @@ from botframework.connector.auth import (
     SimpleCredentialProvider,
 )
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -91,6 +92,8 @@ from app.config import settings
 from app.database import get_db
 from app.models import PRACTICE_VALUES, Employee
 from app.routers.agent_proxy import run_agent_chat
+from app.routers.certifications import submit_certification
+from app.schemas import SubmissionIn
 from app.services import activity_dedup, teams_auth_resilience
 from app.services.audit import serialize_row, write_audit_entry
 from app.services.graph_client import GraphLookupError, GraphUser, get_user_with_manager
@@ -184,6 +187,124 @@ def _auto_provision_employee(db: Session, aad_object_id: str, graph_user: GraphU
     return employee
 
 
+def _build_certification_form_card(prefill: dict) -> Attachment:
+    """The Teams equivalent of the local test UI's actual HTML submission
+    form (frontend/index.html) — that form only exists in the browser, so
+    without this the agent's open_certification_form action had nothing to
+    render in Teams at all (agent_proxy.py's chat_out.actions was silently
+    dropped here entirely; the LLM would say "I've opened the form" with no
+    form ever appearing). manager_name/practice_director_name are carried
+    in the Submit action's own `data` rather than as editable inputs — same
+    "never ask the user for something already known server-side" rule
+    tools.py's own docstring states for the chat path.
+    """
+    practice = prefill.get("practice") or "Not on file"
+    manager_name = prefill.get("manager_name") or "Not on file"
+    practice_director_name = prefill.get("practice_director_name") or "Not on file"
+    card = {
+        "type": "AdaptiveCard",
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "version": "1.4",
+        "body": [
+            {"type": "TextBlock", "text": "Submit a certification", "weight": "Bolder", "size": "Medium"},
+            {
+                "type": "FactSet",
+                "facts": [
+                    {"title": "Practice", "value": practice},
+                    {"title": "Manager", "value": manager_name},
+                    {"title": "Practice Director", "value": practice_director_name},
+                ],
+            },
+            {
+                "type": "Input.Text",
+                "id": "cert_name",
+                "label": "Certification name",
+                "placeholder": "e.g. AWS Certified Solutions Architect - Associate",
+                "isRequired": True,
+                "errorMessage": "Certification name is required.",
+            },
+            {
+                "type": "Input.ChoiceSet",
+                "id": "submission_status",
+                "label": "Status",
+                "style": "compact",
+                "value": "in_progress",
+                "isRequired": True,
+                "choices": [
+                    {"title": "In progress", "value": "in_progress"},
+                    {"title": "Completed", "value": "completed"},
+                    {"title": "Attempted - not cleared", "value": "gave_exam_but_failed"},
+                ],
+            },
+            {"type": "Input.Date", "id": "prep_start_date", "label": "Prep start date (optional)"},
+            {"type": "Input.Date", "id": "exam_end_date", "label": "Exam / completion date (optional)"},
+            {
+                "type": "Input.Text",
+                "id": "credly_link",
+                "label": "Credly badge link (required if Completed)",
+                "placeholder": "https://www.credly.com/badges/...",
+            },
+            {"type": "Input.Date", "id": "expiration_date", "label": "Expiration date (optional)"},
+        ],
+        "actions": [
+            {
+                "type": "Action.Submit",
+                "title": "Submit",
+                "data": {
+                    "form_type": "certification_submission",
+                    "manager_name": prefill.get("manager_name"),
+                    "practice_director_name": prefill.get("practice_director_name"),
+                },
+            }
+        ],
+    }
+    return Attachment(content_type="application/vnd.microsoft.card.adaptive", content=card)
+
+
+def _handle_certification_form_submission(
+    activity: Activity, connector: ConnectorClient, employee: Employee, db: Session
+) -> None:
+    """The other half of the same gap: even if a card had existed, its
+    Action.Submit arrives as a Teams activity with `value` set and no
+    `text` at all — the old code's `if not user_text: return` above would
+    have silently swallowed it. Calls the same submit_certification the
+    local test UI's form posts to directly (same verification, drive-
+    enrollment linking, and SharePoint write-back), never through the LLM —
+    this is a structured submission, not a conversational one."""
+    value = activity.value if isinstance(activity.value, dict) else {}
+    try:
+        payload = SubmissionIn(
+            employee_id=employee.employee_id,
+            cert_name=(value.get("cert_name") or "").strip(),
+            submission_status=value.get("submission_status") or "",
+            manager_name=value.get("manager_name") or None,
+            practice_director_name=value.get("practice_director_name") or None,
+            prep_start_date=value.get("prep_start_date") or None,
+            exam_end_date=value.get("exam_end_date") or None,
+            credly_link=value.get("credly_link") or None,
+            expiration_date=value.get("expiration_date") or None,
+        )
+    except ValidationError as exc:
+        reply = activity.create_reply(f"Sorry, that submission looked malformed: {exc}")
+        connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
+        return
+
+    try:
+        result = submit_certification(payload, db=db, current=employee)
+    except HTTPException as exc:
+        reply = activity.create_reply(f"Sorry, couldn't submit that: {exc.detail}")
+        connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
+        return
+
+    record = result.record
+    reply_text = (
+        f"Recorded **{record.cert_name}** as **{record.submission_status}** "
+        f"(verification: {record.verification_status})."
+    )
+    reply = activity.create_reply(reply_text)
+    connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
+
+
 def _handle_recognized_or_reply(activity: Activity, db: Session) -> None:
     """Everything after auth/tenant checks pass — sync/blocking end to
     end (DB lookup, the agent call, sending the Bot Framework reply),
@@ -230,6 +351,10 @@ def _handle_recognized_or_reply(activity: Activity, db: Session) -> None:
         connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
         return
 
+    if isinstance(activity.value, dict) and activity.value.get("form_type") == "certification_submission":
+        _handle_certification_form_submission(activity, connector, employee, db)
+        return
+
     user_text = (activity.text or "").strip()
     if not user_text:
         return  # non-text activity (e.g. a reaction, a typing indicator) — nothing to answer
@@ -242,6 +367,16 @@ def _handle_recognized_or_reply(activity: Activity, db: Session) -> None:
         return
 
     reply = activity.create_reply(chat_out.reply_text or "(I didn't get a text reply for that — please try rephrasing.)")
+    # The other half of the fix: chat_out.actions used to be dropped
+    # entirely here — the LLM would say "I've opened the form" (per
+    # prompts.py's instruction to always call open_certification_form
+    # rather than collect fields conversationally) with nothing for the
+    # user to actually see or fill in.
+    form_action = next(
+        (a for a in chat_out.actions if a.get("action") == "open_certification_form" and a.get("data")), None
+    )
+    if form_action:
+        reply.attachments = [_build_certification_form_card(form_action["data"])]
     connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
 
 
