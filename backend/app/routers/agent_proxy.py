@@ -22,6 +22,10 @@ endpoints (see DEVELOPMENT_LOG.md), just missed here since this route was
 added afterward.
 """
 
+import time
+import uuid
+from datetime import datetime, timezone
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -30,6 +34,7 @@ from app.config import settings
 from app.models import Employee
 from app.services import gcp_id_token
 from app.services.access_scope import get_current_employee
+from app.services.llm_call_log import log_llm_call
 from app.services.rate_limit import check_rate_limit
 
 router = APIRouter(prefix="/api/agent", tags=["agent_proxy"])
@@ -86,15 +91,18 @@ class ChatOut(BaseModel):
     raw_events: list[dict]
 
 
-def run_agent_chat(employee_id: str, message: str) -> ChatOut:
+def run_agent_chat(employee_id: str, message: str, endpoint: str = "/api/agent/chat") -> ChatOut:
     """The actual agent call, shared by every caller — always called with
     an already-resolved, already-trusted employee_id, never with one taken
     from a request body/query param at this layer. Rate-limited per
     employee_id regardless of which surface (local UI, Teams) triggered
-    the call."""
+    the call. `endpoint` is only for llm_call_log.py's own record of which
+    surface a given logged call came in through — routers/teams.py passes
+    its own path so the two callers' calls are distinguishable in the log."""
     check_rate_limit(employee_id)
     _ensure_session(employee_id)
 
+    call_started_at = time.monotonic()
     try:
         resp = _client.post(
             "/run",
@@ -108,12 +116,32 @@ def run_agent_chat(employee_id: str, message: str) -> ChatOut:
         )
         resp.raise_for_status()
     except httpx.HTTPError as exc:
+        log_llm_call(
+            agent_id=_AGENT_APP_NAME,
+            request_id=str(uuid.uuid4()),
+            provider="google",
+            model=None,
+            latency_ms=(time.monotonic() - call_started_at) * 1000,
+            status="error",
+            error_type=type(exc).__name__,
+            endpoint=endpoint,
+        )
         raise HTTPException(status_code=502, detail=f"Couldn't reach the agent: {exc}") from exc
 
     events = resp.json()
     reply_parts: list[str] = []
     actions: list[dict] = []
 
+    # One log row per real Gemini generation call in this turn — a single
+    # user message can trigger more than one (e.g. one call to decide on a
+    # tool, another for the final reply). event["timestamp"] is the actual
+    # wall-clock second the call completed (epoch float, from ADK/genai
+    # itself) — used both for this row's own `timestamp` and to compute
+    # this specific call's latency as the delta from the previous call (or
+    # from when this request was sent, for the first one), the same
+    # technique used to diagnose the token-fetcher latency bug directly
+    # against this deployment (see gcp_id_token.py's docstring).
+    prev_event_epoch = call_started_at - time.monotonic() + time.time()
     for event in events:
         content = event.get("content") or {}
         if content.get("role") != "model":
@@ -121,6 +149,26 @@ def run_agent_chat(employee_id: str, message: str) -> ChatOut:
         for part in content.get("parts", []):
             if part.get("text"):
                 reply_parts.append(part["text"])
+
+        usage = event.get("usageMetadata")
+        event_epoch = event.get("timestamp")
+        if usage and isinstance(event_epoch, (int, float)):
+            finish_reason = event.get("finishReason")
+            log_llm_call(
+                agent_id=event.get("author") or _AGENT_APP_NAME,
+                request_id=event.get("id") or str(uuid.uuid4()),
+                provider="google",
+                model=event.get("modelVersion"),
+                input_tokens=usage.get("promptTokenCount"),
+                output_tokens=usage.get("candidatesTokenCount"),
+                total_tokens=usage.get("totalTokenCount"),
+                latency_ms=(event_epoch - prev_event_epoch) * 1000,
+                status="success" if finish_reason == "STOP" else "error",
+                error_type=None if finish_reason == "STOP" else finish_reason,
+                endpoint=endpoint,
+                timestamp=datetime.fromtimestamp(event_epoch, tz=timezone.utc),
+            )
+            prev_event_epoch = event_epoch
 
     # UI-triggering tool calls are paired function_call/function_response
     # events with a "user" role (ADK logs tool results as role="user" back

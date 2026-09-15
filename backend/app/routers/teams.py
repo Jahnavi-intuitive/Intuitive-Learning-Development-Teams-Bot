@@ -448,7 +448,7 @@ def _handle_recognized_or_reply(activity: Activity, db: Session) -> None:
         return  # non-text activity (e.g. a reaction, a typing indicator) — nothing to answer
 
     try:
-        chat_out = run_agent_chat(employee.employee_id, user_text)
+        chat_out = run_agent_chat(employee.employee_id, user_text, endpoint="/api/teams/messages")
     except HTTPException as exc:
         reply = activity.create_reply(f"Sorry, something went wrong: {exc.detail}")
         connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)

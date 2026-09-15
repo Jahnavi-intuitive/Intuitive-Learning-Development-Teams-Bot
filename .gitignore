@@ -21,3 +21,7 @@ scripts/db_dump/*.sql
 # Local editor/tooling and ADK session artifacts — not part of the app.
 .claude/scheduled_tasks.lock
 agent/adk_agent/.adk/
+
+# Per-call LLM API log (services/llm_call_log.py) — local-disk runtime
+# data, wiped on every Render restart anyway (see that module's docstring).
+backend/logs/

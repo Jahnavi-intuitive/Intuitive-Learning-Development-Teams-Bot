@@ -6,6 +6,7 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -639,3 +640,41 @@ class ConversationMemory(Base):
     )
 
     employee: Mapped["Employee"] = relationship()
+
+
+class LlmCallLog(Base):
+    """Durable copy of every row services/llm_call_log.py also appends to
+    backend/logs/llm_calls.jsonl — added because that file alone doesn't
+    survive on Render: free web services have no persistent disk (see
+    RENDER_DEPLOY.md), so it's wiped on every restart/redeploy/idle spin-
+    down there. Postgres is this project's one store that's actually
+    durable everywhere it runs, local or deployed, so this table is the
+    real record; the file stays purely as a local tail-and-grep
+    convenience. Written via its own short-lived session
+    (services/llm_call_log.py opens SessionLocal() directly) rather than
+    threading a request-scoped `db` through every call site (agent_proxy.py,
+    embeddings.py, teams.py) — logging a call must never depend on, or
+    interfere with, the transaction the call itself is part of.
+
+    call_timestamp is the LLM call's own real completion time (from the
+    agent's event data where available), not "row inserted at" — that's
+    created_at, kept separately, same distinction this schema draws
+    elsewhere between a domain date and an audit timestamp."""
+
+    __tablename__ = "llm_call_log"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    call_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    agent_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(100), nullable=False)
+    model: Mapped[str | None] = mapped_column(String(100))
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
+    total_tokens: Mapped[int | None] = mapped_column(Integer)
+    latency_ms: Mapped[float | None] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    error_type: Mapped[str | None] = mapped_column(String(255))
+    endpoint: Mapped[str] = mapped_column(String(255), nullable=False)
+    env: Mapped[str] = mapped_column(String(50), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

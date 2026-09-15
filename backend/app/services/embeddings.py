@@ -19,6 +19,8 @@ Windows (see that module's docstring); on this specific local machine it
 routes around a network/EDR issue that has no equivalent on GCP.
 """
 
+import time
+import uuid
 from functools import lru_cache
 
 from google import genai
@@ -26,6 +28,7 @@ from google.genai import types
 
 from app.config import settings
 from app.services import curl_transport
+from app.services.llm_call_log import log_llm_call
 
 curl_transport.apply()
 
@@ -52,9 +55,35 @@ def _client() -> genai.Client:
 
 def embed_text(text: str) -> list[float]:
     """Return a settings.embedding_dim-length embedding vector for `text`."""
-    result = _client().models.embed_content(
+    started_at = time.monotonic()
+    try:
+        result = _client().models.embed_content(
+            model=settings.embedding_model,
+            contents=text,
+            config=types.EmbedContentConfig(output_dimensionality=settings.embedding_dim),
+        )
+    except Exception as exc:
+        log_llm_call(
+            agent_id="embeddings_service",
+            request_id=str(uuid.uuid4()),
+            provider="google",
+            model=settings.embedding_model,
+            latency_ms=(time.monotonic() - started_at) * 1000,
+            status="error",
+            error_type=type(exc).__name__,
+            endpoint="embed_content",
+        )
+        raise
+    # embed_content's response carries no token-usage field the way
+    # generate_content's does (see agent_proxy.py's own logging) — never
+    # fabricate input/output/total_tokens here, just log what's real.
+    log_llm_call(
+        agent_id="embeddings_service",
+        request_id=str(uuid.uuid4()),
+        provider="google",
         model=settings.embedding_model,
-        contents=text,
-        config=types.EmbedContentConfig(output_dimensionality=settings.embedding_dim),
+        latency_ms=(time.monotonic() - started_at) * 1000,
+        status="success",
+        endpoint="embed_content",
     )
     return list(result.embeddings[0].values)
