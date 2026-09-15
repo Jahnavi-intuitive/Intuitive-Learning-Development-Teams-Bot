@@ -187,16 +187,34 @@ def _auto_provision_employee(db: Session, aad_object_id: str, graph_user: GraphU
     return employee
 
 
+_STATUS_CHOICES = [
+    {"title": "In progress", "value": "in_progress"},
+    {"title": "Completed", "value": "completed"},
+    {"title": "Attempted - not cleared", "value": "gave_exam_but_failed"},
+]
+_STATUS_LABELS = {c["value"]: c["title"] for c in _STATUS_CHOICES}
+
+
 def _build_certification_form_card(prefill: dict) -> Attachment:
-    """The Teams equivalent of the local test UI's actual HTML submission
-    form (frontend/index.html) — that form only exists in the browser, so
-    without this the agent's open_certification_form action had nothing to
-    render in Teams at all (agent_proxy.py's chat_out.actions was silently
-    dropped here entirely; the LLM would say "I've opened the form" with no
-    form ever appearing). manager_name/practice_director_name are carried
-    in the Submit action's own `data` rather than as editable inputs — same
-    "never ask the user for something already known server-side" rule
-    tools.py's own docstring states for the chat path.
+    """Step 1 of 2 — the Teams equivalent of the local test UI's actual
+    HTML submission form (frontend/index.html); that form only exists in
+    the browser, so without this the agent's open_certification_form
+    action had nothing to render in Teams at all. manager_name/
+    practice_director_name are carried in the Submit action's own `data`
+    rather than as editable inputs — same "never ask the user for
+    something already known server-side" rule tools.py's own docstring
+    states for the chat path.
+
+    Deliberately just cert name + status here, not every field at once:
+    which of exam_end_date/credly_link even make sense depends on the
+    status the user is about to pick (you can't have an exam end date or
+    a badge link for something still in progress), and a static Adaptive
+    Card can't conditionally show/hide a field based on another field's
+    live value without a round trip — so step 2 (built once status is
+    known) only asks for what's actually applicable. expiration_date is
+    never asked at all, on either step — perform_verification derives it
+    from the Credly badge itself once verified (services/verification.py),
+    so a manually-typed value would just be second-guessing that.
     """
     practice = prefill.get("practice") or "Not on file"
     manager_name = prefill.get("manager_name") or "Not on file"
@@ -230,28 +248,15 @@ def _build_certification_form_card(prefill: dict) -> Attachment:
                 "style": "compact",
                 "value": "in_progress",
                 "isRequired": True,
-                "choices": [
-                    {"title": "In progress", "value": "in_progress"},
-                    {"title": "Completed", "value": "completed"},
-                    {"title": "Attempted - not cleared", "value": "gave_exam_but_failed"},
-                ],
+                "choices": _STATUS_CHOICES,
             },
-            {"type": "Input.Date", "id": "prep_start_date", "label": "Prep start date (optional)"},
-            {"type": "Input.Date", "id": "exam_end_date", "label": "Exam / completion date (optional)"},
-            {
-                "type": "Input.Text",
-                "id": "credly_link",
-                "label": "Credly badge link (required if Completed)",
-                "placeholder": "https://www.credly.com/badges/...",
-            },
-            {"type": "Input.Date", "id": "expiration_date", "label": "Expiration date (optional)"},
         ],
         "actions": [
             {
                 "type": "Action.Submit",
-                "title": "Submit",
+                "title": "Continue",
                 "data": {
-                    "form_type": "certification_submission",
+                    "form_type": "certification_form_basics",
                     "manager_name": prefill.get("manager_name"),
                     "practice_director_name": prefill.get("practice_director_name"),
                 },
@@ -261,16 +266,95 @@ def _build_certification_form_card(prefill: dict) -> Attachment:
     return Attachment(content_type="application/vnd.microsoft.card.adaptive", content=card)
 
 
+def _build_certification_details_card(
+    cert_name: str, submission_status: str, manager_name: str | None, practice_director_name: str | None
+) -> Attachment:
+    """Step 2 of 2 — only the fields that make sense for the status chosen
+    in step 1. Per direct instruction, exam_end_date and credly_link are
+    editable only when submission_status == "completed" — not for
+    in_progress (nothing to date or link yet) and not for
+    gave_exam_but_failed either (no badge; the attempt date isn't asked
+    for at submission time). credly_link is required when shown, matching
+    routers/certifications.py's own 422 if it's missing on a completed
+    submission. expiration_date never appears here either, same reason as
+    step 1's docstring."""
+    body: list[dict] = [
+        {
+            "type": "TextBlock",
+            "text": f"{cert_name} — {_STATUS_LABELS.get(submission_status, submission_status)}",
+            "weight": "Bolder",
+            "wrap": True,
+        },
+        {"type": "Input.Date", "id": "prep_start_date", "label": "Prep start date (optional)"},
+    ]
+    if submission_status == "completed":
+        body.append({"type": "Input.Date", "id": "exam_end_date", "label": "Exam / completion date (optional)"})
+        body.append(
+            {
+                "type": "Input.Text",
+                "id": "credly_link",
+                "label": "Credly badge link",
+                "placeholder": "https://www.credly.com/badges/...",
+                "isRequired": True,
+                "errorMessage": "A Credly badge link is required for a completed certification.",
+            }
+        )
+    card = {
+        "type": "AdaptiveCard",
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "version": "1.4",
+        "body": body,
+        "actions": [
+            {
+                "type": "Action.Submit",
+                "title": "Submit",
+                "data": {
+                    "form_type": "certification_submission",
+                    "cert_name": cert_name,
+                    "submission_status": submission_status,
+                    "manager_name": manager_name,
+                    "practice_director_name": practice_director_name,
+                },
+            }
+        ],
+    }
+    return Attachment(content_type="application/vnd.microsoft.card.adaptive", content=card)
+
+
+def _handle_certification_form_basics(activity: Activity, connector: ConnectorClient) -> None:
+    """Handles step 1's Continue — sends step 2, tailored to the status
+    just picked. Never touches the database; nothing's actually submitted
+    until step 2's own Action.Submit."""
+    value = activity.value if isinstance(activity.value, dict) else {}
+    cert_name = (value.get("cert_name") or "").strip()
+    submission_status = value.get("submission_status") or ""
+    if not cert_name or submission_status not in _STATUS_LABELS:
+        reply = activity.create_reply("Sorry, that didn't come through right — please try submitting again.")
+        connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
+        return
+
+    reply = activity.create_reply("Just a couple more details:")
+    reply.attachments = [
+        _build_certification_details_card(
+            cert_name, submission_status, value.get("manager_name"), value.get("practice_director_name")
+        )
+    ]
+    connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
+
+
 def _handle_certification_form_submission(
     activity: Activity, connector: ConnectorClient, employee: Employee, db: Session
 ) -> None:
-    """The other half of the same gap: even if a card had existed, its
-    Action.Submit arrives as a Teams activity with `value` set and no
-    `text` at all — the old code's `if not user_text: return` above would
-    have silently swallowed it. Calls the same submit_certification the
-    local test UI's form posts to directly (same verification, drive-
-    enrollment linking, and SharePoint write-back), never through the LLM —
-    this is a structured submission, not a conversational one."""
+    """Step 2's Action.Submit — the actual write. Even if a card had
+    existed at all before this fix, its Action.Submit arrives as a Teams
+    activity with `value` set and no `text` at all — the old code's
+    `if not user_text: return` above would have silently swallowed it.
+    Calls the same submit_certification the local test UI's form posts to
+    directly (same verification, drive-enrollment linking, and SharePoint
+    write-back), never through the LLM — this is a structured submission,
+    not a conversational one. expiration_date is intentionally never read
+    from `value` here — it's never on either card; perform_verification
+    fills it in from the Credly badge itself once verified."""
     value = activity.value if isinstance(activity.value, dict) else {}
     try:
         payload = SubmissionIn(
@@ -282,7 +366,6 @@ def _handle_certification_form_submission(
             prep_start_date=value.get("prep_start_date") or None,
             exam_end_date=value.get("exam_end_date") or None,
             credly_link=value.get("credly_link") or None,
-            expiration_date=value.get("expiration_date") or None,
         )
     except ValidationError as exc:
         reply = activity.create_reply(f"Sorry, that submission looked malformed: {exc}")
@@ -351,9 +434,14 @@ def _handle_recognized_or_reply(activity: Activity, db: Session) -> None:
         connector.conversations.reply_to_activity(activity.conversation.id, activity.id, reply)
         return
 
-    if isinstance(activity.value, dict) and activity.value.get("form_type") == "certification_submission":
-        _handle_certification_form_submission(activity, connector, employee, db)
-        return
+    if isinstance(activity.value, dict):
+        form_type = activity.value.get("form_type")
+        if form_type == "certification_form_basics":
+            _handle_certification_form_basics(activity, connector)
+            return
+        if form_type == "certification_submission":
+            _handle_certification_form_submission(activity, connector, employee, db)
+            return
 
     user_text = (activity.text or "").strip()
     if not user_text:
