@@ -9,15 +9,28 @@ falls back to an unauthenticated call if token fetch fails for any other
 reason (e.g. not actually running on GCP) — logged, not raised, since a
 broken internal call is a 502 either way and we'd rather see the real
 downstream error than one from this shim.
+
+2026-09-15: found (via direct timing on the deployed Render instance —
+warm agent_proxy.py -> agent /run calls were taking 10+ seconds longer
+than the backend's own equivalent direct calls) that `id_token.fetch_id_token`
+doesn't fail fast off-GCP — it retries the unreachable GCE metadata server
+with backoff before finally raising, once per call. `K_SERVICE` is set
+automatically on every real Cloud Run instance and nowhere else (Render
+included), so checking it first skips the slow probe entirely anywhere
+that isn't actually Cloud Run, with zero behavior change on Cloud Run
+itself.
 """
 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 
 def fetch_auth_header(target_url: str) -> dict[str, str]:
     if "localhost" in target_url or "127.0.0.1" in target_url:
+        return {}
+    if not os.environ.get("K_SERVICE"):
         return {}
     try:
         import google.auth.transport.requests
