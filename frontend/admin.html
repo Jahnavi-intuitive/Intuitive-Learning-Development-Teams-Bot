@@ -957,7 +957,11 @@ async function createDrive() {
     target_scope,
     target_scope_value,
     deadline,
-    reminder_cadence: remindersRaw ? remindersRaw.split(',').map(n => Number(n.trim())).filter(n => !isNaN(n)) : null,
+    // schemas.py's ReminderCadenceIn is {reminder_days: [...], escalation: [...]}, not
+    // a bare array — this form has no escalation-rule UI, so that half stays empty.
+    reminder_cadence: remindersRaw
+      ? { reminder_days: remindersRaw.split(',').map(n => Number(n.trim())).filter(n => !isNaN(n)), escalation: [] }
+      : null,
     certification_names: driveCertNames,
     is_test_data: document.getElementById('drvIsTest').checked,
   };
