@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intuitive L&amp;D AGI</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --panel: #ffffff; --border: #e5e5e9; --text: #1c1c1e; --muted: #6f6f76;
+    --accent: #c0392b; --accent-soft: #fbe9e7; --radius: 12px;
+    --shadow: 0 1px 2px rgba(20,20,25,0.04), 0 4px 14px rgba(20,20,25,0.06);
+    --sidebar-w: 232px; --sidebar-w-collapsed: 68px; --header-h: 60px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-size: 14px;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; }
+
+  #shell { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ---------------- sidebar ---------------- */
+  #sidebar {
+    width: var(--sidebar-w); flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; transition: width 0.16s ease-out; overflow: hidden; z-index: 20;
+  }
+  #sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+  #sidebar .side-scroll { flex: 1; overflow-y: auto; padding: 10px; }
+
+  .side-section-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); padding: 12px 10px 6px; white-space: nowrap; }
+  #sidebar.collapsed .side-section-label { opacity: 0; height: 0; padding: 0; overflow: hidden; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 8px; cursor: pointer;
+    color: var(--text); border: 1px solid transparent; margin-bottom: 2px; user-select: none;
+    transition: background 0.1s, color 0.1s;
+  }
+  .nav-item:hover { background: var(--bg); }
+  .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-item .nav-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+  .nav-item .nav-icon svg { width: 19px; height: 19px; stroke: currentColor; }
+  .nav-item .nav-label { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+  #sidebar.collapsed .nav-item .nav-label { display: none; }
+
+  #sidebarBackdrop { display: none; }
+
+  /* ---------------- header ---------------- */
+  #topHeader {
+    height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02); z-index: 10;
+  }
+  #hamburgerBtn {
+    border: none; background: none; cursor: pointer; padding: 7px; border-radius: 8px; color: var(--text);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  #hamburgerBtn:hover { background: var(--bg); }
+  #hamburgerBtn svg { width: 20px; height: 20px; stroke: currentColor; }
+
+  .logo-placeholder {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: #fff; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  #brandTitle { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+  #brandTitle .brand-sub { color: var(--muted); font-weight: 500; }
+
+  .header-spacer { flex: 1.15; }
+  .header-spacer.right { flex: 0.85; }
+
+  .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .header-btn {
+    display: flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--panel); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text);
+    transition: background 0.12s, border-color 0.12s, filter 0.12s; white-space: nowrap;
+  }
+  .header-btn svg { width: 15px; height: 15px; stroke: currentColor; flex-shrink: 0; }
+  .header-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .header-btn.primary:hover { filter: brightness(1.08); }
+  .header-btn.secondary:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  #welcomeWrap { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+  #welcomeText { font-size: 13px; color: var(--text); white-space: nowrap; }
+  #welcomeText strong { font-weight: 700; }
+  .avatar-badge {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ---------------- main area ---------------- */
+  #mainColumn { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #tabContent { flex: 1; overflow-y: auto; padding: 24px; }
+  .tab-panel { display: none; max-width: 1100px; margin: 0 auto; }
+  .tab-panel.active { display: block; }
+
+  .panel-header { margin-bottom: 18px; }
+  .panel-header h1 { font-size: 19px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .panel-header p { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .placeholder-card {
+    background: var(--panel); border: 1px dashed var(--border); border-radius: var(--radius);
+    padding: 48px 24px; text-align: center; color: var(--muted); box-shadow: var(--shadow);
+  }
+  .placeholder-card .ph-icon { width: 40px; height: 40px; margin: 0 auto 14px; color: var(--accent); opacity: 0.75; }
+  .placeholder-card .ph-icon svg { width: 100%; height: 100%; stroke: currentColor; }
+  .placeholder-card h3 { font-size: 14.5px; color: var(--text); margin: 0 0 6px; }
+  .placeholder-card p { font-size: 13px; margin: 0; max-width: 420px; margin-inline: auto; }
+
+  /* ---------------- dashboard (real data, single-screen KPI wall) ---------------- */
+  :root {
+    --chart-completed: #2ea043; --chart-in-progress: #c9950f; --chart-not-cleared: #c0392b; --chart-unknown: #9a9aa0;
+  }
+  #panel-dashboard.active { display: flex; flex-direction: column; height: 100%; max-width: none; }
+  #panel-dashboard .panel-header { margin-bottom: 12px; flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  #panel-dashboard .panel-header > div:first-child { min-width: 0; }
+  #dashDataAsOf { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+
+  .dash-shell { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+  .dash-error { color: var(--bad-text, #a12a2a); font-size: 13px; }
+
+  /* Per-provider KPI cards — per direct instruction, completed/in-progress/
+     not-cleared/completion-rate are never shown as one combined org-wide
+     figure; every metric here is bifurcated by provider instead. */
+  .dash-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex-shrink: 0; }
+  .provider-kpi-card {
+    background: var(--panel); border: 1px solid var(--border); border-top: 3px solid var(--accent);
+    border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 7px; min-width: 0;
+  }
+  .provider-kpi-card .pkc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .provider-kpi-card .pkc-name { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .provider-kpi-card .pkc-total { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .provider-kpi-card .pkc-badges { display: flex; flex-wrap: wrap; gap: 5px 10px; }
+  .provider-kpi-card .pkc-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .provider-kpi-card .pkc-badge .pkc-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .provider-kpi-card .pkc-badge .pkc-badge-val { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .provider-kpi-card .pkc-foot { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 6px; }
+  .provider-kpi-card .pkc-foot strong { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; }
+
+  .dash-charts-grid {
+    flex: 1; min-height: 0; display: grid; gap: 12px;
+    grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1.2fr;
+    grid-template-areas: "donut practice" "certchart certchart";
+  }
+  .dash-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .dash-panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 10px; flex-shrink: 0; }
+  .panel-donut { grid-area: donut; }
+  .panel-practice { grid-area: practice; }
+  .panel-certchart { grid-area: certchart; }
+
+  .dash-donut-wrap { flex: 1; min-height: 0; display: flex; align-items: center; gap: 18px; }
+  .dash-donut { position: relative; width: 118px; height: 118px; flex-shrink: 0; }
+  .dash-donut svg { width: 100%; height: 100%; }
+  .dash-donut .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .dash-donut .donut-center .dc-value { font-size: 19px; font-weight: 700; }
+  .dash-donut .donut-center .dc-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .dash-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; overflow-y: auto; }
+  .dash-legend .legend-row { display: flex; align-items: center; gap: 8px; }
+  .dash-legend .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dash-legend .legend-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dash-legend .legend-value { font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+  /* per-certification stacked column chart — grouped strictly by provider
+     (never a combined/interleaved ranking across providers): each provider
+     gets its own labeled section, separated by a divider, sized roughly by
+     how many certifications it has so a provider with many distinct certs
+     doesn't crowd out one with few. */
+  .certchart-wrap { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 16px; }
+  .certchart-group { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--border); padding-right: 16px; }
+  .certchart-group:last-child { border-right: none; padding-right: 0; }
+  .certchart-group-label {
+    flex-shrink: 0; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--accent); margin-bottom: 6px; text-align: center;
+  }
+  .certchart-group-bars { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 2px; }
+  .cert-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+  .cert-col .cert-total { flex-shrink: 0; font-size: 10.5px; font-weight: 700; margin-bottom: 3px; font-variant-numeric: tabular-nums; }
+  .cert-col .cert-bar-track { flex: 1; min-height: 0; width: 68%; display: flex; align-items: flex-end; }
+  .cert-col .cert-bar { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 4px 4px 0 0; overflow: hidden; }
+  .cert-col .cert-seg { width: 100%; }
+  .cert-col .cert-label {
+    flex-shrink: 0; margin-top: 6px; font-size: 10px; color: var(--muted); text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+
+  /* Rows use flex:1 (not a fixed height) so N rows always divide however
+     much vertical space the panel actually has — at a short viewport this
+     shrinks every row instead of silently clipping the last one via
+     overflow:hidden (a real bug hit at 1366x768 with 8 fixed-height rows). */
+  .dash-bar-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+  .bar-list-row { flex: 1; min-height: 0; display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+  .bar-list-row .bl-label { flex: 0 0 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-list-row .bl-track { flex: 1; align-self: stretch; max-height: 20px; border-radius: 5px; background: var(--bg); overflow: hidden; }
+  .bar-list-row .bl-fill { height: 100%; background: var(--accent); border-radius: 5px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; min-width: 26px; }
+  .bar-list-row .bl-fill .bl-inline-value { font-size: 11px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 1100px) {
+    .dash-kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Below the sidebar-overlay breakpoint, packing a 6-tile KPI row + 2x2
+     chart grid into one unscrolled screen stops being realistic at
+     small-viewport font sizes — let the dashboard flow and scroll there
+     instead of shrinking text past readability. */
+  @media (max-width: 900px) {
+    #panel-dashboard.active { display: block; height: auto; }
+    .dash-shell { display: block; }
+    .dash-charts-grid { display: flex; flex-direction: column; margin-top: 12px; }
+    .dash-panel { min-height: 220px; }
+  }
+
+  /* ---------------- responsive ---------------- */
+  @media (max-width: 900px) {
+    #sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+      transform: translateX(-100%); transition: transform 0.16s ease-out; box-shadow: 0 0 0 rgba(0,0,0,0);
+    }
+    #sidebar.mobile-open { transform: translateX(0); box-shadow: 8px 0 24px rgba(0,0,0,0.12); }
+    #sidebar.collapsed { width: var(--sidebar-w); }
+    #sidebar.collapsed .nav-item { justify-content: flex-start; padding: 9px 10px; }
+    #sidebar.collapsed .nav-item .nav-label { display: block; }
+    #sidebar.collapsed .side-section-label { opacity: 1; height: auto; padding: 12px 10px 6px; }
+    #sidebarBackdrop.show { display: block; position: fixed; inset: 0; background: rgba(20,20,25,0.35); z-index: 15; }
+  }
+
+  @media (max-width: 720px) {
+    #brandTitle .brand-sub { display: none; }
+    .header-btn .btn-label { display: none; }
+    .header-btn { padding: 8px 10px; }
+    #welcomeText .full-name { display: none; }
+    #topHeader { padding: 0 12px; gap: 8px; }
+    #tabContent { padding: 16px; }
+  }
+
+  @media (max-width: 480px) {
+    #brandTitle { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <div id="sidebarBackdrop"></div>
+
+  <aside id="sidebar">
+    <div class="side-scroll" role="tablist" aria-orientation="vertical" aria-label="Portal sections">
+      <div class="side-section-label">Menu</div>
+      <div class="nav-item active" id="tab-dashboard" data-tab="dashboard" title="Dashboard" role="tab" tabindex="0" aria-selected="true" aria-controls="panel-dashboard">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" id="tab-trends" data-tab="trends" title="Trends" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-trends">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg></span>
+        <span class="nav-label">Trends</span>
+      </div>
+      <div class="nav-item" id="tab-ask-me" data-tab="ask-me" title="Ask Me" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-ask-me">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
+        <span class="nav-label">Ask Me</span>
+      </div>
+      <div class="nav-item" id="tab-catalog" data-tab="catalog" title="Certification Catalog" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-catalog">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg></span>
+        <span class="nav-label">Certification Catalog</span>
+      </div>
+      <div class="nav-item" id="tab-learning-paths" data-tab="learning-paths" title="Learning Paths" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-learning-paths">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.3"/><circle cx="19" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M6.8 8 11 16M17.2 8 13 16"/></svg></span>
+        <span class="nav-label">Learning Paths</span>
+      </div>
+      <div class="nav-item" id="tab-notifications" data-tab="notifications" title="Notifications" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-notifications">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
+        <span class="nav-label">Notifications</span>
+      </div>
+    </div>
+  </aside>
+
+  <div id="mainColumn">
+    <header id="topHeader">
+      <button id="hamburgerBtn" title="Toggle menu" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="logo-placeholder" title="Logo">L&amp;D</div>
+      <div id="brandTitle">Intuitive <span class="brand-sub">L&amp;D AGI</span></div>
+
+      <div class="header-spacer"></div>
+
+      <div class="header-actions">
+        <button class="header-btn primary" id="submitCertBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          <span class="btn-label">Submit Your Certification</span>
+        </button>
+        <button class="header-btn secondary" id="viewStatusBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          <span class="btn-label">View My Status</span>
+        </button>
+      </div>
+
+      <div class="header-spacer right"></div>
+
+      <div id="welcomeWrap">
+        <div id="welcomeText">Welcome, <strong id="welcomeName">…</strong></div>
+        <div class="avatar-badge" id="avatarBadge">–</div>
+      </div>
+    </header>
+
+    <div id="tabContent">
+
+      <section class="tab-panel active" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+        <div class="panel-header">
+          <div>
+            <h1>Dashboard</h1>
+            <p>Certification status across Anthropic, Gemini, AWS &amp; Databricks.</p>
+          </div>
+          <div id="dashDataAsOf"></div>
+        </div>
+        <div class="dash-shell" id="dashShell">
+          <div class="dash-kpi-row" id="dashKpiRow"></div>
+          <div class="dash-charts-grid">
+            <div class="dash-panel panel-donut">
+              <h3>Status Breakdown</h3>
+              <div class="dash-donut-wrap">
+                <div class="dash-donut" id="statusDonut"></div>
+                <div class="dash-legend" id="statusLegend"></div>
+              </div>
+            </div>
+            <div class="dash-panel panel-practice">
+              <h3>By Practice</h3>
+              <div class="dash-bar-list" id="practiceList"></div>
+            </div>
+            <div class="dash-panel panel-certchart">
+              <h3>Certification Breakdown</h3>
+              <div class="certchart-wrap" id="certChart"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-trends" role="tabpanel" aria-labelledby="tab-trends">
+        <div class="panel-header">
+          <h1>Trends</h1>
+          <p>Certification and completion trends over time.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>Charts and historical trend data will appear here once wired up.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-ask-me" role="tabpanel" aria-labelledby="tab-ask-me">
+        <div class="panel-header">
+          <h1>Ask Me</h1>
+          <p>Chat with the L&amp;D assistant about certifications and learning paths.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>The assistant experience will be embedded here.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-catalog" role="tabpanel" aria-labelledby="tab-catalog">
+        <div class="panel-header">
+          <h1>Certification Catalog</h1>
+          <p>Browse certifications available across the organization.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>The full catalog will be listed here.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-learning-paths" role="tabpanel" aria-labelledby="tab-learning-paths">
+        <div class="panel-header">
+          <h1>Learning Paths</h1>
+          <p>Structured tracks toward role-relevant certifications.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.3"/><circle cx="19" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M6.8 8 11 16M17.2 8 13 16"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>Your assigned or recommended learning paths will show up here.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications">
+        <div class="panel-header">
+          <h1>Notifications</h1>
+          <p>Reminders, expiring certifications, and drive deadlines.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>Your notifications will be listed here.</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const MOBILE_BREAKPOINT = 900;
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+
+function isMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+
+function loadCollapsedPref() {
+  try { return localStorage.getItem('ld_sidebar_collapsed') === '1'; } catch (e) { return false; }
+}
+function saveCollapsedPref(collapsed) {
+  try { localStorage.setItem('ld_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+}
+
+if (!isMobile() && loadCollapsedPref()) sidebar.classList.add('collapsed');
+
+function toggleSidebar() {
+  if (isMobile()) {
+    const open = sidebar.classList.toggle('mobile-open');
+    sidebarBackdrop.classList.toggle('show', open);
+  } else {
+    const collapsed = sidebar.classList.toggle('collapsed');
+    saveCollapsedPref(collapsed);
+  }
+}
+
+hamburgerBtn.addEventListener('click', toggleSidebar);
+sidebarBackdrop.addEventListener('click', () => {
+  sidebar.classList.remove('mobile-open');
+  sidebarBackdrop.classList.remove('show');
+});
+
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    sidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('show');
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
+    sidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('show');
+    hamburgerBtn.focus();
+  }
+});
+
+function activateNavItem(item) {
+  const tab = item.dataset.tab;
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const active = n === item;
+    n.classList.toggle('active', active);
+    n.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tab}`));
+  if (isMobile()) {
+    sidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('show');
+  }
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => activateNavItem(item));
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      activateNavItem(item);
+    }
+  });
+});
+
+function selectTab(tabId) {
+  const item = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+  if (item) item.click();
+}
+
+document.getElementById('submitCertBtn').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+document.getElementById('viewStatusBtn').addEventListener('click', () => {
+  selectTab('dashboard');
+});
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function initials(name) {
+  const parts = String(name).trim().split(/\s+/).filter(p => /^[A-Za-z]/.test(p));
+  if (!parts.length) return '–';
+  return ((parts[0][0] || '') + (parts[parts.length - 1][0] || '')).toUpperCase();
+}
+
+async function loadCurrentUser() {
+  try {
+    const resp = await fetch('/api/employees');
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    const employees = await resp.json();
+    if (!employees.length) throw new Error('no employees');
+    const name = employees[0].name || 'Guest';
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0] || name;
+    const last = parts.slice(1).join(' ');
+    document.getElementById('welcomeName').innerHTML =
+      `${esc(first)} <span class="full-name">${esc(last)}</span>`;
+    document.getElementById('avatarBadge').textContent = initials(name);
+  } catch (e) {
+    document.getElementById('welcomeName').textContent = 'Guest';
+    document.getElementById('avatarBadge').textContent = '–';
+  }
+}
+
+loadCurrentUser();
+
+// ---------------------------------------------------------------------
+// Dashboard tab — real certification data from /api/portal/dashboard/summary
+// (lnd_portal database — see backend/app/routers/portal_dashboard.py)
+// ---------------------------------------------------------------------
+
+const PROVIDER_LABELS = { anthropic: 'Anthropic', gemini: 'Gemini', aws: 'AWS', databricks: 'Databricks' };
+const STATUS_META = {
+  completed: { label: 'Completed', color: 'var(--chart-completed)' },
+  in_progress: { label: 'In Progress', color: 'var(--chart-in-progress)' },
+  not_cleared: { label: 'Attempted – Not Cleared', color: 'var(--chart-not-cleared)' },
+  unknown: { label: 'Unknown', color: 'var(--chart-unknown)' },
+};
+const STATUS_ORDER = ['completed', 'in_progress', 'not_cleared', 'unknown'];
+
+function renderKpis(byProvider) {
+  document.getElementById('dashKpiRow').innerHTML = byProvider.map(p => {
+    const rate = p.total ? Math.round((p.completed / p.total) * 100) : 0;
+    const badges = STATUS_ORDER.filter(key => p[key] > 0).map(key => `
+      <span class="pkc-badge">
+        <span class="pkc-dot" style="background:${STATUS_META[key].color}"></span>
+        <span class="pkc-badge-val">${esc(p[key])}</span> ${esc(STATUS_META[key].label)}
+      </span>
+    `).join('');
+    return `
+      <div class="provider-kpi-card">
+        <div class="pkc-head">
+          <span class="pkc-name">${esc(PROVIDER_LABELS[p.provider] || p.provider)}</span>
+          <span class="pkc-total">${esc(p.total)}</span>
+        </div>
+        <div class="pkc-badges">${badges}</div>
+        <div class="pkc-foot">
+          <span>Completion <strong>${rate}%</strong></span>
+          <span><strong>${esc(p.distinct_certifications)}</strong> certs tracked</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStatusDonut(byStatus, totalRecords) {
+  const counts = Object.fromEntries(byStatus.map(s => [s.status, s.count]));
+  let cumulative = 0;
+  const circles = STATUS_ORDER.filter(key => counts[key] > 0).map(key => {
+    const pct = totalRecords ? (counts[key] / totalRecords) * 100 : 0;
+    const circle = `<circle cx="21" cy="21" r="15.9155" fill="transparent" stroke-width="6"
+      stroke-dasharray="${pct} ${100 - pct}" stroke-dashoffset="${-cumulative}"
+      style="stroke:${STATUS_META[key].color}"/>`;
+    cumulative += pct;
+    return circle;
+  }).join('');
+  document.getElementById('statusDonut').innerHTML = `
+    <svg viewBox="0 0 42 42" style="transform: rotate(-90deg)">
+      <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="var(--bg)" stroke-width="6"/>
+      ${circles}
+    </svg>
+    <div class="donut-center">
+      <div class="dc-value">${esc(totalRecords)}</div>
+      <div class="dc-label">Records</div>
+    </div>
+  `;
+  document.getElementById('statusLegend').innerHTML = STATUS_ORDER.filter(key => counts[key] > 0).map(key => `
+    <div class="legend-row">
+      <span class="legend-dot" style="background:${STATUS_META[key].color}"></span>
+      <span class="legend-label">${esc(STATUS_META[key].label)}</span>
+      <span class="legend-value">${esc(counts[key])}</span>
+    </div>
+  `).join('');
+}
+
+// Short label for a cert-chart column — full name always kept in the
+// title tooltip; this is just what fits under a ~70px-wide column.
+function shortCertLabel(name) {
+  let s = name.replace(/\bCertified\b/gi, '').replace(/\bCertification\b/gi, '')
+    .replace(/\bDatabricks\b/gi, 'DBX').replace(/\s+/g, ' ').trim();
+  if (s.length > 18) s = s.slice(0, 17) + '…';
+  return s;
+}
+
+function renderCertChart(byCertificationGroups) {
+  // One global max so bar heights stay comparable across every provider's
+  // section (a 279-count Anthropic bar and a 4-count AWS bar both read
+  // against the same scale) — only the grouping/ordering is per-provider,
+  // never the data itself.
+  const maxTotal = Math.max(1, ...byCertificationGroups.flatMap(g => g.certifications.map(c => c.total)));
+  document.getElementById('certChart').innerHTML = byCertificationGroups.map(group => {
+    const bars = group.certifications.map(c => {
+      const segs = STATUS_ORDER.filter(key => c[key] > 0).map(key => {
+        const pct = c.total ? (c[key] / c.total) * 100 : 0;
+        return `<div class="cert-seg" style="height:${pct}%;background:${STATUS_META[key].color}" title="${esc(STATUS_META[key].label)}: ${esc(c[key])}"></div>`;
+      }).join('');
+      const barPct = (c.total / maxTotal) * 100;
+      return `
+        <div class="cert-col">
+          <div class="cert-total">${esc(c.total)}</div>
+          <div class="cert-bar-track"><div class="cert-bar" style="height:${barPct}%">${segs}</div></div>
+          <div class="cert-label" title="${esc(c.certification_name)}">${esc(shortCertLabel(c.certification_name))}</div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="certchart-group" style="flex:${group.certifications.length}">
+        <div class="certchart-group-label">${esc(PROVIDER_LABELS[group.provider] || group.provider)}</div>
+        <div class="certchart-group-bars">${bars}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderBarList(containerId, rows) {
+  const maxVal = Math.max(1, ...rows.map(r => r.value));
+  document.getElementById(containerId).innerHTML = rows.map(r => `
+    <div class="bar-list-row">
+      <div class="bl-label" title="${esc(r.label)}">${esc(r.label)}</div>
+      <div class="bl-track"><div class="bl-fill" style="width:${(r.value / maxVal) * 100}%">
+        <span class="bl-inline-value">${esc(r.value)}</span>
+      </div></div>
+    </div>
+  `).join('');
+}
+
+async function loadDashboard() {
+  try {
+    const resp = await fetch('/api/portal/dashboard/summary');
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    const data = await resp.json();
+
+    renderKpis(data.by_provider);
+    renderStatusDonut(data.by_status, data.totals.total_records);
+    renderCertChart(data.by_certification);
+    renderBarList('practiceList', data.by_practice.map(p => ({
+      label: p.practice, value: p.total_count,
+    })));
+
+    document.getElementById('dashDataAsOf').textContent =
+      `Data as of ${new Date(data.data_as_of).toLocaleString()}`;
+  } catch (e) {
+    document.getElementById('dashShell').innerHTML = `<div class="dash-error">Couldn't load dashboard data: ${esc(e.message)}</div>`;
+  }
+}
+
+loadDashboard();
+setInterval(loadDashboard, 60000);
+</script>
+</body>
+</html>

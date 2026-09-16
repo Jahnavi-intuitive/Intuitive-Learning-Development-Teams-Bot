@@ -33,6 +33,7 @@ from app.routers import (
     knowledge_base,
     learning_paths,
     notifications,
+    portal_dashboard,
     teams,
     tracker,
     verification,
@@ -74,6 +75,7 @@ app.include_router(knowledge_base.router)
 app.include_router(escalations.router)
 app.include_router(agent_proxy.router)
 app.include_router(dashboards.router)
+app.include_router(portal_dashboard.router)
 app.include_router(drives.router)
 app.include_router(notifications.router)
 app.include_router(internal.router)
