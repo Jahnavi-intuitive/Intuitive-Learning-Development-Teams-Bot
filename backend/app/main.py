@@ -33,6 +33,8 @@ from app.routers import (
     knowledge_base,
     learning_paths,
     notifications,
+    portal_admin,
+    portal_dashboard,
     teams,
     tracker,
     verification,
@@ -74,6 +76,8 @@ app.include_router(knowledge_base.router)
 app.include_router(escalations.router)
 app.include_router(agent_proxy.router)
 app.include_router(dashboards.router)
+app.include_router(portal_dashboard.router)
+app.include_router(portal_admin.router)
 app.include_router(drives.router)
 app.include_router(notifications.router)
 app.include_router(internal.router)
@@ -436,10 +440,27 @@ def learning_path_graph(
     }
 
 
+class _NoCacheStaticFiles(StaticFiles):
+    """Plain StaticFiles left the browser free to heuristically cache
+    frontend/*.html with no explicit Cache-Control header at all — real,
+    hit during this project's own active development: edits saved and
+    confirmed served by a direct curl were still invisible in the browser
+    after a plain reload (and sometimes even a hard reload), since nothing
+    told the browser it had to revalidate. `no-cache` (not `no-store`)
+    still lets the browser reuse a cached response once the server
+    confirms via ETag/Last-Modified it's unchanged (a real 304), it just
+    removes the option to skip asking entirely."""
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # Mounted last, deliberately: FastAPI/Starlette match routes in the order
 # they're registered, so every /api/... route above gets first look. This
 # catch-all StaticFiles mount at "/" only serves what nothing above already
 # claimed — the custom single-page frontend (frontend/index.html and
 # assets), same-origin with the API so the browser never needs CORS config.
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
-app.mount("/", StaticFiles(directory=_FRONTEND_DIR, html=True), name="frontend")
+app.mount("/", _NoCacheStaticFiles(directory=_FRONTEND_DIR, html=True), name="frontend")

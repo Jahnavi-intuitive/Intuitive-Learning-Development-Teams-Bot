@@ -6,12 +6,17 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://lnd_app:change_me_locally@localhost:5432/lnd_certification"
+    # Separate physical database for the new L&D portal (real org certification
+    # data fed in via REAL EXCEL SHEETS) — deliberately its own database, not
+    # new tables in lnd_certification, per direct instruction to keep this
+    # real data isolated from the existing seeded/demo data above.
+    portal_database_url: str = "postgresql+psycopg://lnd_app:change_me_locally@localhost:5432/lnd_portal"
     gemini_api_key: str = ""
     tracker_xlsx_path: str = "./data/trackers/certification_tracker.xlsx"
     dev_default_employee_id: str = ""
     agent_url: str = "http://localhost:8001"
 
-    @field_validator("database_url")
+    @field_validator("database_url", "portal_database_url")
     @classmethod
     def _normalize_database_url(cls, v: str) -> str:
         """Render (and Heroku, and most other PaaS Postgres add-ons) hand

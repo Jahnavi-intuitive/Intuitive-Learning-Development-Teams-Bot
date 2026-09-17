@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intuitive L&amp;D AGI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+// Set the theme attribute synchronously, before first paint, so there's no
+// flash of the wrong theme — OS preference is the fallback for standalone/
+// browser use; the Teams JS SDK wiring (bottom of this file) overrides this
+// once real Teams context resolves, for the Teams-hosted case.
+(function () {
+  try {
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  } catch (e) {}
+})();
+</script>
+<script src="https://res.cdn.office.net/teams-js/2.19.0/js/MicrosoftTeamsLibrary.js" onerror="window.__teamsSdkLoadFailed = true"></script>
+<style>
+  :root {
+    --bg: #f5f5f7; --panel: #ffffff; --border: #e5e5e9; --text: #1c1c1e; --muted: #6f6f76;
+    --accent: #c0392b; --accent-soft: #fbe9e7; --radius: 12px;
+    --shadow: 0 1px 2px rgba(20,20,25,0.04), 0 4px 14px rgba(20,20,25,0.06);
+    --sidebar-w: 232px; --sidebar-w-collapsed: 68px; --header-h: 60px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-size: 14px;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; }
+
+  #shell { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ---------------- sidebar ---------------- */
+  #sidebar {
+    width: var(--sidebar-w); flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; transition: width 0.16s ease-out; overflow: hidden; z-index: 20;
+  }
+  #sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+  #sidebar .side-scroll { flex: 1; overflow-y: auto; padding: 10px; }
+
+  .side-section-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); padding: 12px 10px 6px; white-space: nowrap; }
+  #sidebar.collapsed .side-section-label { opacity: 0; height: 0; padding: 0; overflow: hidden; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 8px; cursor: pointer;
+    color: var(--text); border: 1px solid transparent; margin-bottom: 2px; user-select: none;
+    transition: background 0.1s, color 0.1s;
+  }
+  .nav-item:hover { background: var(--bg); }
+  .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-item .nav-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+  .nav-item .nav-icon svg { width: 19px; height: 19px; stroke: currentColor; }
+  .nav-item .nav-label { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+  #sidebar.collapsed .nav-item .nav-label { display: none; }
+
+  #sidebarBackdrop { display: none; }
+
+  /* ---------------- header ---------------- */
+  #topHeader {
+    height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02); z-index: 10;
+  }
+  #hamburgerBtn {
+    border: none; background: none; cursor: pointer; padding: 7px; border-radius: 8px; color: var(--text);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  #hamburgerBtn:hover { background: var(--bg); }
+  #hamburgerBtn svg { width: 20px; height: 20px; stroke: currentColor; }
+
+  .logo-placeholder {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: #fff; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  #brandTitle { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+  #brandTitle .brand-sub { color: var(--muted); font-weight: 500; }
+
+  .header-spacer { flex: 1.15; }
+  .header-spacer.right { flex: 0.85; }
+
+  .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .header-btn {
+    display: flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--panel); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text);
+    transition: background 0.12s, border-color 0.12s, filter 0.12s; white-space: nowrap;
+  }
+  .header-btn svg { width: 15px; height: 15px; stroke: currentColor; flex-shrink: 0; }
+  .header-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .header-btn.primary:hover { filter: brightness(1.08); }
+  .header-btn.secondary:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  #welcomeWrap { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+  #welcomeText { font-size: 13px; color: var(--text); white-space: nowrap; }
+  #welcomeText strong { font-weight: 700; }
+  .avatar-badge {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ---------------- main area ---------------- */
+  #mainColumn { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #tabContent { flex: 1; overflow-y: auto; padding: 24px; }
+  .tab-panel { display: none; max-width: 1100px; margin: 0 auto; }
+  .tab-panel.active { display: block; }
+
+  .panel-header { margin-bottom: 18px; }
+  .panel-header h1 { font-size: 19px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .panel-header p { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .placeholder-card {
+    background: var(--panel); border: 1px dashed var(--border); border-radius: var(--radius);
+    padding: 48px 24px; text-align: center; color: var(--muted); box-shadow: var(--shadow);
+  }
+  .placeholder-card .ph-icon { width: 40px; height: 40px; margin: 0 auto 14px; color: var(--accent); opacity: 0.75; }
+  .placeholder-card .ph-icon svg { width: 100%; height: 100%; stroke: currentColor; }
+  .placeholder-card h3 { font-size: 14.5px; color: var(--text); margin: 0 0 6px; }
+  .placeholder-card p { font-size: 13px; margin: 0; max-width: 420px; margin-inline: auto; }
+
+  /* ================= Insights dashboard — design tokens (scoped to
+     #panel-dashboard only; sidebar/header keep the app-wide tokens above) ================= */
+  #panel-dashboard {
+    --font-sans: 'IBM Plex Sans', -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --bg: #EEF1F4; --surface: #FFFFFF; --surface-2: #F5F7F9; --ink: #142430; --ink-soft: #5C6B77; --line: #DEE3E7;
+    --teal: #1B6E72; --good: #0ca30c; --warning: #c98500; --critical: #d03b3b;
+    --good-tint: #e4f5e4; --warning-tint: #fbeed4; --critical-tint: #fbe2e2;
+    --hatch-color: rgba(20,36,48,0.22);
+
+    font-family: var(--font-sans);
+    color: var(--ink);
+    max-width: none;
+  }
+  :root[data-theme="dark"] #panel-dashboard {
+    --bg: #0F1720; --surface: #161F29; --surface-2: #1B2530; --ink: #E7EDF2; --ink-soft: #8FA0AC; --line: #2B3A46;
+    --teal: #57C2BE; --good-tint: #123018; --warning-tint: #332711; --critical-tint: #341717;
+    --hatch-color: rgba(231,237,242,0.28);
+  }
+  /* Teams "contrast" theme: a real pass, not dark-as-is — near-black surfaces,
+     brighter borders/text, boosted state colors for legibility. */
+  :root[data-theme="contrast"] #panel-dashboard {
+    --bg: #000000; --surface: #0B0B0B; --surface-2: #171717; --ink: #FFFFFF; --ink-soft: #D6D6D6; --line: #7A7A7A;
+    --teal: #6FE0DB; --good: #3ddc3d; --warning: #ffb300; --critical: #ff5c5c;
+    --good-tint: #0f2a0f; --warning-tint: #3d2c02; --critical-tint: #3a1010;
+    --hatch-color: rgba(255,255,255,0.4);
+  }
+
+  #panel-dashboard.active { display: block; height: 100%; overflow-y: auto; background: var(--bg); margin: -24px; padding: 24px; }
+  .dash-error { color: var(--critical); font-size: 13px; }
+
+  .dash-section { margin-bottom: 26px; }
+  .dash-section-title { font-size: 14px; font-weight: 600; margin: 0 0 3px; color: var(--ink); }
+  .dash-section-sub { font-size: 11.5px; color: var(--ink-soft); margin: 0 0 10px; }
+  .dash-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+
+  /* Sections 1 + 2 side by side on wide screens; stacked below 1100px so
+     neither the leaderboard cards nor the heatmap's own practice columns
+     get squeezed unreadably. */
+  .dash-two-col { display: flex; gap: 18px; align-items: stretch; }
+  .dash-two-col .dash-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+  .dash-two-col .dash-card { flex: 1; }
+  @media (max-width: 1100px) { .dash-two-col { flex-direction: column; } .dash-two-col .dash-card { flex: none; } }
+
+  /* ---------------- Section 1: provider leaderboard (medium-sized cards) ---------------- */
+  .lb-legend-row { display: flex; gap: 16px; font-size: 11px; color: var(--ink-soft); margin-bottom: 10px; }
+  .lb-legend-row .ll-swatch { display: inline-block; width: 14px; height: 7px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+  .lb-legend-row .ll-swatch.solid { background: var(--ink-soft); }
+  .lb-legend-row .ll-swatch.hatch { background-color: var(--surface-2); background-image: repeating-linear-gradient(135deg, var(--hatch-color) 0 3px, transparent 3px 6px); }
+
+  .lb-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+  .lb-card { position: relative; height: 68px; box-sizing: border-box; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; display: flex; flex-direction: column; justify-content: space-between; gap: 2px; min-width: 0; }
+  .lb-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .lb-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .lb-name { font-size: 10.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-big { display: flex; align-items: baseline; gap: 3px; font-family: var(--font-mono); }
+  .lb-big .lb-completed { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .lb-big .lb-slash { font-size: 11px; color: var(--ink-soft); }
+  .lb-big .lb-target { font-size: 11px; color: var(--ink-soft); }
+  .lb-bar-track { height: 5px; border-radius: 3px; background: var(--surface); overflow: hidden; display: flex; }
+  .lb-bar-solid { height: 100%; }
+  .lb-bar-hatch { height: 100%; background-color: var(--surface); background-image: repeating-linear-gradient(135deg, var(--hatch-color) 0 3px, transparent 3px 6px); }
+  .lb-caption { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--ink-soft); font-family: var(--font-mono); }
+  .lb-caption-muted { font-size: 9.5px; color: var(--ink-soft); font-style: italic; }
+  .lb-tooltip {
+    display: none; position: absolute; left: 12px; right: 12px; top: 100%; margin-top: 6px;
+    background: var(--ink); color: var(--surface); font-size: 10.5px; padding: 6px 9px; border-radius: 7px; z-index: 5;
+    font-family: var(--font-mono); box-shadow: 0 6px 18px rgba(0,0,0,0.22); pointer-events: none;
+  }
+  .lb-card.tt-open .lb-tooltip { display: block; }
+  @media (max-width: 700px) { .lb-grid { grid-template-columns: 1fr; } }
+
+  /* ---------------- Section 2: provider x practice heatmap (compact) ---------------- */
+  .hm-scroll { overflow-x: auto; }
+  .hm-table { border-collapse: separate; border-spacing: 4px; width: max-content; min-width: 100%; }
+  .hm-table th { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); font-weight: 600; padding: 3px 6px; text-align: center; white-space: nowrap; }
+  .hm-table th.hm-row-head { text-align: left; }
+  .hm-row-label { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--ink); white-space: nowrap; padding: 0 6px; }
+  .hm-row-label .lb-dot { width: 7px; height: 7px; }
+  .hm-cell { min-width: 56px; height: 30px; border-radius: 6px; text-align: center; vertical-align: middle; font-family: var(--font-mono); font-weight: 600; font-size: 11px; }
+  .hm-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 10.5px; color: var(--ink-soft); }
+  .hm-legend-bar { width: 140px; height: 7px; border-radius: 4px; background: linear-gradient(to right, #cde2fb, #256abf, #0d366b); }
+
+  /* ---------------- Section 3: provider drill-down ---------------- */
+  .pd-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .pd-tab {
+    display: flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 9px 14px; font-size: 13px; font-weight: 600;
+    color: var(--ink-soft); background: none; border: none; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0;
+    cursor: pointer; white-space: nowrap; transition: background 0.12s, color 0.12s;
+  }
+  .pd-tab:hover { color: var(--ink); background: var(--surface-2); }
+  .pd-tab.active { color: var(--ink); font-weight: 700; }
+  .pd-tab .lb-dot { width: 8px; height: 8px; }
+
+  .pd-panel-section { margin-bottom: 24px; }
+  .pd-panel-section:last-child { margin-bottom: 0; }
+  .pd-panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); font-weight: 700; margin: 0 0 12px; }
+
+  .cert-table { width: 100%; border-collapse: collapse; }
+  .cert-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  .cert-table td { padding: 10px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); vertical-align: middle; }
+  .cert-table td.num { font-family: var(--font-mono); font-weight: 600; text-align: right; width: 70px; }
+  .cert-comp-cell { min-width: 100px; }
+  .cert-comp-track { display: flex; height: 8px; border-radius: 5px; overflow: hidden; background: var(--surface-2); }
+  .cert-comp-solid { height: 100%; }
+  .cert-comp-pending { height: 100%; opacity: 0.4; }
+  .status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .status-pill.on-track { background: var(--good-tint); color: var(--good); }
+  .status-pill.below-target { background: var(--warning-tint); color: var(--warning); }
+  .status-pill .sp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .pw-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 12.5px; }
+  .pw-row:last-child { margin-bottom: 0; }
+  .pw-label { flex: 0 0 170px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pw-track { flex: 1; height: 16px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+  .pw-fill { height: 100%; border-radius: 5px; }
+  .pw-count { flex: 0 0 36px; text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--ink); }
+
+  .pd-cards { display: flex; flex-wrap: wrap; gap: 14px; }
+  .pd-card { display: flex; align-items: center; gap: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; flex: 1 1 220px; min-width: 200px; }
+  .pd-ring { position: relative; width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; }
+  .pd-ring .pd-ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; font-family: var(--font-mono); color: var(--ink); }
+  .pd-card-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .pd-card-practice { font-size: 11.5px; color: var(--ink-soft); margin: 1px 0 3px; }
+  .pd-card-count { font-size: 11.5px; color: var(--ink-soft); font-family: var(--font-mono); }
+
+  @media (max-width: 640px) {
+    .pw-label { flex-basis: 110px; }
+    .cert-table { display: block; overflow-x: auto; }
+  }
+  @media (max-width: 400px) {
+    .dash-card { padding: 14px; }
+    .lb-card { padding: 12px; }
+  }
+
+  /* ---------------- responsive ---------------- */
+  @media (max-width: 900px) {
+    #sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+      transform: translateX(-100%); transition: transform 0.16s ease-out; box-shadow: 0 0 0 rgba(0,0,0,0);
+    }
+    #sidebar.mobile-open { transform: translateX(0); box-shadow: 8px 0 24px rgba(0,0,0,0.12); }
+    #sidebar.collapsed { width: var(--sidebar-w); }
+    #sidebar.collapsed .nav-item { justify-content: flex-start; padding: 9px 10px; }
+    #sidebar.collapsed .nav-item .nav-label { display: block; }
+    #sidebar.collapsed .side-section-label { opacity: 1; height: auto; padding: 12px 10px 6px; }
+    #sidebarBackdrop.show { display: block; position: fixed; inset: 0; background: rgba(20,20,25,0.35); z-index: 15; }
+  }
+
+  @media (max-width: 720px) {
+    #brandTitle .brand-sub { display: none; }
+    .header-btn .btn-label { display: none; }
+    .header-btn { padding: 8px 10px; }
+    #welcomeText .full-name { display: none; }
+    #topHeader { padding: 0 12px; gap: 8px; }
+    #tabContent { padding: 16px; }
+  }
+
+  @media (max-width: 480px) {
+    #brandTitle { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <div id="sidebarBackdrop"></div>
+
+  <aside id="sidebar">
+    <div class="side-scroll" role="tablist" aria-orientation="vertical" aria-label="Portal sections">
+      <div class="side-section-label">Menu</div>
+      <div class="nav-item active" id="tab-dashboard" data-tab="dashboard" title="Dashboard" role="tab" tabindex="0" aria-selected="true" aria-controls="panel-dashboard">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" id="tab-trends" data-tab="trends" title="Trends" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-trends">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg></span>
+        <span class="nav-label">Trends</span>
+      </div>
+      <div class="nav-item" id="tab-ask-me" data-tab="ask-me" title="Ask Me" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-ask-me">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
+        <span class="nav-label">Ask Me</span>
+      </div>
+      <div class="nav-item" id="tab-catalog" data-tab="catalog" title="Certification Catalog" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-catalog">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg></span>
+        <span class="nav-label">Certification Catalog</span>
+      </div>
+      <div class="nav-item" id="tab-learning-paths" data-tab="learning-paths" title="Learning Paths" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-learning-paths">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.3"/><circle cx="19" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M6.8 8 11 16M17.2 8 13 16"/></svg></span>
+        <span class="nav-label">Learning Paths</span>
+      </div>
+      <div class="nav-item" id="tab-notifications" data-tab="notifications" title="Notifications" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-notifications">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
+        <span class="nav-label">Notifications</span>
+      </div>
+    </div>
+  </aside>
+
+  <div id="mainColumn">
+    <header id="topHeader">
+      <button id="hamburgerBtn" title="Toggle menu" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="logo-placeholder" title="Logo">L&amp;D</div>
+      <div id="brandTitle">Intuitive <span class="brand-sub">L&amp;D AGI</span></div>
+
+      <div class="header-spacer"></div>
+
+      <div class="header-actions">
+        <button class="header-btn primary" id="submitCertBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          <span class="btn-label">Submit Your Certification</span>
+        </button>
+        <button class="header-btn secondary" id="viewStatusBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          <span class="btn-label">View My Status</span>
+        </button>
+      </div>
+
+      <div class="header-spacer right"></div>
+
+      <div id="welcomeWrap">
+        <div id="welcomeText">Welcome, <strong id="welcomeName">…</strong></div>
+        <div class="avatar-badge" id="avatarBadge">–</div>
+      </div>
+    </header>
+
+    <div id="tabContent">
+
+      <section class="tab-panel active" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+        <div id="dashShell">
+
+          <div class="dash-section">
+            <div class="dash-two-col">
+              <div class="dash-col">
+                <div class="dash-section-title">Certified employees by provider — progress to target</div>
+                <p class="dash-section-sub">Solid = completed. Hatched = remaining to reach this provider's org target.</p>
+                <div class="dash-card">
+                  <div class="lb-legend-row">
+                    <span><span class="ll-swatch solid"></span>Completed</span>
+                    <span><span class="ll-swatch hatch"></span>Remaining to target</span>
+                  </div>
+                  <div class="lb-grid" id="lbGrid"></div>
+                </div>
+              </div>
+              <div class="dash-col">
+                <div class="dash-section-title">Provider &times; Practice</div>
+                <p class="dash-section-sub">Where each provider's certified headcount sits across the org.</p>
+                <div class="dash-card">
+                  <div class="hm-scroll"><table class="hm-table" id="hmTable"></table></div>
+                  <div class="hm-legend"><span>Fewer</span><span class="hm-legend-bar"></span><span>More</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-section">
+            <div class="dash-section-title">Provider drill-down</div>
+            <p class="dash-section-sub">Certificate mix, practice split, and Practice-Director-wise reach for one provider at a time.</p>
+            <div class="dash-card">
+              <div class="pd-tabs" id="pdTabs"></div>
+              <div id="pdPanel"></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-trends" role="tabpanel" aria-labelledby="tab-trends">
+        <div class="panel-header">
+          <h1>Trends</h1>
+          <p>Certification and completion trends over time.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>Charts and historical trend data will appear here once wired up.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-ask-me" role="tabpanel" aria-labelledby="tab-ask-me">
+        <div class="panel-header">
+          <h1>Ask Me</h1>
+          <p>Chat with the L&amp;D assistant about certifications and learning paths.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>The assistant experience will be embedded here.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-catalog" role="tabpanel" aria-labelledby="tab-catalog">
+        <div class="panel-header">
+          <h1>Certification Catalog</h1>
+          <p>Browse certifications available across the organization.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>The full catalog will be listed here.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-learning-paths" role="tabpanel" aria-labelledby="tab-learning-paths">
+        <div class="panel-header">
+          <h1>Learning Paths</h1>
+          <p>Structured tracks toward role-relevant certifications.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.3"/><circle cx="19" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M6.8 8 11 16M17.2 8 13 16"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>Your assigned or recommended learning paths will show up here.</p>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications">
+        <div class="panel-header">
+          <h1>Notifications</h1>
+          <p>Reminders, expiring certifications, and drive deadlines.</p>
+        </div>
+        <div class="placeholder-card">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+          <h3>Content coming soon</h3>
+          <p>Your notifications will be listed here.</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const MOBILE_BREAKPOINT = 900;
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+
+function isMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+
+function loadCollapsedPref() {
+  try { return localStorage.getItem('ld_sidebar_collapsed') === '1'; } catch (e) { return false; }
+}
+function saveCollapsedPref(collapsed) {
+  try { localStorage.setItem('ld_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+}
+
+if (!isMobile() && loadCollapsedPref()) sidebar.classList.add('collapsed');
+
+function toggleSidebar() {
+  if (isMobile()) {
+    const open = sidebar.classList.toggle('mobile-open');
+    sidebarBackdrop.classList.toggle('show', open);
+  } else {
+    const collapsed = sidebar.classList.toggle('collapsed');
+    saveCollapsedPref(collapsed);
+  }
+}
+
+hamburgerBtn.addEventListener('click', toggleSidebar);
+sidebarBackdrop.addEventListener('click', () => {
+  sidebar.classList.remove('mobile-open');
+  sidebarBackdrop.classList.remove('show');
+});
+
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    sidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('show');
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
+    sidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('show');
+    hamburgerBtn.focus();
+  }
+});
+
+function activateNavItem(item) {
+  const tab = item.dataset.tab;
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const active = n === item;
+    n.classList.toggle('active', active);
+    n.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tab}`));
+  if (isMobile()) {
+    sidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('show');
+  }
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => activateNavItem(item));
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      activateNavItem(item);
+    }
+  });
+});
+
+function selectTab(tabId) {
+  const item = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+  if (item) item.click();
+}
+
+document.getElementById('submitCertBtn').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+document.getElementById('viewStatusBtn').addEventListener('click', () => {
+  selectTab('dashboard');
+});
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function initials(name) {
+  const parts = String(name).trim().split(/\s+/).filter(p => /^[A-Za-z]/.test(p));
+  if (!parts.length) return '–';
+  return ((parts[0][0] || '') + (parts[parts.length - 1][0] || '')).toUpperCase();
+}
+
+async function loadCurrentUser() {
+  try {
+    const resp = await fetch('/api/employees');
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    const employees = await resp.json();
+    if (!employees.length) throw new Error('no employees');
+    const name = employees[0].name || 'Guest';
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0] || name;
+    const last = parts.slice(1).join(' ');
+    document.getElementById('welcomeName').innerHTML =
+      `${esc(first)} <span class="full-name">${esc(last)}</span>`;
+    document.getElementById('avatarBadge').textContent = initials(name);
+  } catch (e) {
+    document.getElementById('welcomeName').textContent = 'Guest';
+    document.getElementById('avatarBadge').textContent = '–';
+  }
+}
+
+loadCurrentUser();
+
+// ---------------------------------------------------------------------
+// Dashboard tab — real certification data from /api/portal/dashboard/overview
+// (lnd_portal database — see backend/app/routers/portal_dashboard.py).
+// One fetch powers all 3 sections; switching the Section-3 provider tab
+// re-filters data already on the page, it never re-queries the backend.
+// ---------------------------------------------------------------------
+
+// Single shared provider color/identity registry — fixed order and hue per
+// provider, used by every section on this page (leaderboard, heatmap row
+// labels, drill-down tabs/bars/rings) so a provider's color never drifts
+// between components. New providers must NOT get an auto-generated hue —
+// come back and pick one checked for colorblind-safe separation instead.
+const PROVIDER_META = {
+  aws:        { label: 'AWS',               color: { light: '#2a78d6', dark: '#3987e5' } },
+  anthropic:  { label: 'Anthropic',         color: { light: '#eb6834', dark: '#d95926' } },
+  azure:      { label: 'Azure',             color: { light: '#1baf7a', dark: '#199e70' } },
+  bedrock:    { label: 'Bedrock',           color: { light: '#eda100', dark: '#c98500' } },
+  databricks: { label: 'Databricks',        color: { light: '#e87ba4', dark: '#d55181' } },
+  gemini:     { label: 'Gemini Enterprise', color: { light: '#008300', dark: '#008300' } },
+  google:     { label: 'Google',            color: { light: '#4a3aa7', dark: '#9085e9' } },
+  snowflake:  { label: 'Snowflake',         color: { light: '#e34948', dark: '#e66767' } },
+};
+function currentAppTheme() {
+  const t = document.documentElement.getAttribute('data-theme');
+  return t === 'dark' || t === 'contrast' ? 'dark' : 'light'; // contrast reuses the dark provider hues
+}
+function providerColor(id) {
+  const meta = PROVIDER_META[id];
+  return meta ? meta.color[currentAppTheme()] : '#888888';
+}
+function providerLabel(id) { return (PROVIDER_META[id] || {}).label || id; }
+
+// Tap-to-toggle + hover tooltip, touch-friendly for the Teams mobile client.
+function bindTapHover(el) {
+  el.addEventListener('mouseenter', () => el.classList.add('tt-open'));
+  el.addEventListener('mouseleave', () => el.classList.remove('tt-open'));
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = !el.classList.contains('tt-open');
+    document.querySelectorAll('.tt-open').forEach(o => o.classList.remove('tt-open'));
+    if (willOpen) el.classList.add('tt-open');
+  });
+}
+document.addEventListener('click', () => document.querySelectorAll('.tt-open').forEach(el => el.classList.remove('tt-open')));
+
+// Sequential blue ramp for the heatmap — same 3 stops in both themes (cells
+// are filled blocks, not text-on-surface, so they don't need to invert).
+const SEQ_STOPS = ['#cde2fb', '#256abf', '#0d366b'];
+function hexToRgb(hex) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function rgbToHex([r, g, b]) { return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join(''); }
+function hexToRgba(hex, alpha) { const [r, g, b] = hexToRgb(hex); return `rgba(${r},${g},${b},${alpha})`; }
+function lerpColor(c1, c2, t) {
+  const a = hexToRgb(c1), b = hexToRgb(c2);
+  return rgbToHex([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+}
+// t in [0,1] = this cell's value relative to the matrix's own max cell.
+function heatCellColor(t) {
+  const bg = t <= 0.5 ? lerpColor(SEQ_STOPS[0], SEQ_STOPS[1], t / 0.5) : lerpColor(SEQ_STOPS[1], SEQ_STOPS[2], (t - 0.5) / 0.5);
+  const text = t >= 0.62 ? '#ffffff' : '#0d1b26'; // same t the color itself uses, not a separate lightness calc
+  return { bg, text };
+}
+
+function matrixLookup(matrix) {
+  const map = {};
+  matrix.forEach(c => { map[c.provider + '|' + c.practice] = c.count; });
+  return map;
+}
+function matrixCount(map, provider, practice) { return map[provider + '|' + practice] || 0; }
+
+let dashboardOverview = null;
+let activeProviderId = null;
+
+// ---------------- Section 1: provider leaderboard ----------------
+function renderLeaderboard(sortedProviders) {
+  document.getElementById('lbGrid').innerHTML = sortedProviders.map(p => {
+    const color = providerColor(p.provider);
+    const hasTarget = p.target !== null && p.target !== undefined;
+    let barHtml, captionHtml, tooltipText;
+    if (!hasTarget) {
+      barHtml = `<div class="lb-bar-track"></div>`;
+      captionHtml = `<span class="lb-caption-muted">No target set</span>`;
+      tooltipText = `${p.completed} completed — no target set yet`;
+    } else {
+      const pct = p.target > 0 ? Math.round((p.completed / p.target) * 100) : 0;
+      const solidPct = p.target > 0 ? Math.min(100, (p.completed / p.target) * 100) : 100;
+      const remaining = p.target - p.completed;
+      barHtml = `
+        <div class="lb-bar-track">
+          <div class="lb-bar-solid" style="width:${solidPct}%;background:${color}"></div>
+          ${remaining > 0 ? `<div class="lb-bar-hatch" style="width:${100 - solidPct}%"></div>` : ''}
+        </div>`;
+      captionHtml = remaining >= 0
+        ? `<span>${pct}% of target</span><span>${esc(remaining)} left</span>`
+        : `<span>${pct}% of target</span><span>+${esc(-remaining)} over target</span>`;
+      tooltipText = remaining >= 0
+        ? `${p.completed} completed of ${p.target} target (${pct}%) · ${remaining} remaining`
+        : `${p.completed} completed of ${p.target} target (${pct}%) · ${-remaining} over target`;
+    }
+    return `
+      <div class="lb-card">
+        <div class="lb-head"><span class="lb-dot" style="background:${color}"></span><span class="lb-name">${esc(providerLabel(p.provider))}</span></div>
+        <div class="lb-big"><span class="lb-completed">${esc(p.completed)}</span><span class="lb-slash">/</span><span class="lb-target">${hasTarget ? esc(p.target) : '—'}</span></div>
+        ${barHtml}
+        <div class="lb-caption">${captionHtml}</div>
+        <div class="lb-tooltip">${esc(tooltipText)}</div>
+      </div>
+    `;
+  }).join('');
+  document.querySelectorAll('#lbGrid .lb-card').forEach(bindTapHover);
+}
+
+// ---------------- Section 2: provider x practice heatmap ----------------
+function renderHeatmap(sortedProviders, practices, matrix) {
+  const map = matrixLookup(matrix);
+  const maxCell = Math.max(1, ...matrix.map(c => c.count));
+  const headHtml = `<tr><th class="hm-row-head">Provider</th>${practices.map(pr => `<th>${esc(pr.practice)}</th>`).join('')}</tr>`;
+  const bodyHtml = sortedProviders.map(p => {
+    const color = providerColor(p.provider);
+    const cells = practices.map(pr => {
+      const count = matrixCount(map, p.provider, pr.practice);
+      const { bg, text } = heatCellColor(count / maxCell);
+      return `<td class="hm-cell" style="background:${bg};color:${text}" title="${esc(providerLabel(p.provider))} · ${esc(pr.practice)}: ${esc(count)}">${esc(count)}</td>`;
+    }).join('');
+    return `<tr><td><div class="hm-row-label"><span class="lb-dot" style="background:${color}"></span>${esc(providerLabel(p.provider))}</div></td>${cells}</tr>`;
+  }).join('');
+  document.getElementById('hmTable').innerHTML = `<thead>${headHtml}</thead><tbody>${bodyHtml}</tbody>`;
+}
+
+// ---------------- Section 3: provider drill-down ----------------
+function renderProviderTabs(sortedProviders) {
+  document.getElementById('pdTabs').innerHTML = sortedProviders.map(p => {
+    const color = providerColor(p.provider);
+    const isActive = p.provider === activeProviderId;
+    // Active tab needs its own visible highlight (a text-color change alone
+    // read as invisible) — a tint of the provider's own color as the
+    // background, plus a matching colored underline.
+    const activeStyle = isActive ? `background:${hexToRgba(color, 0.14)};border-bottom-color:${color};` : '';
+    return `
+    <button class="pd-tab${isActive ? ' active' : ''}" data-provider="${p.provider}" type="button" style="${activeStyle}">
+      <span class="lb-dot" style="background:${color}"></span>${esc(providerLabel(p.provider))}
+    </button>
+  `;
+  }).join('');
+  document.querySelectorAll('#pdTabs .pd-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeProviderId = btn.dataset.provider;
+      renderProviderTabs(sortedProviders);
+      renderProviderPanel();
+    });
+  });
+}
+
+function renderProviderPanel() {
+  if (!dashboardOverview || !activeProviderId) return;
+  const provider = activeProviderId;
+  const color = providerColor(provider);
+  const { practices, matrix, certifications } = dashboardOverview;
+  const map = matrixLookup(matrix);
+
+  // (a) Certificates under this provider
+  const certs = certifications.filter(c => c.provider === provider);
+  const certRows = certs.map(c => {
+    const denom = c.completed + c.pending;
+    const solidPct = denom ? (c.completed / denom) * 100 : 0;
+    const pendingPct = denom ? (c.pending / denom) * 100 : 0;
+    const pillClass = c.on_track ? 'on-track' : 'below-target';
+    const pillLabel = c.on_track ? 'On track' : 'Below target';
+    return `
+      <tr>
+        <td>${esc(c.certification_name)}</td>
+        <td class="num">${esc(c.completed)}</td>
+        <td class="cert-comp-cell"><div class="cert-comp-track">
+          <div class="cert-comp-solid" style="width:${solidPct}%;background:${color}"></div>
+          <div class="cert-comp-pending" style="width:${pendingPct}%;background:${color}"></div>
+        </div></td>
+        <td class="num">${esc(c.pending)}</td>
+        <td><span class="status-pill ${pillClass}"><span class="sp-dot"></span>${pillLabel}</span></td>
+      </tr>
+    `;
+  }).join('');
+  const certTableHtml = certs.length ? `
+    <table class="cert-table">
+      <thead><tr><th>Certification</th><th>Completed</th><th>Composition</th><th>Pending</th><th>Status</th></tr></thead>
+      <tbody>${certRows}</tbody>
+    </table>` : `<p class="dash-section-sub">No certifications on file for this provider yet.</p>`;
+
+  // (b) Practice-wise breakdown — this provider's own data, own color, own scale.
+  const practiceValues = practices.map(pr => ({ practice: pr.practice, count: matrixCount(map, provider, pr.practice) }));
+  const maxPractice = Math.max(1, ...practiceValues.map(pv => pv.count));
+  const practiceRowsHtml = practiceValues.map(pv => `
+    <div class="pw-row">
+      <div class="pw-label" title="${esc(pv.practice)}">${esc(pv.practice)}</div>
+      <div class="pw-track"><div class="pw-fill" style="width:${(pv.count / maxPractice) * 100}%;background:${color}"></div></div>
+      <div class="pw-count">${esc(pv.count)}</div>
+    </div>
+  `).join('');
+
+  // (c) Practice Director-wise reach — ring = this provider's completed count
+  // in that practice, as a % of that practice's tracked headcount (any
+  // provider/status — see routers/portal_dashboard.py's docstring on why
+  // this is a disclosed proxy, not a true HR roster count).
+  const pdCardsHtml = practices.map(pr => {
+    const count = matrixCount(map, provider, pr.practice);
+    const pct = pr.headcount ? Math.round((count / pr.headcount) * 100) : 0;
+    return `
+      <div class="pd-card">
+        <div class="pd-ring" style="background:conic-gradient(${color} 0% ${pct}%, var(--line) ${pct}% 100%)">
+          <div class="pd-ring-pct">${pct}%</div>
+        </div>
+        <div>
+          <div class="pd-card-name">${esc(pr.pd_leader_name || 'Unassigned')}</div>
+          <div class="pd-card-practice">${esc(pr.practice)}</div>
+          <div class="pd-card-count">${esc(count)} of ${esc(pr.headcount)} certified</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('pdPanel').innerHTML = `
+    <div class="pd-panel-section">
+      <div class="pd-panel-title">Certificates under ${esc(providerLabel(provider))}</div>
+      ${certTableHtml}
+    </div>
+    <div class="pd-panel-section">
+      <div class="pd-panel-title">Practice-wise breakdown</div>
+      ${practiceRowsHtml}
+    </div>
+    <div class="pd-panel-section">
+      <div class="pd-panel-title">Practice Director-wise reach</div>
+      <div class="pd-cards">${pdCardsHtml}</div>
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  if (!dashboardOverview) return;
+  const sortedProviders = [...dashboardOverview.providers].sort((a, b) => b.completed - a.completed);
+  renderLeaderboard(sortedProviders);
+  renderHeatmap(sortedProviders, dashboardOverview.practices, dashboardOverview.matrix);
+  if (!activeProviderId || !sortedProviders.some(p => p.provider === activeProviderId)) {
+    activeProviderId = sortedProviders[0] ? sortedProviders[0].provider : null;
+  }
+  renderProviderTabs(sortedProviders);
+  renderProviderPanel();
+}
+
+async function loadDashboard() {
+  try {
+    const resp = await fetch('/api/portal/dashboard/overview');
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    dashboardOverview = await resp.json();
+    renderDashboard();
+  } catch (e) {
+    document.getElementById('dashShell').innerHTML = `<div class="dash-error">Couldn't load dashboard data: ${esc(e.message)}</div>`;
+  }
+}
+
+// ---------------------------------------------------------------------
+// Theme: Teams JS SDK when hosted inside Teams (live default/dark/contrast
+// changes via registerOnThemeChangeHandler), OS prefers-color-scheme as the
+// fallback for standalone/browser use (already set synchronously in <head>
+// to avoid a flash). Re-renders the already-fetched data on every theme
+// change so provider colors update immediately, with no re-fetch.
+// ---------------------------------------------------------------------
+let teamsThemeActive = false;
+
+function applyTheme(theme) {
+  const mapped = theme === 'dark' ? 'dark' : theme === 'contrast' ? 'contrast' : 'light';
+  document.documentElement.setAttribute('data-theme', mapped);
+  renderDashboard();
+}
+
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!teamsThemeActive) { document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light'); renderDashboard(); }
+  });
+}
+
+if (window.microsoftTeams) {
+  microsoftTeams.app.initialize()
+    .then(() => microsoftTeams.app.getContext())
+    .then(ctx => {
+      teamsThemeActive = true;
+      applyTheme(ctx.app.theme);
+      microsoftTeams.app.registerOnThemeChangeHandler(applyTheme);
+    })
+    .catch(() => { /* not running inside Teams — OS-preference fallback already applied */ });
+}
+
+loadDashboard();
+setInterval(loadDashboard, 60000);
+</script>
+</body>
+</html>

@@ -18,6 +18,11 @@ tools/.pg0/
 # RENDER_DEPLOY.md's data-migration step.
 scripts/db_dump/*.sql
 
+# Real org certification tracker workbooks (real employee names/emails) —
+# scripts/ingest_real_excel_data.py reads these locally to seed lnd_portal.
+# Same "never commit real PII" policy as scripts/db_dump/*.sql above.
+REAL EXCEL SHEETS/
+
 # Local editor/tooling and ADK session artifacts — not part of the app.
 .claude/scheduled_tasks.lock
 agent/adk_agent/.adk/

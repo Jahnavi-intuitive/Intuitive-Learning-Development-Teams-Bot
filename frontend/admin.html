@@ -150,6 +150,7 @@
   <button id="navKb" onclick="showSection('kb')">Knowledge Base / Q&amp;A</button>
   <button id="navDrives" onclick="showSection('drives')">Certification Drives</button>
   <button id="navPaths" onclick="showSection('paths')">Learning Paths</button>
+  <button id="navPortalTargets" onclick="showSection('portalTargets')">Portal Provider Targets</button>
 </nav>
 
 <main>
@@ -319,6 +320,16 @@
         <button class="btn" onclick="openPathNodeModal(null)">+ Add starting certification</button>
       </div>
       <div id="pathGraphWrap"><div class="empty-state">Select a practice and click Load.</div></div>
+    </div>
+  </section>
+
+  <!-- ================= PORTAL PROVIDER TARGETS ================= -->
+  <section id="section-portalTargets" class="section">
+    <div class="card">
+      <h2>Provider certification targets</h2>
+      <p class="hint">Org-set certified-employee goals shown as progress bars on the L&amp;D Portal's Dashboard tab (Section 1). A provider with no target set shows "no target set" there rather than a fabricated number. Changes are logged to the audit trail.</p>
+      <div class="actions"><button class="btn primary" onclick="loadPortalTargets()">Load / Refresh</button></div>
+      <div id="portalTargetsTableWrap"><div class="empty-state">Not loaded yet — click Load.</div></div>
     </div>
   </section>
 
@@ -576,7 +587,7 @@ async function loadEmployees() {
 
 // ---------- nav ----------
 function showSection(name) {
-  for (const s of ['catalog', 'kb', 'drives', 'paths']) {
+  for (const s of ['catalog', 'kb', 'drives', 'paths', 'portalTargets']) {
     document.getElementById('section-' + s).classList.toggle('active', s === name);
     document.getElementById('nav' + s[0].toUpperCase() + s.slice(1)).classList.toggle('active', s === name);
   }
@@ -1259,6 +1270,50 @@ async function savePathNode() {
     toast(`Added ${certName} to the ${pathGraphState.practice} path.`, true);
     closePathNodeModal();
     loadPathGraph();
+  } catch (e) { toast(e.message, false); }
+}
+
+// ============ PORTAL PROVIDER TARGETS ============
+// Reads/writes app/portal_admin.py — a physically separate database
+// (lnd_portal) from everything else on this page, surfaced here only
+// because this is where every other admin-editable table already lives.
+async function loadPortalTargets() {
+  const wrap = document.getElementById('portalTargetsTableWrap');
+  wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const rows = await api('GET', '/api/admin/portal/provider-targets');
+    wrap.innerHTML = `<table><thead><tr><th>Provider</th><th>Target</th><th>Last updated by</th><th>Last updated at</th><th>Actions</th></tr></thead><tbody>
+      ${rows.map(r => `<tr>
+        <td>${esc(r.provider)}</td>
+        <td><input type="number" min="0" id="ptTarget-${esc(r.provider)}" value="${r.target_count ?? ''}" placeholder="no target set" style="width:110px;"></td>
+        <td>${r.updated_by ? esc(r.updated_by) : '—'}</td>
+        <td>${r.updated_at ? new Date(r.updated_at).toLocaleString() : '—'}</td>
+        <td>
+          <button class="btn primary" onclick="savePortalTarget('${esc(r.provider)}')">Save</button>
+          ${r.target_count !== null ? `<button class="btn danger" onclick="clearPortalTarget('${esc(r.provider)}')">Clear</button>` : ''}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  } catch (e) { wrap.innerHTML = `<div class="empty-state">Failed to load: ${esc(e.message)}</div>`; }
+}
+
+async function savePortalTarget(provider) {
+  const input = document.getElementById(`ptTarget-${provider}`);
+  const value = input.value.trim();
+  if (value === '' || Number(value) < 0) { toast('Enter a target of 0 or more.', false); return; }
+  try {
+    await api('PUT', `/api/admin/portal/provider-targets/${provider}`, { target_count: Number(value) });
+    toast(`${provider} target saved.`, true);
+    loadPortalTargets();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function clearPortalTarget(provider) {
+  if (!confirm(`Clear the target for ${provider}? The Dashboard will show "no target set" until a new one is saved.`)) return;
+  try {
+    await api('DELETE', `/api/admin/portal/provider-targets/${provider}`);
+    toast(`${provider} target cleared.`, true);
+    loadPortalTargets();
   } catch (e) { toast(e.message, false); }
 }
 
