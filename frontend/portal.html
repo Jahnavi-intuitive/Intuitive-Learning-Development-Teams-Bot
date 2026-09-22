@@ -2116,12 +2116,6 @@ if (window.microsoftTeams) {
       teamsThemeActive = true;
       applyTheme(ctx.app.theme);
       microsoftTeams.app.registerOnThemeChangeHandler(applyTheme);
-      // Viewed inside Teams == the external org's tenant, which has no
-      // identity mapping into this tenant's own employee/cert data — hide
-      // the two personal-data entry points (submit + view-my-status) so
-      // they only ever see the shared org-wide analytics, never a "me" view.
-      document.getElementById('submitCertBtn').style.display = 'none';
-      document.getElementById('viewStatusBtn').style.display = 'none';
     })
     .catch(() => { /* not running inside Teams — OS-preference fallback already applied */ });
 }

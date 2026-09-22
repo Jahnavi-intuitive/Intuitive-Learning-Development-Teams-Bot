@@ -52,9 +52,9 @@ _FOLDER = "REAL EXCEL SHEETS"
 _SKIP_SHEET_NAMES = {"summary"}  # case-insensitive — never treat a Summary tab as cert data
 
 _PROVIDER_FILES = {
-    Provider.anthropic: "Anthropic_Claude_Architect_Certification_Tracker (2).xlsx",
-    Provider.gemini: "Gemini Certification Tracker (1).xlsx",
-    Provider.aws: "AWS Certification Completion (1).xlsx",
+    Provider.anthropic: "Anthropic_Claude_Architect_Certification_Tracker.xlsx",
+    Provider.gemini: "Gemini Certification Tracker.xlsx",
+    Provider.aws: "AWS_Certifications_Merged.xlsx",
     Provider.databricks: "Databricks_Certifications_Record.xlsx",
 }
 
