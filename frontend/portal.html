@@ -1090,6 +1090,11 @@ let currentEmployeeId = null;
 let currentEmployeeName = null;
 
 async function loadCurrentUser() {
+  // Inside Teams, the header name comes only from Teams' own getContext()
+  // (see the microsoftTeams init block below) — this stand-in employee
+  // record is a different, unrelated person and must never be shown there,
+  // even while the Teams lookup is still in flight.
+  const inTeams = !!window.microsoftTeams;
   try {
     const resp = await fetch('/api/employees');
     if (!resp.ok) throw new Error(`${resp.status}`);
@@ -1098,6 +1103,7 @@ async function loadCurrentUser() {
     currentEmployeeId = employees[0].employee_id;
     const name = employees[0].name || 'Guest';
     currentEmployeeName = employees[0].name || null;
+    if (inTeams) return;
     const parts = name.trim().split(/\s+/);
     const first = parts[0] || name;
     const last = parts.slice(1).join(' ');
@@ -1105,6 +1111,7 @@ async function loadCurrentUser() {
       `${esc(first)} <span class="full-name">${esc(last)}</span>`;
     document.getElementById('avatarBadge').textContent = initials(name);
   } catch (e) {
+    if (inTeams) return;
     document.getElementById('welcomeName').textContent = 'Guest';
     document.getElementById('avatarBadge').textContent = '–';
   }
