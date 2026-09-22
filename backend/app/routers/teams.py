@@ -517,3 +517,19 @@ async def messages(payload: dict, request: Request, db: Session = Depends(get_db
     if activity.id:
         activity_dedup.mark_done(activity.id)
     return {}
+
+
+@router.get("/user-display-name/{aad_object_id}")
+def get_teams_user_display_name(aad_object_id: str):
+    """Portal.html (a static Teams tab, not this bot) only gets an AAD
+    object id from Teams' plain getContext() — real displayName requires
+    full Teams SSO, which isn't set up. Reuses the exact same app-only
+    Graph lookup this bot already uses for a new employee's identity
+    (get_user_with_manager, User.Read.All application permission, already
+    consented) instead of standing up SSO + an On-Behalf-Of token exchange
+    for what is otherwise just a header display string."""
+    try:
+        user = get_user_with_manager(aad_object_id)
+    except GraphLookupError:
+        raise HTTPException(status_code=404, detail="Could not resolve this Teams user via Graph.")
+    return {"display_name": user.display_name}

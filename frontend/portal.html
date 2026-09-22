@@ -2117,24 +2117,23 @@ if (window.microsoftTeams) {
       applyTheme(ctx.app.theme);
       microsoftTeams.app.registerOnThemeChangeHandler(applyTheme);
       // Real Teams identity, same principle as the bot's aadObjectId-based
-      // lookup (routers/teams.py) — here it's just the display name shown
-      // in the header, not a data-scoping identity, so no backend lookup
-      // is needed: Teams already hands the signed-in user's name straight
-      // to the tab via getContext(). Overrides the /api/employees[0]
-      // stand-in name loadCurrentUser() falls back to outside Teams.
-      // displayName is the real name, but many tenants only expose it
-      // through full Teams SSO (not set up here) and leave it undefined
-      // from plain getContext() — userPrincipalName/loginHint (the sign-in
-      // email) are looser-permissioned and usually still come through, so
-      // fall back to a name derived from the email's local part.
-      const emailFallback = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
-      const teamsName = (ctx.user && ctx.user.displayName)
-        || (emailFallback ? emailFallback.split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : null);
-      if (teamsName) {
-        const parts = teamsName.trim().split(/\s+/);
+      // lookup (routers/teams.py) — plain getContext() reliably gives the
+      // AAD object id but not displayName (that needs full Teams SSO,
+      // not set up here), so hand the id to the backend and reuse the
+      // exact same app-only Graph lookup the bot already uses for a new
+      // employee's identity, instead of building an SSO/OBO flow just
+      // for a header display string.
+      const setWelcomeName = (name) => {
+        const parts = name.trim().split(/\s+/);
         document.getElementById('welcomeName').innerHTML =
-          `${esc(parts[0] || teamsName)} <span class="full-name">${esc(parts.slice(1).join(' '))}</span>`;
-        document.getElementById('avatarBadge').textContent = initials(teamsName);
+          `${esc(parts[0] || name)} <span class="full-name">${esc(parts.slice(1).join(' '))}</span>`;
+        document.getElementById('avatarBadge').textContent = initials(name);
+      };
+      if (ctx.user && ctx.user.id) {
+        fetch(`/api/teams/user-display-name/${encodeURIComponent(ctx.user.id)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => { if (data && data.display_name) setWelcomeName(data.display_name); })
+          .catch(() => { /* Graph lookup failed — leave the /api/employees stand-in name in place */ });
       }
     })
     .catch(() => { /* not running inside Teams — OS-preference fallback already applied */ });
