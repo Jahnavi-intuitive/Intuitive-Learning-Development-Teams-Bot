@@ -1,0 +1,34 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "ee227464-2ea7-4968-8b5f-a337f85408be",
+  "developer": {
+    "name": "Intuitive Technology Partners",
+    "websiteUrl": "https://claude.ai/code/artifact/1d200d82-5dcb-42b3-a4df-4bc00a85f27f",
+    "privacyUrl": "https://claude.ai/code/artifact/1d200d82-5dcb-42b3-a4df-4bc00a85f27f",
+    "termsOfUseUrl": "https://claude.ai/code/artifact/988d8479-bf94-4ff1-944a-0919ce402906"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "L&D Portal",
+    "full": "L&D Portal"
+  },
+  "description": {
+    "short": "Org-wide certification dashboard, trends, and downloads.",
+    "full": "The L&D Portal dashboard — provider leaderboards, certification trends, data downloads, and team lookup for the organization's certification tracking."
+  },
+  "accentColor": "#C0392B",
+  "staticTabs": [
+    {
+      "entityId": "ldPortalDashboard",
+      "name": "L&D Portal",
+      "contentUrl": "https://lnd-backend.onrender.com/portal.html",
+      "scopes": ["personal"]
+    }
+  ],
+  "validDomains": ["lnd-backend.onrender.com"]
+}

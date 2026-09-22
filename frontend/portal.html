@@ -2116,6 +2116,19 @@ if (window.microsoftTeams) {
       teamsThemeActive = true;
       applyTheme(ctx.app.theme);
       microsoftTeams.app.registerOnThemeChangeHandler(applyTheme);
+      // Real Teams identity, same principle as the bot's aadObjectId-based
+      // lookup (routers/teams.py) — here it's just the display name shown
+      // in the header, not a data-scoping identity, so no backend lookup
+      // is needed: Teams already hands the signed-in user's name straight
+      // to the tab via getContext(). Overrides the /api/employees[0]
+      // stand-in name loadCurrentUser() falls back to outside Teams.
+      const teamsName = ctx.user && ctx.user.displayName;
+      if (teamsName) {
+        const parts = teamsName.trim().split(/\s+/);
+        document.getElementById('welcomeName').innerHTML =
+          `${esc(parts[0] || teamsName)} <span class="full-name">${esc(parts.slice(1).join(' '))}</span>`;
+        document.getElementById('avatarBadge').textContent = initials(teamsName);
+      }
     })
     .catch(() => { /* not running inside Teams — OS-preference fallback already applied */ });
 }
