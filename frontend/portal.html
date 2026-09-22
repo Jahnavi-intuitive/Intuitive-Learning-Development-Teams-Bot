@@ -2122,7 +2122,14 @@ if (window.microsoftTeams) {
       // is needed: Teams already hands the signed-in user's name straight
       // to the tab via getContext(). Overrides the /api/employees[0]
       // stand-in name loadCurrentUser() falls back to outside Teams.
-      const teamsName = ctx.user && ctx.user.displayName;
+      // displayName is the real name, but many tenants only expose it
+      // through full Teams SSO (not set up here) and leave it undefined
+      // from plain getContext() — userPrincipalName/loginHint (the sign-in
+      // email) are looser-permissioned and usually still come through, so
+      // fall back to a name derived from the email's local part.
+      const emailFallback = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
+      const teamsName = (ctx.user && ctx.user.displayName)
+        || (emailFallback ? emailFallback.split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : null);
       if (teamsName) {
         const parts = teamsName.trim().split(/\s+/);
         document.getElementById('welcomeName').innerHTML =
