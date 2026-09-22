@@ -14,7 +14,7 @@ schema already snapshots employee_name/practice rather than trusting a join.
 
 import enum
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Integer, String, Text, func
+from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.portal_db import PortalBase
@@ -22,17 +22,18 @@ from app.portal_db import PortalBase
 
 class Provider(str, enum.Enum):
     anthropic = "anthropic"
-    gemini = "gemini"
+    gemini = "gemini"  # the real source file/folder calls this "Google" — same provider, one canonical value
     aws = "aws"
     databricks = "databricks"
-    # Added for the provider leaderboard/heatmap/drill-down dashboard —
-    # these 4 have no rows in certification_records yet (no source Excel
-    # sheet ingested for them), but the dashboard shows all 8 fixed-color
-    # providers per direct instruction, reading a real, honest 0 rather
-    # than hiding the column until data exists.
+    # Azure and Snowflake: kept in the catalog per direct instruction even
+    # though there's no ingested data for them yet (no source Excel sheet) —
+    # the dashboard shows a real, honest 0 rather than hiding the column.
+    # "google" and "bedrock" were removed here (2026-09-17): never had any
+    # real data under either value (confirmed empty across
+    # certification_records/provider_targets/demo_trend_backfill before the
+    # enum was actually narrowed), and "google" was a duplicate of "gemini"
+    # for the same real provider, not a second one.
     azure = "azure"
-    bedrock = "bedrock"
-    google = "google"
     snowflake = "snowflake"
 
 
@@ -97,6 +98,14 @@ class CertificationRecord(PortalBase):
     source_file: Mapped[str] = mapped_column(String(255), nullable=False)
     raw_row: Mapped[dict] = mapped_column(JSON, nullable=False)  # original row, for audit/debugging
 
+    # Provenance for the live SharePoint sync (services/portal_sharepoint_sync.py)
+    # — every record traces back to exactly which sheet row it came from and
+    # when it was last confirmed against the source, per direct instruction.
+    # source_row is 1-indexed within its sheet (header row excluded), matching
+    # what an admin would count opening the sheet in Excel.
+    source_sheet_row: Mapped[int | None] = mapped_column(Integer)
+    last_synced_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -115,3 +124,126 @@ class ProviderTarget(PortalBase):
     target_count: Mapped[int] = mapped_column(Integer, nullable=False)
     updated_by: Mapped[str] = mapped_column(String(255), nullable=False)
     updated_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class TrendGranularity(str, enum.Enum):
+    weekly = "weekly"
+    monthly = "monthly"
+
+
+class DemoTrendBackfill(PortalBase):
+    """Illustrative-only historical backfill for the Trends tab —
+    NEVER real data. Written exactly once, by scripts/seed_demo_trend_history.py,
+    never by the real ingestion pipeline (scripts/ingest_real_excel_data.py),
+    and never read by the Dashboard tab, the agent, or any compliance/audit
+    reporting — routers/portal_trends.py is the only reader.
+
+    Exists because real certificate-issuance *dates* are thin or entirely
+    absent for some providers today (as of this table's introduction: AWS
+    and Gemini have zero dated completion records at all — neither source
+    workbook ever captured a real date for a completed cert — while
+    Anthropic and Databricks already have 16+ months of real dated
+    history and need no backfill). A flat/undated chart demos badly, so
+    this table holds a smoothed, organic-looking growth curve that always
+    ends exactly at the real current total for that series.
+
+    Each row is a *cumulative* completed-count snapshot at one period
+    boundary (a Monday for weekly, the 1st for monthly) for one series —
+    either a specific certification (certification_name set, for Section
+    1's per-provider leading-certification chart) or a whole provider
+    (certification_name NULL, for Section 2's weekly/monthly provider
+    trends). The reader prefers a real computed value for any period
+    where one exists and only falls back to this table where it doesn't
+    — so as real dated history accumulates past this launch, seeded
+    periods stop being used with zero code change, and a period already
+    covered by a real record is never overwritten here.
+    """
+
+    __tablename__ = "demo_trend_backfill"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), nullable=False, index=True)
+    certification_name: Mapped[str | None] = mapped_column(String(255), index=True)
+    granularity: Mapped[TrendGranularity] = mapped_column(Enum(TrendGranularity, name="trend_granularity"), nullable=False)
+    period_start: Mapped[object] = mapped_column(Date, nullable=False)
+    cumulative_completed: Mapped[int] = mapped_column(Integer, nullable=False)
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="seed_demo")
+    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint(
+            "provider", "certification_name", "granularity", "period_start",
+            name="uq_demo_trend_backfill_period",
+        ),
+    )
+
+
+class CertificationAlias(PortalBase):
+    """Maps a raw certification identifier exactly as it appears in a
+    source workbook (a sheet/tab name, or a free-text column value like
+    Databricks' "Cert Type") to one canonical certification_name — so a
+    newly-added sheet or a typo'd/abbreviated variant doesn't silently
+    create a second, separate line on the dashboard next to the
+    already-known correct one.
+
+    Auto-populated by services/portal_sharepoint_sync.py the moment a new
+    raw value is seen for a provider (canonical defaults to the raw value
+    itself, cleaned up, until an admin corrects it) — recognizing a newly
+    added sheet or cert-type value never requires a code change. Not yet
+    admin-editable through a UI (a natural follow-up to provider_targets'
+    same pattern) — updated_by stays NULL until that exists."""
+
+    __tablename__ = "certification_aliases"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), nullable=False, index=True)
+    raw_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    first_seen_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_by: Mapped[str | None] = mapped_column(String(255))
+
+    __table_args__ = (
+        UniqueConstraint("provider", "raw_key", name="uq_certification_alias_provider_raw_key"),
+    )
+
+
+class IngestionError(PortalBase):
+    """A row from a source Excel sheet that failed validation during a
+    SharePoint sync — never silently dropped, never allowed to corrupt a
+    real certification_records row. Logged with enough context (source
+    file, sheet, row number, the actual raw row, and why) that an admin
+    can go fix the source file directly. One bad row never blocks the
+    rest of that file's sync."""
+
+    __tablename__ = "ingestion_errors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), nullable=False, index=True)
+    source_file: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_sheet: Mapped[str | None] = mapped_column(String(255))
+    source_row: Mapped[int | None] = mapped_column(Integer)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    raw_row: Mapped[dict] = mapped_column(JSON, nullable=False)
+    sync_run_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IngestionLog(PortalBase):
+    """One row per SharePoint sync run (scheduled every few minutes, or
+    admin-triggered on demand) — what happened, at a glance, without
+    digging through application logs. Powers the "last successful sync
+    per provider" health signal (a plain query against this table, no
+    dedicated UI yet)."""
+
+    __tablename__ = "ingestion_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    started_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    finished_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+    trigger: Mapped[str] = mapped_column(String(20), nullable=False)  # "scheduled" | "manual"
+    providers_synced: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
+    rows_inserted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rows_updated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rows_deleted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rows_rejected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(Text)

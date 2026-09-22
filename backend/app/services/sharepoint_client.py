@@ -28,6 +28,7 @@ admin-triggered sync, not continuous), but worth knowing if that changes.
 """
 
 import logging
+import urllib.parse
 
 import requests
 
@@ -97,6 +98,56 @@ def download_file(filename: str) -> bytes | None:
         return None
     if not resp.ok:
         raise SharePointError(f"Downloading {filename!r} failed: {resp.status_code} {resp.text[:300]}")
+    return resp.content
+
+
+def _encoded_path(*segments: str) -> str:
+    """Graph's `root:/{path}:/...` addressing takes a real path, but each
+    segment (a folder or file name) still needs URL-encoding for spaces and
+    the parens several of these real filenames contain — quote() each
+    segment individually so a literal "/" in a name is never mistaken for a
+    path separator."""
+    return "/".join(urllib.parse.quote(s, safe="") for s in segments)
+
+
+def list_files_in_folder(folder: str) -> list[str]:
+    """Every .xlsx file directly inside `folder` (one level, no recursion)
+    — used for the "REAL EXCEL SHEETS" subfolder holding the real
+    Anthropic/Gemini/AWS/Databricks org data, a different part of this same
+    library from the per-provider tracker exports at the root that
+    list_files()/download_file()/upload_file() above manage."""
+    _require_config()
+    path = _encoded_path(folder)
+    try:
+        resp = requests.get(
+            f"{_GRAPH_BASE}/drives/{settings.sharepoint_drive_id}/root:/{path}:/children",
+            headers=_auth_header(),
+            timeout=_REQUEST_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        raise SharePointError(f"Listing folder {folder!r} failed: {exc}") from exc
+    if not resp.ok:
+        raise SharePointError(f"Listing folder {folder!r} failed: {resp.status_code} {resp.text[:300]}")
+    return [item["name"] for item in resp.json().get("value", []) if item.get("name", "").endswith(".xlsx")]
+
+
+def download_file_in_folder(folder: str, filename: str) -> bytes | None:
+    """Same as download_file(), but for a file inside a subfolder rather
+    than the library root."""
+    _require_config()
+    path = _encoded_path(folder, filename)
+    try:
+        resp = requests.get(
+            f"{_GRAPH_BASE}/drives/{settings.sharepoint_drive_id}/root:/{path}:/content",
+            headers=_auth_header(),
+            timeout=_REQUEST_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        raise SharePointError(f"Downloading {folder}/{filename} failed: {exc}") from exc
+    if resp.status_code == 404:
+        return None
+    if not resp.ok:
+        raise SharePointError(f"Downloading {folder}/{filename} failed: {resp.status_code} {resp.text[:300]}")
     return resp.content
 
 

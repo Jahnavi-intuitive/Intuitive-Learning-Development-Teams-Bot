@@ -85,7 +85,7 @@
   .header-spacer { flex: 1.15; }
   .header-spacer.right { flex: 0.85; }
 
-  .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; position: relative; }
   .header-btn {
     display: flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--border);
     background: var(--panel); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text);
@@ -95,6 +95,92 @@
   .header-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .header-btn.primary:hover { filter: brightness(1.08); }
   .header-btn.secondary:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  /* ---------------- "View My Status" popover — a small anchored panel
+     under the header button, not a page navigation or tab switch.
+     Global scope (same tokens as the header/modal), so it renders
+     correctly regardless of which tab is active behind it. ---------------- */
+  .status-popover {
+    position: absolute; top: calc(100% + 10px); right: 0; width: 380px; max-width: calc(100vw - 32px);
+    max-height: 70vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.22); z-index: 150;
+  }
+  .status-popover[hidden] { display: none; }
+  .status-popover-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+  .status-popover-head h3 { font-size: 14px; margin: 0; }
+  .status-popover-body { padding: 14px 16px; font-size: 13px; }
+  .status-popover-loading, .status-popover-error, .status-popover-empty { color: var(--muted); font-size: 13px; padding: 6px 0; }
+  .status-popover-error { color: #d03b3b; }
+
+  .sp-person-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-bottom: 14px; }
+  .sp-person-field .spf-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+  .sp-person-field .spf-value { font-size: 12.5px; color: var(--text); font-weight: 600; }
+
+  .sp-cert-card { border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; margin-bottom: 8px; }
+  .sp-cert-card:last-child { margin-bottom: 0; }
+  .sp-cert-provider { font-size: 10.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+  .sp-cert-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .sp-cert-dates { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', ui-monospace, monospace; margin-top: 5px; }
+
+  .sp-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .sp-pill .sp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .sp-pill.completed { background: #e4f5e4; color: #0ca30c; }
+  .sp-pill.in_progress { background: #fbeed4; color: #c98500; }
+  .sp-pill.not_cleared { background: #fbe2e2; color: #d03b3b; }
+  .sp-pill.unknown { background: var(--bg); color: var(--muted); }
+
+  .sp-expiry-badge { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+  .sp-expiry-badge.expiring_soon { background: #fbeed4; color: #c98500; }
+  .sp-expiry-badge.expired { background: #fbe2e2; color: #d03b3b; }
+
+  @media (max-width: 480px) {
+    .status-popover { position: fixed; top: 64px; right: 16px; left: 16px; width: auto; }
+    .sp-person-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---------------- certification submission modal (global scope — sits
+     outside .insights-panel, uses the same app-wide tokens as the header) ---------------- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(20,20,25,0.45); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal-card {
+    background: var(--panel); border-radius: 14px; width: 100%; max-width: 640px; max-height: 90vh;
+    overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .modal-head h2 { font-size: 16px; margin: 0; }
+  .modal-close { border: none; background: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--muted); padding: 4px 8px; border-radius: 6px; }
+  .modal-close:hover { background: var(--bg); }
+  .modal-body { padding: 18px 22px; }
+  .modal-actions { display: flex; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--border); }
+
+  .cert-form-hint { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+  .cert-form-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .cert-form-field { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 5px; }
+  .cert-form-field label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .cert-form-field input, .cert-form-field select {
+    font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--panel); color: var(--text);
+  }
+  .cert-form-field input:disabled { background: var(--bg); color: var(--muted); }
+  .cert-form-message { font-size: 13px; padding: 10px 12px; border-radius: 8px; margin-top: 6px; }
+  .cert-form-message.success { background: #e4f5e4; color: #0ca30c; }
+  .cert-form-message.error { background: #fbe2e2; color: #d03b3b; }
+
+  .cert-form-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 18px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--text); white-space: nowrap;
+  }
+  .cert-form-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cert-form-btn.primary:hover { filter: brightness(1.08); }
+  .cert-form-btn.secondary:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  @media (max-width: 480px) {
+    .cert-form-field { flex-basis: 100%; }
+  }
 
   #welcomeWrap { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
   #welcomeText { font-size: 13px; color: var(--text); white-space: nowrap; }
@@ -124,8 +210,9 @@
   .placeholder-card p { font-size: 13px; margin: 0; max-width: 420px; margin-inline: auto; }
 
   /* ================= Insights dashboard — design tokens (scoped to
-     #panel-dashboard only; sidebar/header keep the app-wide tokens above) ================= */
-  #panel-dashboard {
+     .insights-panel — the Dashboard and Trends tabs; sidebar/header keep
+     the app-wide tokens above) ================= */
+  .insights-panel {
     --font-sans: 'IBM Plex Sans', -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -138,21 +225,21 @@
     color: var(--ink);
     max-width: none;
   }
-  :root[data-theme="dark"] #panel-dashboard {
+  :root[data-theme="dark"] .insights-panel {
     --bg: #0F1720; --surface: #161F29; --surface-2: #1B2530; --ink: #E7EDF2; --ink-soft: #8FA0AC; --line: #2B3A46;
     --teal: #57C2BE; --good-tint: #123018; --warning-tint: #332711; --critical-tint: #341717;
     --hatch-color: rgba(231,237,242,0.28);
   }
   /* Teams "contrast" theme: a real pass, not dark-as-is — near-black surfaces,
      brighter borders/text, boosted state colors for legibility. */
-  :root[data-theme="contrast"] #panel-dashboard {
+  :root[data-theme="contrast"] .insights-panel {
     --bg: #000000; --surface: #0B0B0B; --surface-2: #171717; --ink: #FFFFFF; --ink-soft: #D6D6D6; --line: #7A7A7A;
     --teal: #6FE0DB; --good: #3ddc3d; --warning: #ffb300; --critical: #ff5c5c;
     --good-tint: #0f2a0f; --warning-tint: #3d2c02; --critical-tint: #3a1010;
     --hatch-color: rgba(255,255,255,0.4);
   }
 
-  #panel-dashboard.active { display: block; height: 100%; overflow-y: auto; background: var(--bg); margin: -24px; padding: 24px; }
+  .insights-panel.active { display: block; height: 100%; overflow-y: auto; background: var(--bg); margin: -24px; padding: 24px; }
   .dash-error { color: var(--critical); font-size: 13px; }
 
   .dash-section { margin-bottom: 26px; }
@@ -223,10 +310,11 @@
   .pd-panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); font-weight: 700; margin: 0 0 12px; }
 
   .cert-table { width: 100%; border-collapse: collapse; }
-  .cert-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); }
-  .cert-table td { padding: 10px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); vertical-align: middle; }
-  .cert-table td.num { font-family: var(--font-mono); font-weight: 600; text-align: right; width: 70px; }
-  .cert-comp-cell { min-width: 100px; }
+  .cert-table th { text-align: center; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  .cert-table td { padding: 10px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); vertical-align: middle; text-align: center; }
+  .cert-table td.num { font-family: var(--font-mono); font-weight: 600; }
+  .cert-comp-cell { min-width: 100px; padding-left: 10px; padding-right: 10px; }
+  .cert-table th.last-col, .cert-table td.last-col { padding-right: 60px; }
   .cert-comp-track { display: flex; height: 8px; border-radius: 5px; overflow: hidden; background: var(--surface-2); }
   .cert-comp-solid { height: 100%; }
   .cert-comp-pending { height: 100%; opacity: 0.4; }
@@ -235,12 +323,14 @@
   .status-pill.below-target { background: var(--warning-tint); color: var(--warning); }
   .status-pill .sp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-  .pw-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 12.5px; }
+  .pw-row { display: flex; align-items: center; gap: 60px; margin: 0 auto 11px; max-width: 640px; font-size: 12.5px; }
   .pw-row:last-child { margin-bottom: 0; }
   .pw-label { flex: 0 0 170px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pw-track { flex: 1; height: 16px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
-  .pw-fill { height: 100%; border-radius: 5px; }
-  .pw-count { flex: 0 0 36px; text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--ink); }
+  .pw-frac { flex: 0 0 64px; font-family: var(--font-mono); font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .pw-frac .pw-frac-total { color: var(--ink-soft); font-weight: 500; }
+  .pw-track { flex: 1; height: 7px; border-radius: 4px; background: var(--surface-2); overflow: hidden; display: flex; }
+  .pw-fill { height: 100%; }
+  .pw-hatch { height: 100%; background-color: var(--surface-2); background-image: repeating-linear-gradient(135deg, var(--hatch-color) 0 3px, transparent 3px 6px); }
 
   .pd-cards { display: flex; flex-wrap: wrap; gap: 14px; }
   .pd-card { display: flex; align-items: center; gap: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; flex: 1 1 220px; min-width: 200px; }
@@ -258,6 +348,194 @@
     .dash-card { padding: 14px; }
     .lb-card { padding: 12px; }
   }
+
+  /* ================= Trends tab ================= */
+  .trend-chart-wrap { width: 100%; aspect-ratio: 640 / 260; }
+  .trend-chart-wrap svg { width: 100%; height: 100%; overflow: visible; }
+  .trend-line { fill: none; stroke-width: 2.2; }
+  .trend-line-seeded { stroke-dasharray: 4 3; }
+  .trend-axis-label { font-family: var(--font-mono); font-size: 8px; fill: var(--ink-soft); }
+  .trend-gridline { stroke: var(--line); stroke-width: 1; }
+
+  .trend-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .trend-legend-chip {
+    display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink); cursor: pointer;
+    padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); user-select: none;
+  }
+  .trend-legend-chip.dimmed { opacity: 0.35; }
+  .trend-legend-chip .lb-dot { width: 8px; height: 8px; }
+
+  .leaders-card { display: flex; flex-direction: column; }
+  .leaders-list { flex: 1; overflow-y: auto; max-height: 260px; }
+  .leader-row { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+  .leader-row:last-child { border-bottom: none; }
+  .leader-rank { flex: 0 0 16px; color: var(--ink-soft); font-family: var(--font-mono); font-size: 10.5px; text-align: right; }
+  .leader-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .leader-name { flex: 1; min-width: 0; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .leader-count { font-family: var(--font-mono); font-weight: 600; color: var(--ink); flex: 0 0 auto; }
+  .leader-growth { font-family: var(--font-mono); font-size: 10.5px; flex: 0 0 58px; text-align: right; }
+  .leader-growth.up { color: var(--good); }
+  .leader-growth.down { color: var(--critical); }
+  .leader-growth.na { color: var(--ink-soft); }
+
+  .leaders-highlights { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+  .leaders-highlights strong { color: var(--ink); }
+
+  .trend-subtabs { display: flex; gap: 6px; margin: 2px 0 18px; }
+  .trend-subtab {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-soft); cursor: pointer;
+  }
+  .trend-subtab.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+  .trend-stat-row { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .trend-stat-tile { flex: 1 1 160px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .trend-stat-tile .tst-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: 4px; }
+  .trend-stat-tile .tst-value { font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--ink); }
+  .trend-stat-tile .tst-delta { font-family: var(--font-mono); font-size: 11.5px; margin-top: 3px; }
+  .trend-stat-tile .tst-delta.up { color: var(--good); }
+  .trend-stat-tile .tst-delta.down { color: var(--critical); }
+
+  .trend-comparator { display: flex; align-items: center; gap: 16px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }
+  .trend-comparator .tc-point { text-align: center; flex-shrink: 0; }
+  .trend-comparator .tc-value { font-family: var(--font-mono); font-size: 24px; font-weight: 600; color: var(--ink); }
+  .trend-comparator .tc-label { font-size: 10.5px; color: var(--ink-soft); margin-top: 3px; }
+  .trend-comparator .tc-line { flex: 1; height: 2px; border-radius: 2px; }
+
+  .trend-illustrative-note { font-size: 10.5px; color: var(--ink-soft); font-style: italic; margin: 6px 0 16px; }
+
+  .trend-monthly-chart-wrap { width: 100%; aspect-ratio: 640 / 200; margin-bottom: 16px; }
+  .trend-monthly-chart-wrap svg { width: 100%; height: 100%; overflow: visible; }
+  .trend-target-line { stroke-dasharray: 5 4; stroke-width: 1.5; }
+  .trend-target-label { font-family: var(--font-mono); font-size: 9px; }
+
+  .trend-month-tiles { display: flex; gap: 10px; flex-wrap: wrap; }
+  .trend-month-tile { flex: 1 1 90px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; text-align: center; }
+  .trend-month-tile .tmt-month { font-size: 10px; color: var(--ink-soft); margin-bottom: 3px; }
+  .trend-month-tile .tmt-value { font-family: var(--font-mono); font-size: 15px; font-weight: 600; color: var(--ink); }
+  .trend-month-tile .tmt-delta { font-family: var(--font-mono); font-size: 10px; margin-top: 2px; }
+  .trend-month-tile .tmt-delta.up { color: var(--good); }
+  .trend-month-tile .tmt-delta.down { color: var(--critical); }
+
+  .trend-empty { font-size: 12.5px; color: var(--ink-soft); font-style: italic; padding: 24px 0; text-align: center; }
+
+  @media (max-width: 640px) {
+    .trend-comparator { flex-direction: column; }
+    .trend-comparator .tc-line { width: 2px; height: 40px; }
+  }
+
+  /* ================= Data Download tab ================= */
+  .dd-card { max-width: 640px; }
+  .dd-mode-toggle { display: flex; gap: 6px; margin-bottom: 20px; }
+  .dd-mode-btn {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-soft); cursor: pointer;
+  }
+  .dd-mode-btn.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+  .dd-selector-wrap { margin-bottom: 18px; }
+  .dd-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); font-weight: 600; margin-bottom: 6px; }
+  .dd-select {
+    width: 100%; font-family: inherit; font-size: 13px; color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+  }
+
+  .dd-combo { position: relative; }
+  .dd-combo-btn {
+    width: 100%; text-align: left; font-family: inherit; font-size: 13px; color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  }
+  .dd-combo-btn .lb-dot { flex-shrink: 0; }
+  .dd-combo-list {
+    position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; max-height: 280px; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  }
+  .dd-combo-group-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); font-weight: 700;
+    padding: 8px 12px 4px;
+  }
+  .dd-combo-option {
+    display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 12.5px; color: var(--ink); cursor: pointer;
+  }
+  .dd-combo-option:hover { background: var(--surface-2); }
+
+  .dd-fields-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .dd-fields-header span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); font-weight: 600; }
+  .dd-select-all-btn {
+    font-family: inherit; font-size: 11.5px; color: var(--teal); background: none; border: 1px solid var(--line);
+    border-radius: 7px; padding: 4px 10px; cursor: pointer;
+  }
+  .dd-fields-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; margin-bottom: 22px; }
+  .dd-field-checkbox { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink); }
+  .dd-field-checkbox input { accent-color: var(--teal); }
+
+  .dd-download-btn {
+    font-family: inherit; font-size: 13.5px; font-weight: 600; color: #fff; background: var(--teal);
+    border: none; border-radius: 8px; padding: 11px 20px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  }
+  .dd-download-btn:disabled { background: var(--surface-2); color: var(--ink-soft); cursor: not-allowed; }
+  .dd-download-btn.loading { opacity: 0.75; cursor: wait; }
+  .dd-spinner {
+    width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%;
+    animation: dd-spin 0.7s linear infinite; display: none;
+  }
+  .dd-download-btn.loading .dd-spinner { display: inline-block; }
+  @keyframes dd-spin { to { transform: rotate(360deg); } }
+
+  .dd-error { margin-top: 12px; font-size: 12.5px; color: var(--critical); }
+
+  @media (max-width: 480px) {
+    .dd-fields-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ================= Find My Team tab ================= */
+  .fmt-search-card { max-width: 640px; }
+  .fmt-search-wrap { position: relative; }
+  .fmt-search-input {
+    width: 100%; font-family: inherit; font-size: 14px; color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px;
+  }
+  .fmt-typeahead {
+    position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; max-height: 320px; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  }
+  .fmt-typeahead-option { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
+  .fmt-typeahead-option:last-child { border-bottom: none; }
+  .fmt-typeahead-option:hover { background: var(--surface-2); }
+  .fmt-typeahead-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .fmt-typeahead-secondary { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .fmt-typeahead-empty { padding: 14px; font-size: 12.5px; color: var(--ink-soft); font-style: italic; }
+
+  .fmt-person-card { display: flex; flex-wrap: wrap; gap: 22px; }
+  .fmt-person-field { min-width: 140px; }
+  .fmt-person-field .fpf-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); font-weight: 600; margin-bottom: 3px; }
+  .fmt-person-field .fpf-value { font-size: 13.5px; color: var(--ink); font-weight: 600; }
+
+  .fmt-cert-grid { margin-top: 18px; }
+  .fmt-cert-card {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px; height: auto;
+  }
+  .fmt-cert-card.expiring_soon { border-color: var(--warning); background: var(--warning-tint); }
+  .fmt-cert-card.expired { border-color: var(--critical); background: var(--critical-tint); }
+  .fmt-cert-provider-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+  .fmt-cert-name { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .fmt-cert-dates { font-size: 11px; color: var(--ink-soft); font-family: var(--font-mono); }
+  .fmt-expiry-badge {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; padding: 2px 9px;
+    border-radius: 999px; width: fit-content;
+  }
+  .fmt-expiry-badge.expiring_soon { background: var(--warning-tint); color: var(--warning); }
+  .fmt-expiry-badge.expired { background: var(--critical-tint); color: var(--critical); }
+
+  .status-pill.completed { background: var(--good-tint); color: var(--good); }
+  .status-pill.in_progress { background: var(--warning-tint); color: var(--warning); }
+  .status-pill.not_cleared { background: var(--critical-tint); color: var(--critical); }
+  .status-pill.unknown { background: var(--surface); color: var(--ink-soft); }
+
+  .fmt-empty { text-align: center; padding: 36px 20px; color: var(--ink-soft); font-size: 13px; font-style: italic; }
+
+  @media (max-width: 700px) { .fmt-cert-grid { grid-template-columns: 1fr; } }
 
   /* ---------------- responsive ---------------- */
   @media (max-width: 900px) {
@@ -303,6 +581,14 @@
         <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg></span>
         <span class="nav-label">Trends</span>
       </div>
+      <div class="nav-item" id="tab-data-download" data-tab="data-download" title="Data Download" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-data-download">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M4 19h16"/></svg></span>
+        <span class="nav-label">Data Download</span>
+      </div>
+      <div class="nav-item" id="tab-find-my-team" data-tab="find-my-team" title="Find My Team" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-find-my-team">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        <span class="nav-label">Find My Team</span>
+      </div>
       <div class="nav-item" id="tab-ask-me" data-tab="ask-me" title="Ask Me" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-ask-me">
         <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
         <span class="nav-label">Ask Me</span>
@@ -341,6 +627,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
           <span class="btn-label">View My Status</span>
         </button>
+        <div class="status-popover" id="statusPopover" hidden>
+          <div class="status-popover-head">
+            <h3>My Status</h3>
+            <button class="modal-close" id="statusPopoverCloseBtn" type="button" aria-label="Close">&times;</button>
+          </div>
+          <div class="status-popover-body" id="statusPopoverBody"></div>
+        </div>
       </div>
 
       <div class="header-spacer right"></div>
@@ -353,7 +646,7 @@
 
     <div id="tabContent">
 
-      <section class="tab-panel active" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+      <section class="tab-panel active insights-panel" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
         <div id="dashShell">
 
           <div class="dash-section">
@@ -392,15 +685,123 @@
         </div>
       </section>
 
-      <section class="tab-panel" id="panel-trends" role="tabpanel" aria-labelledby="tab-trends">
-        <div class="panel-header">
-          <h1>Trends</h1>
-          <p>Certification and completion trends over time.</p>
+      <section class="tab-panel insights-panel" id="panel-trends" role="tabpanel" aria-labelledby="tab-trends">
+        <div id="trendsShell">
+
+          <div class="dash-section">
+            <div class="dash-two-col">
+              <div class="dash-col">
+                <div class="dash-section-title">Certification trend comparison</div>
+                <p class="dash-section-sub">Each line is that provider's leading certification, by real completed count. Full available history per line.</p>
+                <div class="dash-card">
+                  <div class="trend-chart-wrap"><svg id="trendChartSvg" viewBox="0 0 640 260" preserveAspectRatio="none"></svg></div>
+                  <div class="trend-legend" id="trendLegend"></div>
+                </div>
+              </div>
+              <div class="dash-col">
+                <div class="dash-section-title">Leaders, by completions</div>
+                <p class="dash-section-sub">Every tracked certification, ranked by latest completed count.</p>
+                <div class="dash-card leaders-card">
+                  <div class="leaders-list" id="leadersList"></div>
+                  <div class="leaders-highlights" id="leadersHighlights"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-section">
+            <div class="dash-section-title">Provider trends</div>
+            <p class="dash-section-sub">Weekly and monthly completion trends, one provider at a time.</p>
+            <div class="dash-card">
+              <div class="pd-tabs" id="trendProviderTabs"></div>
+              <div class="trend-subtabs" id="trendSubTabs">
+                <button class="trend-subtab active" data-subtab="weekly" type="button">Weekly</button>
+                <button class="trend-subtab" data-subtab="monthly" type="button">Monthly</button>
+              </div>
+              <div id="trendProviderPanel"></div>
+            </div>
+          </div>
+
         </div>
-        <div class="placeholder-card">
-          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg></div>
-          <h3>Content coming soon</h3>
-          <p>Charts and historical trend data will appear here once wired up.</p>
+      </section>
+
+      <!--
+        TODO(access-control): This tab exports row-level, per-employee data
+        (name/email/practice/etc.) — unlike the Dashboard/Trends tabs, which
+        only ever show aggregate counts, this is a materially higher data-
+        sensitivity level. There is NO role-based access control on this tab
+        yet. Acceptable for now (internal presentation/testing group only),
+        but this MUST be locked down (e.g. L&D admins / Practice Directors
+        only) before it's exposed beyond that group. See
+        DEVELOPMENT_LOG.md's 2026-09-17 entry — don't let this slip.
+      -->
+      <section class="tab-panel insights-panel" id="panel-data-download" role="tabpanel" aria-labelledby="tab-data-download">
+        <div id="dataDownloadShell">
+          <div class="dash-section">
+            <div class="dash-section-title">Data Download</div>
+            <p class="dash-section-sub">Export real row-level certification data as an Excel workbook — reads through the same backend as the Dashboard and Trends tabs.</p>
+            <div class="dash-card dd-card">
+              <div class="dd-mode-toggle" id="ddModeToggle">
+                <button class="dd-mode-btn active" data-mode="provider" type="button">Provider-wise</button>
+                <button class="dd-mode-btn" data-mode="certification" type="button">Certification-wise</button>
+              </div>
+
+              <div class="dd-selector-wrap" id="ddProviderSelectorWrap">
+                <label class="dd-label" for="ddProviderSelect">Provider</label>
+                <select class="dd-select" id="ddProviderSelect"><option value="">Select a provider…</option></select>
+              </div>
+              <div class="dd-selector-wrap" id="ddCertSelectorWrap" hidden>
+                <label class="dd-label">Certification</label>
+                <div class="dd-combo" id="ddCertCombo">
+                  <button class="dd-combo-btn" id="ddCertComboBtn" type="button">Select a certification…</button>
+                  <div class="dd-combo-list" id="ddCertComboList" hidden></div>
+                </div>
+              </div>
+
+              <div class="dd-fields-header">
+                <span>Fields to include</span>
+                <button class="dd-select-all-btn" id="ddSelectAllBtn" type="button">Deselect all</button>
+              </div>
+              <div class="dd-fields-grid" id="ddFieldsGrid"></div>
+
+              <button class="dd-download-btn" id="ddDownloadBtn" type="button" disabled>Download Data</button>
+              <div class="dd-error" id="ddError" hidden></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!--
+        TODO(access-control): This tab surfaces a single named individual's
+        full certification history — the MOST personally-identifiable view
+        in this whole portal (more so than Data Download's bulk export,
+        since it's specifically framed around looking up one named
+        person). There is NO role-based access control on this tab yet.
+        Acceptable for now (internal presentation/testing group only), but
+        this MUST be restricted to leadership/L&D admin roles before wider
+        rollout. See DEVELOPMENT_LOG.md's 2026-09-17 entry — don't let
+        this slip, and it carries MORE sensitive exposure than Data
+        Download, not less.
+      -->
+      <section class="tab-panel insights-panel" id="panel-find-my-team" role="tabpanel" aria-labelledby="tab-find-my-team">
+        <div id="findMyTeamShell">
+          <div class="dash-section">
+            <div class="dash-section-title">Find My Team</div>
+            <p class="dash-section-sub">Search for an employee to see their real certification record — reads through the same backend as the Dashboard tab.</p>
+            <div class="dash-card fmt-search-card">
+              <div class="fmt-search-wrap">
+                <input type="text" id="fmtSearchInput" class="fmt-search-input" placeholder="Search by employee name…" autocomplete="off">
+                <div class="fmt-typeahead" id="fmtTypeahead" hidden></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-section" id="fmtResultSection" hidden>
+            <div class="dash-card fmt-person-card" id="fmtPersonCard"></div>
+            <div class="lb-grid fmt-cert-grid" id="fmtCertGrid"></div>
+          </div>
+
+          <div class="dash-card fmt-empty" id="fmtEmptyState">Search for an employee to see their certification report.</div>
         </div>
       </section>
 
@@ -452,6 +853,72 @@
         </div>
       </section>
 
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="certModalOverlay" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Submit a certification</h2>
+      <button class="modal-close" id="certModalCloseBtn" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="cert-form-hint">Practice is auto-filled from your profile — it's not something you set here.</p>
+      <div class="cert-form-row">
+        <div class="cert-form-field">
+          <label>Cert name</label>
+          <input list="certCatalogOptions" id="certFormName" placeholder="Start typing to search the catalog…">
+          <datalist id="certCatalogOptions"></datalist>
+        </div>
+        <div class="cert-form-field">
+          <label>Status</label>
+          <select id="certFormStatus">
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="gave_exam_but_failed">Gave Exam but Failed</option>
+          </select>
+        </div>
+      </div>
+      <div class="cert-form-row">
+        <div class="cert-form-field">
+          <label>Manager</label>
+          <input id="certFormManager">
+        </div>
+        <div class="cert-form-field">
+          <label>Practice Director</label>
+          <input id="certFormPd">
+        </div>
+        <div class="cert-form-field">
+          <label>Practice</label>
+          <input id="certFormPractice" disabled>
+        </div>
+      </div>
+      <div class="cert-form-row">
+        <div class="cert-form-field">
+          <label>Prep start date</label>
+          <input type="date" id="certFormPrepStart">
+        </div>
+        <div class="cert-form-field" id="certFormExamEndField">
+          <label>End date / exam date</label>
+          <input type="date" id="certFormExamEnd">
+        </div>
+        <div class="cert-form-field" id="certFormExpirationField">
+          <label>Expiration date (optional)</label>
+          <input type="date" id="certFormExpiration">
+        </div>
+      </div>
+      <div class="cert-form-row" id="certFormCredlyRow" style="display:none;">
+        <div class="cert-form-field" style="flex:1 1 100%;">
+          <label>Credly link (required for Completed — triggers verification)</label>
+          <input id="certFormCredly" placeholder="https://www.credly.com/badges/.../public_url">
+        </div>
+      </div>
+      <div class="cert-form-message" id="certFormMessage" hidden></div>
+    </div>
+    <div class="modal-actions">
+      <button class="cert-form-btn primary" id="certFormSubmitBtn" type="button"><span class="btn-label">Submit</span></button>
+      <button class="cert-form-btn secondary" id="certFormCancelBtn" type="button"><span class="btn-label">Cancel</span></button>
     </div>
   </div>
 </div>
@@ -533,12 +1000,83 @@ function selectTab(tabId) {
   if (item) item.click();
 }
 
-document.getElementById('submitCertBtn').addEventListener('click', () => {
-  window.location.href = 'index.html';
+// "View My Status" — a small popover anchored under the header button,
+// not a tab switch or page navigation. Reads the same real tracker data
+// as Find My Team (GET /api/portal/team-search/person), just scoped to
+// the logged-in user's own name — no separate "my status" data path.
+function statusPillClass(key) {
+  return ['completed', 'in_progress', 'not_cleared'].includes(key) ? key : 'unknown';
+}
+
+async function loadStatusPopover() {
+  const body = document.getElementById('statusPopoverBody');
+  if (!currentEmployeeName) {
+    body.innerHTML = `<div class="status-popover-error">Couldn't determine the current employee — try reloading the page.</div>`;
+    return;
+  }
+  body.innerHTML = `<div class="status-popover-loading">Loading…</div>`;
+  try {
+    const resp = await fetch(`/api/portal/team-search/person?identity=${encodeURIComponent(currentEmployeeName)}`);
+    if (!resp.ok) {
+      const errBody = await resp.json().catch(() => ({}));
+      throw new Error(errBody.detail || `${resp.status}`);
+    }
+    const person = await resp.json();
+    renderStatusPopover(person);
+  } catch (e) {
+    body.innerHTML = `<div class="status-popover-error">Couldn't load your certification record: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderStatusPopover(person) {
+  const body = document.getElementById('statusPopoverBody');
+  const personGrid = `
+    <div class="sp-person-grid">
+      <div class="sp-person-field"><div class="spf-label">Name</div><div class="spf-value">${esc(person.display_name)}</div></div>
+      <div class="sp-person-field"><div class="spf-label">Practice</div><div class="spf-value">${esc(person.practice || '—')}</div></div>
+    </div>
+  `;
+  if (!person.certifications.length) {
+    body.innerHTML = personGrid + `<div class="status-popover-empty">No certifications on record yet.</div>`;
+    return;
+  }
+  const cards = person.certifications.map(c => {
+    const color = providerColor(c.provider);
+    const badge = c.expiry_state === 'expiring_soon' ? `<span class="sp-expiry-badge expiring_soon">Expiring soon</span>`
+      : c.expiry_state === 'expired' ? `<span class="sp-expiry-badge expired">Expired</span>` : '';
+    const dateLine = [
+      c.completion_date ? `Completed ${c.completion_date}` : (c.submission_date ? `Submitted ${c.submission_date}` : null),
+      c.expiry_date ? `Expires ${c.expiry_date}` : null,
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="sp-cert-card">
+        <div class="sp-cert-provider"><span class="lb-dot" style="background:${color}"></span>${esc(c.provider_label)}</div>
+        <div class="sp-cert-name">${esc(c.certification_name || '(Unspecified certification)')}</div>
+        <span class="sp-pill ${statusPillClass(c.status_key)}"><span class="sp-dot"></span>${esc(c.status)}</span>${badge}
+        ${dateLine ? `<div class="sp-cert-dates">${esc(dateLine)}</div>` : ''}
+      </div>`;
+  }).join('');
+  body.innerHTML = personGrid + cards;
+}
+
+function openStatusPopover() {
+  document.getElementById('statusPopover').hidden = false;
+  loadStatusPopover();
+}
+
+function closeStatusPopover() {
+  document.getElementById('statusPopover').hidden = true;
+}
+
+document.getElementById('viewStatusBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const popover = document.getElementById('statusPopover');
+  if (popover.hidden) openStatusPopover(); else closeStatusPopover();
 });
-document.getElementById('viewStatusBtn').addEventListener('click', () => {
-  selectTab('dashboard');
-});
+document.getElementById('statusPopoverCloseBtn').addEventListener('click', closeStatusPopover);
+document.getElementById('statusPopover').addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('click', closeStatusPopover);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeStatusPopover(); });
 
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -548,13 +1086,18 @@ function initials(name) {
   return ((parts[0][0] || '') + (parts[parts.length - 1][0] || '')).toUpperCase();
 }
 
+let currentEmployeeId = null;
+let currentEmployeeName = null;
+
 async function loadCurrentUser() {
   try {
     const resp = await fetch('/api/employees');
     if (!resp.ok) throw new Error(`${resp.status}`);
     const employees = await resp.json();
     if (!employees.length) throw new Error('no employees');
+    currentEmployeeId = employees[0].employee_id;
     const name = employees[0].name || 'Guest';
+    currentEmployeeName = employees[0].name || null;
     const parts = name.trim().split(/\s+/);
     const first = parts[0] || name;
     const last = parts.slice(1).join(' ');
@@ -570,6 +1113,147 @@ async function loadCurrentUser() {
 loadCurrentUser();
 
 // ---------------------------------------------------------------------
+// Certification submission modal — opened inline from the header's
+// "Submit Your Certification" button instead of navigating away to
+// index.html. Submission itself is the same backend endpoint/payload
+// shape as index.html's own inline chat form (GET
+// /api/employees/{id}/prefill, POST /api/certifications/submit). The
+// cert-name typeahead, however, searches the portal's own live-synced
+// certification names (GET /api/portal/data-download/certifications)
+// rather than the separate main-app certification_catalog table, which
+// has no real certifications seeded in it — searching it here would
+// mean "start typing" almost never finds a match.
+// ---------------------------------------------------------------------
+
+let certCatalogNames = [];
+
+function showCertFormMessage(kind, text) {
+  const el = document.getElementById('certFormMessage');
+  el.hidden = false;
+  el.className = `cert-form-message ${kind}`;
+  el.textContent = text;
+}
+
+function certOnStatusChange() {
+  const status = document.getElementById('certFormStatus').value;
+  document.getElementById('certFormCredlyRow').style.display = status === 'completed' ? 'flex' : 'none';
+  // Exam/expiration dates aren't known yet while still In Progress — only
+  // ask for them once there's an outcome (Completed or Gave Exam but Failed).
+  const showOutcomeDates = status !== 'in_progress';
+  document.getElementById('certFormExamEndField').style.display = showOutcomeDates ? 'flex' : 'none';
+  document.getElementById('certFormExpirationField').style.display = showOutcomeDates ? 'flex' : 'none';
+  if (!showOutcomeDates) {
+    document.getElementById('certFormExamEnd').value = '';
+    document.getElementById('certFormExpiration').value = '';
+  }
+}
+
+function certOnNameInput() {
+  const q = document.getElementById('certFormName').value.trim().toLowerCase();
+  const matches = q ? certCatalogNames.filter(n => n.toLowerCase().includes(q)) : certCatalogNames;
+  document.getElementById('certCatalogOptions').innerHTML = matches.map(n => `<option value="${esc(n)}">`).join('');
+}
+
+async function openCertModal() {
+  document.getElementById('certFormMessage').hidden = true;
+  document.getElementById('certFormName').value = '';
+  document.getElementById('certFormStatus').value = 'in_progress';
+  document.getElementById('certFormManager').value = '';
+  document.getElementById('certFormPd').value = '';
+  document.getElementById('certFormPractice').value = '';
+  document.getElementById('certFormPrepStart').value = '';
+  document.getElementById('certFormExamEnd').value = '';
+  document.getElementById('certFormExpiration').value = '';
+  document.getElementById('certFormCredly').value = '';
+  certOnStatusChange();
+  document.getElementById('certModalOverlay').hidden = false;
+
+  fetch('/api/portal/data-download/certifications')
+    .then(r => r.ok ? r.json() : [])
+    .then(rows => {
+      certCatalogNames = [...new Set(rows.map(r => r.certification_name))].sort();
+      document.getElementById('certCatalogOptions').innerHTML = certCatalogNames.map(n => `<option value="${esc(n)}">`).join('');
+    })
+    .catch(() => { /* non-fatal — the field still works as free text */ });
+
+  if (!currentEmployeeId) {
+    showCertFormMessage('error', "Couldn't determine the current employee — try reloading the page.");
+    return;
+  }
+  try {
+    const resp = await fetch(`/api/employees/${currentEmployeeId}/prefill`, { headers: { 'X-Employee-Id': currentEmployeeId } });
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    const p = await resp.json();
+    document.getElementById('certFormManager').value = p.manager_name || '';
+    document.getElementById('certFormPd').value = p.practice_director_name || '';
+    document.getElementById('certFormPractice').value = p.practice || '';
+  } catch (e) {
+    showCertFormMessage('error', `Couldn't load your profile: ${e.message}`);
+  }
+}
+
+function closeCertModal() {
+  document.getElementById('certModalOverlay').hidden = true;
+}
+
+async function submitCertForm() {
+  const certName = document.getElementById('certFormName').value.trim();
+  const status = document.getElementById('certFormStatus').value;
+  const statusLabels = { in_progress: 'In Progress', completed: 'Completed', gave_exam_but_failed: 'Gave Exam but Failed' };
+  const credlyLink = document.getElementById('certFormCredly').value.trim() || null;
+
+  if (!certName) { showCertFormMessage('error', 'Cert name is required.'); return; }
+  if (status === 'completed' && !credlyLink) { showCertFormMessage('error', 'Credly link is required when status is Completed.'); return; }
+  if (!currentEmployeeId) { showCertFormMessage('error', "Couldn't determine the current employee."); return; }
+
+  const payload = {
+    employee_id: currentEmployeeId,
+    cert_name: certName,
+    submission_status: status,
+    manager_name: document.getElementById('certFormManager').value.trim() || null,
+    practice_director_name: document.getElementById('certFormPd').value.trim() || null,
+    prep_start_date: document.getElementById('certFormPrepStart').value || null,
+    exam_end_date: document.getElementById('certFormExamEnd').value || null,
+    credly_link: credlyLink,
+    expiration_date: document.getElementById('certFormExpiration').value || null,
+  };
+
+  const submitBtn = document.getElementById('certFormSubmitBtn');
+  submitBtn.disabled = true;
+  submitBtn.querySelector('.btn-label').textContent = 'Submitting…';
+  try {
+    const resp = await fetch('/api/certifications/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Employee-Id': currentEmployeeId },
+      body: JSON.stringify(payload),
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      showCertFormMessage('error', `Submission failed: ${typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail || body)}`);
+    } else {
+      const verificationNote = body.verification ? ` Verification: ${body.verification.status}.` : '';
+      showCertFormMessage('success', `Submitted ${certName} as ${statusLabels[status]}.${verificationNote}`);
+      setTimeout(closeCertModal, 1800);
+    }
+  } catch (e) {
+    showCertFormMessage('error', `Submission failed: ${e.message}`);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.querySelector('.btn-label').textContent = 'Submit';
+  }
+}
+
+document.getElementById('submitCertBtn').addEventListener('click', openCertModal);
+document.getElementById('certFormCancelBtn').addEventListener('click', closeCertModal);
+document.getElementById('certModalCloseBtn').addEventListener('click', closeCertModal);
+document.getElementById('certModalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'certModalOverlay') closeCertModal();
+});
+document.getElementById('certFormStatus').addEventListener('change', certOnStatusChange);
+document.getElementById('certFormName').addEventListener('input', certOnNameInput);
+document.getElementById('certFormSubmitBtn').addEventListener('click', submitCertForm);
+
+// ---------------------------------------------------------------------
 // Dashboard tab — real certification data from /api/portal/dashboard/overview
 // (lnd_portal database — see backend/app/routers/portal_dashboard.py).
 // One fetch powers all 3 sections; switching the Section-3 provider tab
@@ -581,15 +1265,19 @@ loadCurrentUser();
 // labels, drill-down tabs/bars/rings) so a provider's color never drifts
 // between components. New providers must NOT get an auto-generated hue —
 // come back and pick one checked for colorblind-safe separation instead.
+// 6 providers, per direct instruction (2026-09-17): the real source data is
+// Anthropic/Databricks/AWS/Google (the SharePoint folder's own naming for
+// what this app's Provider enum still calls "gemini" internally — same
+// provider, one canonical value, not two), plus Azure and Snowflake kept in
+// the catalog with no data yet. "Bedrock" and a separate "google" provider
+// were removed — neither ever had any real data under it.
 const PROVIDER_META = {
-  aws:        { label: 'AWS',               color: { light: '#2a78d6', dark: '#3987e5' } },
-  anthropic:  { label: 'Anthropic',         color: { light: '#eb6834', dark: '#d95926' } },
-  azure:      { label: 'Azure',             color: { light: '#1baf7a', dark: '#199e70' } },
-  bedrock:    { label: 'Bedrock',           color: { light: '#eda100', dark: '#c98500' } },
-  databricks: { label: 'Databricks',        color: { light: '#e87ba4', dark: '#d55181' } },
-  gemini:     { label: 'Gemini Enterprise', color: { light: '#008300', dark: '#008300' } },
-  google:     { label: 'Google',            color: { light: '#4a3aa7', dark: '#9085e9' } },
-  snowflake:  { label: 'Snowflake',         color: { light: '#e34948', dark: '#e66767' } },
+  aws:        { label: 'AWS',        color: { light: '#2a78d6', dark: '#3987e5' } },
+  anthropic:  { label: 'Anthropic',  color: { light: '#eb6834', dark: '#d95926' } },
+  azure:      { label: 'Azure',      color: { light: '#1baf7a', dark: '#199e70' } },
+  databricks: { label: 'Databricks', color: { light: '#e87ba4', dark: '#d55181' } },
+  gemini:     { label: 'Google',     color: { light: '#008300', dark: '#008300' } },
+  snowflake:  { label: 'Snowflake',  color: { light: '#e34948', dark: '#e66767' } },
 };
 function currentAppTheme() {
   const t = document.documentElement.getAttribute('data-theme');
@@ -734,37 +1422,45 @@ function renderProviderPanel() {
     const denom = c.completed + c.pending;
     const solidPct = denom ? (c.completed / denom) * 100 : 0;
     const pendingPct = denom ? (c.pending / denom) * 100 : 0;
-    const pillClass = c.on_track ? 'on-track' : 'below-target';
-    const pillLabel = c.on_track ? 'On track' : 'Below target';
     return `
       <tr>
         <td>${esc(c.certification_name)}</td>
         <td class="num">${esc(c.completed)}</td>
-        <td class="cert-comp-cell"><div class="cert-comp-track">
+        <td class="num">${esc(c.pending)}</td>
+        <td class="cert-comp-cell last-col"><div class="cert-comp-track">
           <div class="cert-comp-solid" style="width:${solidPct}%;background:${color}"></div>
           <div class="cert-comp-pending" style="width:${pendingPct}%;background:${color}"></div>
         </div></td>
-        <td class="num">${esc(c.pending)}</td>
-        <td><span class="status-pill ${pillClass}"><span class="sp-dot"></span>${pillLabel}</span></td>
       </tr>
     `;
   }).join('');
   const certTableHtml = certs.length ? `
     <table class="cert-table">
-      <thead><tr><th>Certification</th><th>Completed</th><th>Composition</th><th>Pending</th><th>Status</th></tr></thead>
+      <thead><tr><th>Certification</th><th>Completed</th><th>In Progress</th><th class="last-col">Composition</th></tr></thead>
       <tbody>${certRows}</tbody>
     </table>` : `<p class="dash-section-sub">No certifications on file for this provider yet.</p>`;
 
   // (b) Practice-wise breakdown — this provider's own data, own color, own scale.
+  // Denominator is this provider's own total completions across all
+  // practices (not practice headcount, which this dataset can't derive
+  // honestly — see the headcount_map docstring in portal_dashboard.py), so
+  // each row reads as "this practice's share of everyone who completed a
+  // <provider> cert," not "this practice's completion rate."
   const practiceValues = practices.map(pr => ({ practice: pr.practice, count: matrixCount(map, provider, pr.practice) }));
-  const maxPractice = Math.max(1, ...practiceValues.map(pv => pv.count));
-  const practiceRowsHtml = practiceValues.map(pv => `
+  const totalForProvider = Math.max(1, practiceValues.reduce((sum, pv) => sum + pv.count, 0));
+  const practiceRowsHtml = practiceValues.map(pv => {
+    const solidPct = (pv.count / totalForProvider) * 100;
+    return `
     <div class="pw-row">
       <div class="pw-label" title="${esc(pv.practice)}">${esc(pv.practice)}</div>
-      <div class="pw-track"><div class="pw-fill" style="width:${(pv.count / maxPractice) * 100}%;background:${color}"></div></div>
-      <div class="pw-count">${esc(pv.count)}</div>
+      <div class="pw-frac">${esc(pv.count)}<span class="pw-frac-total"> / ${esc(totalForProvider)}</span></div>
+      <div class="pw-track">
+        <div class="pw-fill" style="width:${solidPct}%;background:${color}"></div>
+        ${pv.count < totalForProvider ? `<div class="pw-hatch" style="width:${100 - solidPct}%"></div>` : ''}
+      </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   // (c) Practice Director-wise reach — ring = this provider's completed count
   // in that practice, as a % of that practice's tracked headcount (any
@@ -796,7 +1492,7 @@ function renderProviderPanel() {
       <div class="pd-panel-title">Practice-wise breakdown</div>
       ${practiceRowsHtml}
     </div>
-    <div class="pd-panel-section">
+    <div class="pd-panel-section" style="display:none;">
       <div class="pd-panel-title">Practice Director-wise reach</div>
       <div class="pd-cards">${pdCardsHtml}</div>
     </div>
@@ -827,6 +1523,565 @@ async function loadDashboard() {
 }
 
 // ---------------------------------------------------------------------
+// Trends tab — real+backfilled certification trend data from
+// /api/portal/trends/overview (see backend/app/routers/portal_trends.py).
+// Provider-wise only, per direct instruction: nothing here is ever summed
+// into one combined/org-wide number. Backfilled (demo-only) points are
+// visually distinguished (dashed line segments + an "illustrative history"
+// note) wherever they appear — never silently blended with real data.
+// ---------------------------------------------------------------------
+
+let trendsOverview = null;
+let activeTrendProviderId = null;
+let activeTrendSubtab = 'weekly';
+const trendHiddenSeries = new Set();
+
+function seriesKey(s) { return s.provider + '|' + s.certification_name; }
+
+function monthLabel(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+}
+function weekLabel(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// ---------------- Section 1: comparison chart + legend ----------------
+const TREND_CHART_W = 640, TREND_CHART_H = 260;
+const TREND_MARGIN = { left: 34, right: 8, top: 10, bottom: 22 };
+
+function renderTrendChart() {
+  const comparison = trendsOverview.comparison;
+  const months = comparison.months;
+  const monthIndex = Object.fromEntries(months.map((m, i) => [m, i]));
+  const visible = comparison.series.filter(s => !trendHiddenSeries.has(seriesKey(s)));
+  const maxVal = Math.max(1, ...visible.flatMap(s => s.points.map(p => p.value)), 1);
+  const plotW = TREND_CHART_W - TREND_MARGIN.left - TREND_MARGIN.right;
+  const plotH = TREND_CHART_H - TREND_MARGIN.top - TREND_MARGIN.bottom;
+  const xAt = (i) => TREND_MARGIN.left + (months.length > 1 ? (i / (months.length - 1)) * plotW : plotW / 2);
+  const yAt = (v) => TREND_MARGIN.top + plotH - (v / maxVal) * plotH;
+
+  const gridVals = [0, Math.round(maxVal / 2), maxVal];
+  const gridHtml = gridVals.map(v => `
+    <line class="trend-gridline" x1="${TREND_MARGIN.left}" x2="${TREND_CHART_W - TREND_MARGIN.right}" y1="${yAt(v)}" y2="${yAt(v)}"/>
+    <text class="trend-axis-label" x="2" y="${yAt(v) + 3}">${esc(v)}</text>
+  `).join('');
+  const labelStep = Math.max(1, Math.ceil(months.length / 7));
+  const xLabelsHtml = months.map((m, i) => i % labelStep === 0
+    ? `<text class="trend-axis-label" x="${xAt(i)}" y="${TREND_CHART_H - 4}" text-anchor="middle">${esc(monthLabel(m))}</text>` : '').join('');
+
+  const linesHtml = comparison.series.map(s => {
+    if (trendHiddenSeries.has(seriesKey(s))) return '';
+    const color = providerColor(s.provider);
+    const pts = s.points.map(p => ({ x: xAt(monthIndex[p.period]), y: yAt(p.value), seeded: p.is_seeded, value: p.value, period: p.period }));
+    const splitIdx = pts.findIndex(p => !p.seeded);
+    const seededPts = splitIdx <= 0 ? [] : pts.slice(0, splitIdx + 1);
+    const realPts = splitIdx <= 0 ? pts : pts.slice(splitIdx);
+    const toPoly = (arr) => arr.map(p => `${p.x},${p.y}`).join(' ');
+    const dashed = seededPts.length > 1 ? `<polyline class="trend-line trend-line-seeded" points="${toPoly(seededPts)}" style="stroke:${color}"/>` : '';
+    const solid = realPts.length > 1 ? `<polyline class="trend-line" points="${toPoly(realPts)}" style="stroke:${color}"/>` : '';
+    const dots = pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="2.6" style="fill:${color}"><title>${esc(providerLabel(s.provider))} · ${esc(monthLabel(p.period))}: ${esc(p.value)}${p.seeded ? ' (illustrative)' : ''}</title></circle>`).join('');
+    return dashed + solid + dots;
+  }).join('');
+
+  document.getElementById('trendChartSvg').innerHTML = gridHtml + xLabelsHtml + linesHtml;
+  renderTrendLegend();
+}
+
+function renderTrendLegend() {
+  const comparison = trendsOverview.comparison;
+  const anySeeded = comparison.series.some(s => s.points.some(p => p.is_seeded));
+  const chipsHtml = comparison.series.map(s => {
+    const key = seriesKey(s);
+    const dimmed = trendHiddenSeries.has(key);
+    const color = providerColor(s.provider);
+    return `
+      <div class="trend-legend-chip${dimmed ? ' dimmed' : ''}" data-key="${esc(key)}">
+        <span class="lb-dot" style="background:${color}"></span>${esc(s.certification_name)} (${esc(providerLabel(s.provider))})
+      </div>`;
+  }).join('');
+  const noteHtml = anySeeded
+    ? `<div class="trend-illustrative-note" style="flex-basis:100%;">Dashed segments are illustrative (backfilled) history, not real records — hover a point for detail.</div>`
+    : '';
+  document.getElementById('trendLegend').innerHTML = chipsHtml + noteHtml;
+  document.querySelectorAll('#trendLegend .trend-legend-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const key = chip.dataset.key;
+      if (trendHiddenSeries.has(key)) trendHiddenSeries.delete(key); else trendHiddenSeries.add(key);
+      renderTrendChart(); // client-side only — no refetch
+    });
+  });
+}
+
+// ---------------- Section 1: leaders panel ----------------
+function renderLeaders() {
+  const { leaders, highlights } = trendsOverview.comparison;
+  document.getElementById('leadersList').innerHTML = leaders.map((l, i) => {
+    const color = providerColor(l.provider);
+    const growthHtml = l.growth_pct === null
+      ? `<span class="leader-growth na">new</span>`
+      : `<span class="leader-growth ${l.growth_pct >= 0 ? 'up' : 'down'}">${l.growth_pct >= 0 ? '+' : ''}${l.growth_pct}%</span>`;
+    return `
+      <div class="leader-row">
+        <span class="leader-rank">${i + 1}</span>
+        <span class="leader-dot" style="background:${color}"></span>
+        <span class="leader-name" title="${esc(l.certification_name)}">${esc(l.certification_name)}</span>
+        <span class="leader-count">${esc(l.latest)}</span>
+        ${growthHtml}
+      </div>`;
+  }).join('');
+
+  const fg = highlights.fastest_growing;
+  const fgHtml = fg
+    ? `Fastest growing: <strong>${esc(fg.certification_name)}</strong> — up ${esc(fg.growth_pct)}% since Jan 1`
+    : `Fastest growing: <span class="leader-growth na">not enough data yet</span>`;
+  const ftHtml = highlights.furthest_from_target_provider
+    ? `Furthest from target: <strong>${esc(providerLabel(highlights.furthest_from_target_provider))}</strong> — only ${esc(highlights.furthest_from_target_pct)}% of its target reached`
+    : `Furthest from target: <span class="leader-growth na">no provider targets set yet</span>`;
+  document.getElementById('leadersHighlights').innerHTML = `<div>${fgHtml}</div><div>${ftHtml}</div>`;
+}
+
+// ---------------- Section 2: provider weekly/monthly ----------------
+function trendProviderOrder() {
+  return [...trendsOverview.providers].sort((a, b) => {
+    const av = a.monthly ? a.monthly.points[a.monthly.points.length - 1].value : 0;
+    const bv = b.monthly ? b.monthly.points[b.monthly.points.length - 1].value : 0;
+    return bv - av;
+  });
+}
+
+function renderTrendProviderTabs() {
+  const ordered = trendProviderOrder();
+  document.getElementById('trendProviderTabs').innerHTML = ordered.map(p => {
+    const color = providerColor(p.provider);
+    const isActive = p.provider === activeTrendProviderId;
+    const style = isActive ? `background:${hexToRgba(color, 0.14)};border-bottom-color:${color};` : '';
+    return `
+      <button class="pd-tab${isActive ? ' active' : ''}" data-provider="${p.provider}" type="button" style="${style}">
+        <span class="lb-dot" style="background:${color}"></span>${esc(providerLabel(p.provider))}
+      </button>`;
+  }).join('');
+  document.querySelectorAll('#trendProviderTabs .pd-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTrendProviderId = btn.dataset.provider;
+      renderTrendProviderTabs();
+      renderTrendProviderPanel();
+    });
+  });
+}
+
+function renderWeeklyHtml(p) {
+  const w = p.weekly;
+  const lineColor = w.favorable ? 'var(--good)' : 'var(--critical)';
+  const anySeeded = w.comparator_first.is_seeded || w.comparator_last.is_seeded;
+  const thisDelta = w.this_week_count - w.previous_week_count;
+  return `
+    <div class="trend-stat-row">
+      <div class="trend-stat-tile">
+        <div class="tst-label">This week (${esc(weekLabel(w.this_week_label))})</div>
+        <div class="tst-value">${esc(w.this_week_count)}</div>
+        <div class="tst-delta ${thisDelta >= 0 ? 'up' : 'down'}">${thisDelta >= 0 ? '+' : ''}${esc(thisDelta)} vs previous week</div>
+      </div>
+      <div class="trend-stat-tile">
+        <div class="tst-label">Previous week (${esc(weekLabel(w.previous_week_label))})</div>
+        <div class="tst-value">${esc(w.previous_week_count)}</div>
+      </div>
+    </div>
+    <div class="trend-comparator">
+      <div class="tc-point">
+        <div class="tc-value">${esc(w.comparator_first.value)}</div>
+        <div class="tc-label">Week of ${esc(weekLabel(w.comparator_first.period))}</div>
+      </div>
+      <div class="tc-line" style="background:${lineColor}"></div>
+      <div class="tc-point">
+        <div class="tc-value">${esc(w.comparator_last.value)}</div>
+        <div class="tc-label">Week of ${esc(weekLabel(w.comparator_last.period))}</div>
+      </div>
+    </div>
+    ${anySeeded ? `<div class="trend-illustrative-note">One or both comparator points are illustrative (backfilled) history, not real records.</div>` : ''}
+  `;
+}
+
+function renderMonthlyHtml(p) {
+  const m = p.monthly;
+  const color = providerColor(p.provider);
+  const W = 640, H = 200, MARGIN = { left: 34, right: 8, top: 10, bottom: 22 };
+  const maxVal = Math.max(1, m.target || 0, ...m.points.map(pt => pt.value));
+  const plotW = W - MARGIN.left - MARGIN.right, plotH = H - MARGIN.top - MARGIN.bottom;
+  const xAt = (i) => MARGIN.left + (m.points.length > 1 ? (i / (m.points.length - 1)) * plotW : plotW / 2);
+  const yAt = (v) => MARGIN.top + plotH - (v / maxVal) * plotH;
+  const pts = m.points.map((pt, i) => ({ x: xAt(i), y: yAt(pt.value), seeded: pt.is_seeded, value: pt.value, period: pt.period }));
+  const splitIdx = pts.findIndex(pt => !pt.seeded);
+  const seededPts = splitIdx <= 0 ? [] : pts.slice(0, splitIdx + 1);
+  const realPts = splitIdx <= 0 ? pts : pts.slice(splitIdx);
+  const toPoly = (arr) => arr.map(pt => `${pt.x},${pt.y}`).join(' ');
+  const areaPts = pts.length ? `${xAt(0)},${yAt(0)} ${toPoly(pts)} ${xAt(pts.length - 1)},${yAt(0)}` : '';
+  const dots = pts.map(pt => `<circle cx="${pt.x}" cy="${pt.y}" r="2.4" style="fill:${color}"><title>${esc(monthLabel(pt.period))}: ${esc(pt.value)}${pt.seeded ? ' (illustrative)' : ''}</title></circle>`).join('');
+  const labelStep = Math.max(1, Math.ceil(m.points.length / 7));
+  const xLabels = m.points.map((pt, i) => i % labelStep === 0
+    ? `<text class="trend-axis-label" x="${xAt(i)}" y="${H - 4}" text-anchor="middle">${esc(monthLabel(pt.period))}</text>` : '').join('');
+  const targetLine = m.target ? `
+    <line class="trend-target-line" x1="${MARGIN.left}" x2="${W - MARGIN.right}" y1="${yAt(m.target)}" y2="${yAt(m.target)}" style="stroke:${color}"/>
+    <text class="trend-target-label" x="${W - MARGIN.right}" y="${yAt(m.target) - 4}" text-anchor="end" style="fill:${color}">Target: ${esc(m.target)}</text>
+  ` : '';
+  const tilesHtml = m.month_tiles.map(t => {
+    const deltaClass = t.delta_vs_previous === null ? '' : (t.delta_vs_previous >= 0 ? 'up' : 'down');
+    const deltaText = t.delta_vs_previous === null ? '' : `<div class="tmt-delta ${deltaClass}">${t.delta_vs_previous >= 0 ? '+' : ''}${esc(t.delta_vs_previous)}</div>`;
+    return `
+      <div class="trend-month-tile">
+        <div class="tmt-month">${esc(monthLabel(t.month))}</div>
+        <div class="tmt-value">${esc(t.new_completed)}</div>
+        ${deltaText}
+      </div>`;
+  }).join('');
+  const anySeeded = m.points.some(pt => pt.is_seeded);
+  return `
+    <div class="trend-monthly-chart-wrap"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polygon points="${areaPts}" style="fill:${hexToRgba(color, 0.12)}"/>
+      ${seededPts.length > 1 ? `<polyline class="trend-line trend-line-seeded" points="${toPoly(seededPts)}" style="stroke:${color}"/>` : ''}
+      ${realPts.length > 1 ? `<polyline class="trend-line" points="${toPoly(realPts)}" style="stroke:${color}"/>` : ''}
+      ${targetLine}
+      ${dots}
+      ${xLabels}
+    </svg></div>
+    ${anySeeded ? `<div class="trend-illustrative-note">Dashed portion is illustrative (backfilled) history, not real records.</div>` : ''}
+    <div class="trend-month-tiles">${tilesHtml}</div>
+  `;
+}
+
+function renderTrendProviderPanel() {
+  if (!trendsOverview || !activeTrendProviderId) return;
+  const p = trendsOverview.providers.find(x => x.provider === activeTrendProviderId);
+  const container = document.getElementById('trendProviderPanel');
+  if (!p || !p.weekly) {
+    container.innerHTML = `<div class="trend-empty">No certifications completed yet for ${esc(providerLabel(activeTrendProviderId))}.</div>`;
+    return;
+  }
+  container.innerHTML = activeTrendSubtab === 'weekly' ? renderWeeklyHtml(p) : renderMonthlyHtml(p);
+}
+
+document.querySelectorAll('#trendSubTabs .trend-subtab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeTrendSubtab = btn.dataset.subtab;
+    document.querySelectorAll('#trendSubTabs .trend-subtab').forEach(b => b.classList.toggle('active', b === btn));
+    renderTrendProviderPanel();
+  });
+});
+
+function renderTrends() {
+  if (!trendsOverview) return;
+  renderTrendChart();
+  renderLeaders();
+  const ordered = trendProviderOrder();
+  if (!activeTrendProviderId || !ordered.some(p => p.provider === activeTrendProviderId)) {
+    const firstWithData = ordered.find(p => p.weekly);
+    activeTrendProviderId = firstWithData ? firstWithData.provider : (ordered[0] ? ordered[0].provider : null);
+  }
+  renderTrendProviderTabs();
+  renderTrendProviderPanel();
+}
+
+async function loadTrends() {
+  try {
+    const resp = await fetch('/api/portal/trends/overview');
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    trendsOverview = await resp.json();
+    renderTrends();
+  } catch (e) {
+    document.getElementById('trendsShell').innerHTML = `<div class="dash-error">Couldn't load trends data: ${esc(e.message)}</div>`;
+  }
+}
+
+// ---------------------------------------------------------------------
+// Data Download tab — server-generated .xlsx export of real row-level
+// certification data (see backend/app/routers/portal_data_download.py).
+// TODO(access-control): this tab has no permission check yet — see the
+// HTML comment above #panel-data-download and DEVELOPMENT_LOG.md.
+// ---------------------------------------------------------------------
+
+let ddMode = 'provider';
+let ddFields = [];
+let ddCheckedFields = new Set();
+let ddProviders = [];
+let ddCertifications = [];
+let ddSelectedProvider = null;
+let ddSelectedCert = null;
+
+function ddShowError(message) {
+  const el = document.getElementById('ddError');
+  el.hidden = !message;
+  el.textContent = message || '';
+}
+
+async function loadDataDownloadOptions() {
+  try {
+    const [fields, providers, certs] = await Promise.all([
+      fetch('/api/portal/data-download/fields').then(r => r.json()),
+      fetch('/api/portal/data-download/providers').then(r => r.json()),
+      fetch('/api/portal/data-download/certifications').then(r => r.json()),
+    ]);
+    ddFields = fields;
+    ddCheckedFields = new Set(fields.map(f => f.key));
+    ddProviders = providers;
+    ddCertifications = certs;
+    renderDdFields();
+    renderDdProviderSelect();
+    renderDdCertCombo();
+  } catch (e) {
+    ddShowError(`Couldn't load export options: ${e.message}`);
+  }
+}
+
+function renderDdFields() {
+  document.getElementById('ddFieldsGrid').innerHTML = ddFields.map(f => `
+    <label class="dd-field-checkbox">
+      <input type="checkbox" data-field="${esc(f.key)}" ${ddCheckedFields.has(f.key) ? 'checked' : ''}>
+      ${esc(f.label)}
+    </label>
+  `).join('');
+  document.querySelectorAll('#ddFieldsGrid input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) ddCheckedFields.add(cb.dataset.field); else ddCheckedFields.delete(cb.dataset.field);
+      updateDdSelectAllLabel();
+    });
+  });
+  updateDdSelectAllLabel();
+}
+
+function updateDdSelectAllLabel() {
+  document.getElementById('ddSelectAllBtn').textContent = ddCheckedFields.size === ddFields.length ? 'Deselect all' : 'Select all';
+}
+
+document.getElementById('ddSelectAllBtn').addEventListener('click', () => {
+  const allChecked = ddCheckedFields.size === ddFields.length;
+  ddCheckedFields = allChecked ? new Set() : new Set(ddFields.map(f => f.key));
+  renderDdFields();
+});
+
+function renderDdProviderSelect() {
+  const sel = document.getElementById('ddProviderSelect');
+  sel.innerHTML = '<option value="">Select a provider…</option>' +
+    ddProviders.map(p => `<option value="${esc(p.provider)}">${esc(p.label)}</option>`).join('');
+}
+document.getElementById('ddProviderSelect').addEventListener('change', (e) => {
+  ddSelectedProvider = e.target.value || null;
+  updateDdDownloadEnabled();
+});
+
+function renderDdCertCombo() {
+  const groups = {};
+  ddCertifications.forEach(c => {
+    (groups[c.provider] = groups[c.provider] || { label: c.provider_label, items: [] }).items.push(c);
+  });
+  document.getElementById('ddCertComboList').innerHTML = Object.values(groups).map(group => `
+    <div class="dd-combo-group-label">${esc(group.label)}</div>
+    ${group.items.map(c => `
+      <div class="dd-combo-option" data-provider="${esc(c.provider)}" data-cert="${esc(c.certification_name)}">
+        <span class="lb-dot" style="background:${providerColor(c.provider)}"></span>${esc(c.certification_name)}
+      </div>
+    `).join('')}
+  `).join('');
+  document.querySelectorAll('#ddCertComboList .dd-combo-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      ddSelectedCert = { provider: opt.dataset.provider, certification_name: opt.dataset.cert };
+      document.getElementById('ddCertComboBtn').innerHTML =
+        `<span class="lb-dot" style="background:${providerColor(ddSelectedCert.provider)}"></span>${esc(ddSelectedCert.certification_name)}`;
+      document.getElementById('ddCertComboList').hidden = true;
+      updateDdDownloadEnabled();
+    });
+  });
+}
+
+document.getElementById('ddCertComboBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('ddCertComboList').hidden = !document.getElementById('ddCertComboList').hidden;
+});
+document.addEventListener('click', () => { document.getElementById('ddCertComboList').hidden = true; });
+
+document.querySelectorAll('#ddModeToggle .dd-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    ddMode = btn.dataset.mode;
+    document.querySelectorAll('#ddModeToggle .dd-mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('ddProviderSelectorWrap').hidden = ddMode !== 'provider';
+    document.getElementById('ddCertSelectorWrap').hidden = ddMode !== 'certification';
+    updateDdDownloadEnabled();
+  });
+});
+
+function updateDdDownloadEnabled() {
+  document.getElementById('ddDownloadBtn').disabled = ddMode === 'provider' ? !ddSelectedProvider : !ddSelectedCert;
+}
+
+document.getElementById('ddDownloadBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('ddDownloadBtn');
+  ddShowError(null);
+  btn.disabled = true;
+  btn.classList.add('loading');
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<span class="dd-spinner"></span> Preparing file…';
+  try {
+    const params = new URLSearchParams();
+    ddCheckedFields.forEach(f => params.append('fields', f));
+    let url;
+    if (ddMode === 'provider') {
+      params.set('provider', ddSelectedProvider);
+      url = `/api/portal/data-download/export/provider?${params.toString()}`;
+    } else {
+      params.set('provider', ddSelectedCert.provider);
+      params.set('certification_name', ddSelectedCert.certification_name);
+      url = `/api/portal/data-download/export/certification?${params.toString()}`;
+    }
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      throw new Error(body.detail ? JSON.stringify(body.detail) : `${resp.status}`);
+    }
+    const blob = await resp.blob();
+    const disposition = resp.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : 'export.xlsx';
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  } catch (e) {
+    ddShowError(`Download failed: ${e.message}`);
+  } finally {
+    btn.classList.remove('loading');
+    btn.innerHTML = originalHtml;
+    updateDdDownloadEnabled();
+  }
+});
+
+loadDataDownloadOptions();
+
+// ---------------------------------------------------------------------
+// Find My Team tab — search real employees by name, view their full real
+// certification history (see backend/app/routers/portal_team_search.py).
+// TODO(access-control): this tab has no permission check yet — see the
+// HTML comment above #panel-find-my-team and DEVELOPMENT_LOG.md. This is
+// the most personally-identifiable view in the portal.
+// ---------------------------------------------------------------------
+
+let fmtDebounceTimer = null;
+let fmtActiveRequestId = 0;
+
+function fmtStatusPillClass(statusKey) {
+  return { completed: 'completed', in_progress: 'in_progress', not_cleared: 'not_cleared', unknown: 'unknown' }[statusKey] || 'unknown';
+}
+
+document.getElementById('fmtSearchInput').addEventListener('input', (e) => {
+  const q = e.target.value.trim();
+  clearTimeout(fmtDebounceTimer);
+  if (q.length < 2) {
+    document.getElementById('fmtTypeahead').hidden = true;
+    return;
+  }
+  fmtDebounceTimer = setTimeout(() => fmtRunSearch(q), 250);
+});
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('fmtSearchInput').closest('.fmt-search-wrap');
+  if (wrap && !wrap.contains(e.target)) document.getElementById('fmtTypeahead').hidden = true;
+});
+
+async function fmtRunSearch(q) {
+  const requestId = ++fmtActiveRequestId;
+  try {
+    const resp = await fetch(`/api/portal/team-search/search?q=${encodeURIComponent(q)}`);
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    const results = await resp.json();
+    if (requestId !== fmtActiveRequestId) return; // a newer keystroke's search already superseded this one
+    renderFmtTypeahead(results, q);
+  } catch (e) {
+    if (requestId !== fmtActiveRequestId) return;
+    document.getElementById('fmtTypeahead').hidden = false;
+    document.getElementById('fmtTypeahead').innerHTML = `<div class="fmt-typeahead-empty">Search failed: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderFmtTypeahead(results, q) {
+  const el = document.getElementById('fmtTypeahead');
+  el.hidden = false;
+  if (!results.length) {
+    el.innerHTML = `<div class="fmt-typeahead-empty">No employee found matching "${esc(q)}".</div>`;
+    return;
+  }
+  el.innerHTML = results.map(r => {
+    const secondary = [r.practice, r.pd_leader_name ? `PD: ${r.pd_leader_name}` : null].filter(Boolean).join(' · ') || r.email || '';
+    return `
+      <div class="fmt-typeahead-option" data-identity="${esc(r.identity)}">
+        <div class="fmt-typeahead-name">${esc(r.display_name)}</div>
+        ${secondary ? `<div class="fmt-typeahead-secondary">${esc(secondary)}</div>` : ''}
+      </div>`;
+  }).join('');
+  document.querySelectorAll('#fmtTypeahead .fmt-typeahead-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.getElementById('fmtSearchInput').value = opt.querySelector('.fmt-typeahead-name').textContent;
+      el.hidden = true;
+      fmtLoadPerson(opt.dataset.identity);
+    });
+  });
+}
+
+async function fmtLoadPerson(identity) {
+  document.getElementById('fmtEmptyState').hidden = true;
+  const section = document.getElementById('fmtResultSection');
+  section.hidden = false;
+  document.getElementById('fmtPersonCard').innerHTML = `<div class="fmt-empty">Loading…</div>`;
+  document.getElementById('fmtCertGrid').innerHTML = '';
+  try {
+    const resp = await fetch(`/api/portal/team-search/person?identity=${encodeURIComponent(identity)}`);
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      throw new Error(body.detail || `${resp.status}`);
+    }
+    const person = await resp.json();
+    renderFmtPerson(person);
+  } catch (e) {
+    document.getElementById('fmtPersonCard').innerHTML = `<div class="dash-error">Couldn't load this employee: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderFmtPerson(person) {
+  document.getElementById('fmtPersonCard').innerHTML = `
+    <div class="fmt-person-field"><div class="fpf-label">Name</div><div class="fpf-value">${esc(person.display_name)}</div></div>
+    <div class="fmt-person-field"><div class="fpf-label">Email</div><div class="fpf-value">${esc(person.email || '—')}</div></div>
+    <div class="fmt-person-field"><div class="fpf-label">Practice</div><div class="fpf-value">${esc(person.practice || '—')}</div></div>
+    <div class="fmt-person-field"><div class="fpf-label">Practice Director</div><div class="fpf-value">${esc(person.pd_leader_name || '—')}</div></div>
+  `;
+
+  if (!person.certifications.length) {
+    document.getElementById('fmtCertGrid').innerHTML = `<div class="fmt-empty">${esc(person.display_name)} has no certifications on record yet.</div>`;
+    return;
+  }
+
+  document.getElementById('fmtCertGrid').innerHTML = person.certifications.map(c => {
+    const color = providerColor(c.provider);
+    const cardClass = c.expiry_state ? ` ${c.expiry_state}` : '';
+    const badge = c.expiry_state === 'expiring_soon' ? `<span class="fmt-expiry-badge expiring_soon">Expiring soon</span>`
+      : c.expiry_state === 'expired' ? `<span class="fmt-expiry-badge expired">Expired</span>` : '';
+    const dateLine = [
+      c.completion_date ? `Completed ${c.completion_date}` : (c.submission_date ? `Submitted ${c.submission_date}` : null),
+      c.expiry_date ? `Expires ${c.expiry_date}` : null,
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="fmt-cert-card${cardClass}">
+        <div class="fmt-cert-provider-row"><span class="lb-dot" style="background:${color}"></span>${esc(c.provider_label)}</div>
+        <div class="fmt-cert-name">${esc(c.certification_name || '(Unspecified certification)')}</div>
+        <span class="status-pill ${fmtStatusPillClass(c.status_key)}"><span class="sp-dot"></span>${esc(c.status)}</span>
+        ${dateLine ? `<div class="fmt-cert-dates">${esc(dateLine)}</div>` : ''}
+        ${badge}
+      </div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------------
 // Theme: Teams JS SDK when hosted inside Teams (live default/dark/contrast
 // changes via registerOnThemeChangeHandler), OS prefers-color-scheme as the
 // fallback for standalone/browser use (already set synchronously in <head>
@@ -839,11 +2094,18 @@ function applyTheme(theme) {
   const mapped = theme === 'dark' ? 'dark' : theme === 'contrast' ? 'contrast' : 'light';
   document.documentElement.setAttribute('data-theme', mapped);
   renderDashboard();
+  renderTrends();
+  if (ddCertifications.length) renderDdCertCombo();
 }
 
 if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!teamsThemeActive) { document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light'); renderDashboard(); }
+    if (!teamsThemeActive) {
+      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      renderDashboard();
+      renderTrends();
+      if (ddCertifications.length) renderDdCertCombo();
+    }
   });
 }
 
@@ -854,12 +2116,20 @@ if (window.microsoftTeams) {
       teamsThemeActive = true;
       applyTheme(ctx.app.theme);
       microsoftTeams.app.registerOnThemeChangeHandler(applyTheme);
+      // Viewed inside Teams == the external org's tenant, which has no
+      // identity mapping into this tenant's own employee/cert data — hide
+      // the two personal-data entry points (submit + view-my-status) so
+      // they only ever see the shared org-wide analytics, never a "me" view.
+      document.getElementById('submitCertBtn').style.display = 'none';
+      document.getElementById('viewStatusBtn').style.display = 'none';
     })
     .catch(() => { /* not running inside Teams — OS-preference fallback already applied */ });
 }
 
 loadDashboard();
 setInterval(loadDashboard, 60000);
+loadTrends();
+setInterval(loadTrends, 60000);
 </script>
 </body>
 </html>

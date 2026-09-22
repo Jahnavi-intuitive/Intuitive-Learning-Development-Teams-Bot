@@ -59,6 +59,15 @@ class Settings(BaseSettings):
     notification_sweep_hour: int = 6  # local hour, 24h clock
     notification_sweep_minute: int = 0
 
+    # Live SharePoint sync for the L&D Portal (app/services/portal_sharepoint_sync.py)
+    # — reads the real Anthropic/Gemini/AWS/Databricks workbooks straight from
+    # SharePoint on a short interval. No webhook/change-notification path yet:
+    # Graph subscriptions need a public HTTPS endpoint this backend doesn't
+    # have while running locally — this interval is the only sync mechanism
+    # for now, confirmed with the user rather than assumed.
+    portal_sync_enabled: bool = True
+    portal_sync_interval_minutes: int = 5
+
     # --- Production auth seam -------------------------------------------
     # "header": the X-Employee-Id dev stand-in used throughout local
     #   development — trusts the header at face value, no verification.

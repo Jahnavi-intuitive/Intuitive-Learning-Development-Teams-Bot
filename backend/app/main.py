@@ -35,6 +35,10 @@ from app.routers import (
     notifications,
     portal_admin,
     portal_dashboard,
+    portal_data_download,
+    portal_sync,
+    portal_team_search,
+    portal_trends,
     teams,
     tracker,
     verification,
@@ -78,6 +82,10 @@ app.include_router(agent_proxy.router)
 app.include_router(dashboards.router)
 app.include_router(portal_dashboard.router)
 app.include_router(portal_admin.router)
+app.include_router(portal_data_download.router)
+app.include_router(portal_sync.router)
+app.include_router(portal_team_search.router)
+app.include_router(portal_trends.router)
 app.include_router(drives.router)
 app.include_router(notifications.router)
 app.include_router(internal.router)
