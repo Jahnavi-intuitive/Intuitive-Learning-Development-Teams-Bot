@@ -2138,6 +2138,15 @@ if (window.microsoftTeams) {
           `${esc(parts[0] || teamsName)} <span class="full-name">${esc(parts.slice(1).join(' '))}</span>`;
         document.getElementById('avatarBadge').textContent = initials(teamsName);
       }
+      // TEMPORARY DEBUG — remove once the welcome-name issue is diagnosed.
+      // Prints the raw ctx.user object Teams actually handed back, right on
+      // the page, so it can be read/screenshotted without opening dev tools.
+      const dbg = document.createElement('pre');
+      dbg.id = 'teamsDebugCtx';
+      dbg.style.cssText = 'position:fixed;bottom:8px;right:8px;max-width:420px;max-height:200px;overflow:auto;background:#000;color:#0f0;font-size:10px;padding:8px;z-index:9999;white-space:pre-wrap;';
+      dbg.textContent = 'ctx.user = ' + JSON.stringify(ctx.user, null, 2) + '\n\nresolved teamsName = ' + JSON.stringify(teamsName);
+      document.body.appendChild(dbg);
+      console.log('TEAMS DEBUG ctx.user:', ctx.user, 'resolved teamsName:', teamsName);
     })
     .catch(() => { /* not running inside Teams — OS-preference fallback already applied */ });
 }
