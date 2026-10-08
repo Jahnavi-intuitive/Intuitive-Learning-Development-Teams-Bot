@@ -92,7 +92,9 @@ class Settings(BaseSettings):
     # have while running locally — this interval is the only sync mechanism
     # for now, confirmed with the user rather than assumed.
     portal_sync_enabled: bool = True
-    portal_sync_interval_minutes: int = 5
+    # Every 5 hours: on Databricks each sync keeps the SQL warehouse running,
+    # so a short interval means it's billed nearly all day.
+    portal_sync_interval_minutes: int = 300
 
     # --- Production auth seam -------------------------------------------
     # "header": the X-Employee-Id dev stand-in used throughout local
