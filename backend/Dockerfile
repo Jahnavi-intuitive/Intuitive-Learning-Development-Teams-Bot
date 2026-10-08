@@ -40,6 +40,7 @@ USER appuser
 ENV PORT=8080
 EXPOSE 8080
 
-# Run migrations, then start the server — safe to re-run on every deploy
-# (alembic upgrade head is a no-op once the DB is already current).
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# On Postgres, run migrations first (a no-op once the DB is current). On
+# Databricks there are no Alembic migrations — tables are built by
+# scripts/load_databricks_from_postgres.py — so it's skipped.
+CMD ["sh", "-c", "if [ -z \"$DATABRICKS_SERVER_HOSTNAME\" ]; then alembic upgrade head; fi && uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]

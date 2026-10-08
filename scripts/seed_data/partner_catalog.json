@@ -1,0 +1,970 @@
+{
+  "schema_note": "Partner certification catalog for the next-certification recommender (lnd_portal.partner_certifications). provider uses the portal Provider enum: aws, gemini (= Google Cloud / Gemini), anthropic, databricks, azure. level is the recommender's canonical ladder (foundational | associate | professional | specialty | expert). skill_domains are keys from backend/app/services/recommender/taxonomy.py DOMAINS. prerequisite_names are recommended prior certs, not enforced gates (except where the partner itself enforces one, noted). relevant_practices use the main app's practice enum values. Starting set only: L&D should review it against each partner portal and edit via PUT /api/admin/partner-catalog.",
+  "certifications": [
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Cloud Practitioner",
+      "level": "foundational",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod",
+        "Data+AI",
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified AI Practitioner",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai",
+        "machine_learning"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Solutions Architect - Associate",
+      "level": "associate",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Developer - Associate",
+      "level": "associate",
+      "skill_domains": [
+        "software_development",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified CloudOps Engineer - Associate",
+      "level": "associate",
+      "skill_domains": [
+        "devops",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Data Engineer - Associate",
+      "level": "associate",
+      "skill_domains": [
+        "data_engineering"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Machine Learning Engineer - Associate",
+      "level": "associate",
+      "skill_domains": [
+        "machine_learning"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Solutions Architect - Professional",
+      "level": "professional",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [
+        "AWS Certified Solutions Architect - Associate"
+      ],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified DevOps Engineer - Professional",
+      "level": "professional",
+      "skill_domains": [
+        "devops"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [
+        "AWS Certified Developer - Associate"
+      ],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Generative AI Developer - Professional",
+      "level": "professional",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Security - Specialty",
+      "level": "specialty",
+      "skill_domains": [
+        "security"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx",
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified Advanced Networking - Specialty",
+      "level": "specialty",
+      "skill_domains": [
+        "networking"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Digital Leader",
+      "level": "foundational",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod",
+        "Data+AI",
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Generative AI Leader",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Associate Cloud Engineer",
+      "level": "associate",
+      "skill_domains": [
+        "cloud_architecture",
+        "devops"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Associate Data Practitioner",
+      "level": "associate",
+      "skill_domains": [
+        "data_engineering",
+        "data_analytics"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Cloud Architect",
+      "level": "professional",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [
+        "Google Cloud Associate Cloud Engineer"
+      ],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Data Engineer",
+      "level": "professional",
+      "skill_domains": [
+        "data_engineering"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Machine Learning Engineer",
+      "level": "professional",
+      "skill_domains": [
+        "machine_learning",
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Cloud Developer",
+      "level": "professional",
+      "skill_domains": [
+        "software_development"
+      ],
+      "relevant_practices": [
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Cloud DevOps Engineer",
+      "level": "professional",
+      "skill_domains": [
+        "devops"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Cloud Security Engineer",
+      "level": "professional",
+      "skill_domains": [
+        "security"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Certified Partner Specialist Gemini Enterprise Agent Development",
+      "level": "specialty",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Certified Partner Specialist Gemini Enterprise Deployment",
+      "level": "specialty",
+      "skill_domains": [
+        "generative_ai",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "anthropic",
+      "certification_name": "Claude Certified Associate - Foundations",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod",
+        "Cloud & Platform Engineer",
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "anthropic",
+      "certification_name": "Claude Certified Developer - Foundations",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai",
+        "software_development"
+      ],
+      "relevant_practices": [
+        "App + DB Mod",
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "anthropic",
+      "certification_name": "Claude Certified Architect - Foundations",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "anthropic",
+      "certification_name": "Claude Certified Architect - Professional",
+      "level": "professional",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [
+        "Claude Certified Architect - Foundations"
+      ],
+      "validity_months": null
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Certified Data Analyst Associate",
+      "level": "associate",
+      "skill_domains": [
+        "data_analytics"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Certified Data Engineer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "data_engineering"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Certified Machine Learning Associate",
+      "level": "associate",
+      "skill_domains": [
+        "machine_learning"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Certified Generative AI Engineer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Certified Data Engineer Professional",
+      "level": "professional",
+      "skill_domains": [
+        "data_engineering"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [
+        "Databricks Certified Data Engineer Associate"
+      ],
+      "validity_months": 24
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Certified Machine Learning Professional",
+      "level": "professional",
+      "skill_domains": [
+        "machine_learning"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [
+        "Databricks Certified Machine Learning Associate"
+      ],
+      "validity_months": 24
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Fundamentals",
+      "level": "foundational",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod",
+        "Data+AI",
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure AI Fundamentals",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai",
+        "machine_learning"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Data Fundamentals",
+      "level": "foundational",
+      "skill_domains": [
+        "data_engineering",
+        "database"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Administrator Associate",
+      "level": "associate",
+      "skill_domains": [
+        "cloud_architecture",
+        "devops"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Developer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "software_development"
+      ],
+      "relevant_practices": [
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure AI Engineer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "generative_ai",
+        "machine_learning"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Data Scientist Associate",
+      "level": "associate",
+      "skill_domains": [
+        "machine_learning"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Fabric Data Engineer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "data_engineering"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Security Engineer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "security"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Solutions Architect Expert",
+      "level": "expert",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [
+        "Microsoft Certified: Azure Administrator Associate"
+      ],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: DevOps Engineer Expert",
+      "level": "expert",
+      "skill_domains": [
+        "devops"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [
+        "Microsoft Certified: Azure Administrator Associate"
+      ],
+      "validity_months": 12
+    },
+    {
+      "provider": "aws",
+      "certification_name": "AWS Certified AI Business Strategist",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 36
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Cloud Database Engineer",
+      "level": "professional",
+      "skill_domains": [
+        "database",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "App + DB Mod",
+        "Data+AI",
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Cloud Network Engineer",
+      "level": "professional",
+      "skill_domains": [
+        "networking",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx",
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Associate Google Workspace Administrator",
+      "level": "associate",
+      "skill_domains": [
+        "devops",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Google Workspace Administrator",
+      "level": "professional",
+      "skill_domains": [
+        "devops",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Security Operations Engineer",
+      "level": "professional",
+      "skill_domains": [
+        "security",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx",
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "gemini",
+      "certification_name": "Google Cloud Professional Agentic Architect",
+      "level": "professional",
+      "skill_domains": [
+        "generative_ai",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod",
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Security, Compliance, and Identity Fundamentals",
+      "level": "foundational",
+      "skill_domains": [
+        "security"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Network Engineer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "networking"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Database Administrator Associate",
+      "level": "associate",
+      "skill_domains": [
+        "database",
+        "devops"
+      ],
+      "relevant_practices": [
+        "App + DB Mod",
+        "Data+AI",
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Fabric Analytics Engineer Associate",
+      "level": "associate",
+      "skill_domains": [
+        "data_analytics"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Power BI Data Analyst Associate",
+      "level": "associate",
+      "skill_domains": [
+        "data_analytics"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Security Operations Analyst Associate",
+      "level": "associate",
+      "skill_domains": [
+        "data_analytics",
+        "security"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "NetSec + SDx"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Identity and Access Administrator Associate",
+      "level": "associate",
+      "skill_domains": [
+        "security",
+        "devops"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx",
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Windows Server Hybrid Administrator Associate",
+      "level": "associate",
+      "skill_domains": [
+        "devops"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Cybersecurity Architect Expert",
+      "level": "expert",
+      "skill_domains": [
+        "security",
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "NetSec + SDx",
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [
+        "Microsoft Certified: Azure Security Engineer Associate"
+      ],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure for SAP Workloads Specialty",
+      "level": "specialty",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Virtual Desktop Specialty",
+      "level": "specialty",
+      "skill_domains": [
+        "cloud_architecture"
+      ],
+      "relevant_practices": [
+        "Cloud & Platform Engineer",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "azure",
+      "certification_name": "Microsoft Certified: Azure Cosmos DB Developer Specialty",
+      "level": "specialty",
+      "skill_domains": [
+        "database",
+        "software_development"
+      ],
+      "relevant_practices": [
+        "App + DB Mod",
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 12
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Fundamentals Accreditation",
+      "level": "foundational",
+      "skill_domains": [
+        "data_engineering"
+      ],
+      "relevant_practices": [
+        "Data+AI"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Generative AI Fundamentals Accreditation",
+      "level": "foundational",
+      "skill_domains": [
+        "generative_ai"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": null
+    },
+    {
+      "provider": "databricks",
+      "certification_name": "Databricks Certified Associate Developer for Apache Spark",
+      "level": "associate",
+      "skill_domains": [
+        "data_engineering",
+        "software_development"
+      ],
+      "relevant_practices": [
+        "Data+AI",
+        "App + DB Mod"
+      ],
+      "prerequisite_names": [],
+      "validity_months": 24
+    }
+  ]
+}

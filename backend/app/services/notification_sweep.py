@@ -43,6 +43,7 @@ from app.models import (
     Notification,
     NotificationSettings,
 )
+from app.services import cert_progress
 from app.services.audit import serialize_row, write_audit_entry
 from app.services.audited_crud import update_with_audit
 from app.services.notification_channel import send_notification
@@ -66,6 +67,7 @@ class SweepReport:
     drive_reminders_created: int = 0
     drive_escalations_created: int = 0
     cert_expiry_reminders_created: int = 0
+    prep_overdue_reminders_created: int = 0
     skipped_duplicate: int = 0
     escalations_skipped_unresolved_recipient: int = 0
     sent: int = 0
@@ -242,6 +244,56 @@ def _cert_expiry_pass(db: Session, today: date, expiry_windows: list[int]) -> li
     return candidates
 
 
+def _prep_overdue_pass(db: Session, today: date) -> list[_Candidate]:
+    """In-progress certifications whose prep has run past their level's
+    business-day target (services/cert_progress.py). One reminder when the
+    target is first passed, then one more every further 5 business days
+    (a working week) still overdue — the bucket in the dedupe_key is what
+    makes that a weekly nudge rather than a daily one. Only each
+    employee's latest record per certification counts, so a cert they've
+    since completed never gets nagged about."""
+    target_map = cert_progress.targets(db)
+    in_progress = db.scalars(
+        select(CertificateRecord.employee_id).where(
+            CertificateRecord.submission_status == "in_progress",
+            CertificateRecord.prep_start_date.isnot(None),
+            CertificateRecord.employee_id.isnot(None),
+        ).distinct()
+    ).all()
+
+    candidates: list[_Candidate] = []
+    for emp_id in in_progress:
+        employee = db.get(Employee, emp_id)
+        if not employee:
+            continue
+        for record in cert_progress.latest_records(db, employee):
+            p = cert_progress.progress_for(db, record, today, target_map)
+            if not p.is_overdue:
+                continue
+            bucket = (p.overdue_business_days - 1) // 5
+            first = (employee.name or "").split(" ")[0] or "there"
+            message = (
+                f"Hi {first}, you started preparing for \"{record.cert_name}\" on "
+                f"{record.prep_start_date.strftime('%d %b %Y')} — that's {p.business_days_elapsed} business days, "
+                f"past the {p.target_business_days}-business-day target for "
+                f"{'an' if p.level[:1] in 'aeiou' else 'a'} {p.level} certification. "
+                "Please book your exam and finish it, or update its status if your plans have changed."
+            )
+            candidates.append(
+                _Candidate(
+                    dedupe_key=f"prep_overdue:{record.id}:{bucket}",
+                    notification_type="prep_overdue_reminder",
+                    recipient=employee,
+                    message=message,
+                    related_certificate_record_id=record.id,
+                    threshold_days=p.target_business_days,
+                    escalation_level="employee",
+                    is_test_data=employee.is_test_data,
+                )
+            )
+    return candidates
+
+
 def _insert_and_send(
     db: Session, candidates: list[_Candidate], simulate_failure_employee_ids: set[str]
 ) -> list[tuple[_Candidate, bool | None]]:
@@ -280,13 +332,25 @@ def _insert_and_send(
             }
         )
 
-    stmt = (
-        pg_insert(Notification)
-        .values(rows)
-        .on_conflict_do_nothing(index_elements=["dedupe_key"])
-        .returning(Notification.id, Notification.dedupe_key)
-    )
-    inserted = db.execute(stmt).all()
+    if db.get_bind().dialect.name == "postgresql":
+        stmt = (
+            pg_insert(Notification)
+            .values(rows)
+            .on_conflict_do_nothing(index_elements=["dedupe_key"])
+            .returning(Notification.id, Notification.dedupe_key)
+        )
+        inserted = db.execute(stmt).all()
+    else:
+        # Databricks doesn't enforce unique constraints, so skip already-sent
+        # dedupe keys explicitly. Safe because the sweep only ever runs in the
+        # backend's single process (one container replica).
+        existing = set(
+            db.execute(select(Notification.dedupe_key).where(Notification.dedupe_key.in_(list(by_dedupe_key)))).scalars()
+        )
+        new_rows = [r for r in rows if r["dedupe_key"] not in existing]
+        for r in new_rows:
+            db.add(Notification(**r))
+        inserted = [(r["id"], r["dedupe_key"]) for r in new_rows]
     db.flush()
     inserted_dedupe_keys = {dedupe_key for _id, dedupe_key in inserted}
 
@@ -369,8 +433,9 @@ def run_sweep(
 
     drive_candidates, skipped_unresolved = _drive_pass(db, today)
     cert_candidates = _cert_expiry_pass(db, today, settings.expiry_reminder_days)
+    prep_candidates = _prep_overdue_pass(db, today)
 
-    results = _insert_and_send(db, drive_candidates + cert_candidates, fail_set)
+    results = _insert_and_send(db, drive_candidates + cert_candidates + prep_candidates, fail_set)
     retried, retried_now_sent = _retry_pass(db, settings.retry_cap, fail_set)
 
     report = SweepReport(escalations_skipped_unresolved_recipient=skipped_unresolved)
@@ -384,6 +449,8 @@ def run_sweep(
             report.drive_escalations_created += 1
         elif candidate.notification_type == "cert_expiry_reminder":
             report.cert_expiry_reminders_created += 1
+        elif candidate.notification_type == "prep_overdue_reminder":
+            report.prep_overdue_reminders_created += 1
         if outcome:
             report.sent += 1
         else:

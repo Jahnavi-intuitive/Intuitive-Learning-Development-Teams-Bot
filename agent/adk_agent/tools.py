@@ -74,95 +74,192 @@ def _handle(resp: httpx.Response) -> dict:
 
 
 async def search_certification_catalog(query: str) -> dict:
-    """Search the certification catalog by name (autocomplete/lookup).
+    """Look up certifications in the partner certification catalog (AWS,
+    Azure/Microsoft, Google Cloud, Databricks, Anthropic —
+    every level). Use it to turn whatever the user called a certification
+    ("SAA", "the Azure admin one", "databricks DE pro") into its exact
+    catalog name before starting/discussing it, or to answer "what
+    certifications does X offer?". Matches rows containing every word of
+    the query (provider name counts), so try shorter or different words if
+    nothing comes back — e.g. "solutions architect" rather than "SAA".
 
     Args:
-        query: Partial or full certification name to search for.
+        query: Words to search for, e.g. "aws solutions architect" or
+            "fabric data engineer". An empty string returns the whole catalog.
 
     Returns:
-        dict with status and, on success, a list of matching certifications
-        (name, provider, level, prerequisites, validity period, status).
+        dict with status and, on success, a list of certifications
+        (provider, certification_name, level, skill_domains,
+        prerequisite_names, validity_months).
     """
-    resp = await _client.get("/api/catalog/certifications", params={"q": query})
+    params = {"q": query} if query and query.strip() else {}
+    resp = await _client.get("/api/portal/catalog", params=params)
     return _handle(resp)
 
 
-async def get_next_certification_for_practice(as_employee_id: str) -> dict:
-    """Get the next recommended certification in the caller's own practice's
-    learning path, skipping ones they've already completed. The practice is
-    looked up from the employee's own record server-side — never ask the
-    user which practice they're in, they're already assigned to one.
-
-    IMPORTANT: this returns a LIST (next_certifications), not a single
-    certification — the underlying path is a prerequisite graph, not a
-    straight line, so more than one certification can be eligible at once
-    (a real branch point, e.g. one completed cert opening up two valid
-    next options) and that's normal, not an error. An empty list means the
-    path is either fully completed or has nothing configured yet — check
-    which by looking at whether path_name is set. Never collapse multiple
-    results down to "pick one" on the user's behalf; present all of them
-    (grouped by track_label where present) and let the user choose.
-
-    If the response has practice_missing=true, this employee has no
-    practice on file yet (e.g. a brand-new Teams user, auto-provisioned on
-    first contact, before any directory sync or admin has filled it in) —
-    say so plainly ("I don't have your practice on file yet, so I can't
-    recommend a path — L&D can add it") and stop there. Never guess a
-    practice or default to one; this is different from an empty
-    next_certifications list with a real practice set.
+async def get_my_certification_progress(as_employee_id: str) -> dict:
+    """The caller's own certifications, one row per certification (its
+    latest record): status (in_progress | completed | gave_exam_but_failed),
+    verification, dates, level — and for anything in progress, business
+    days of prep so far vs. that level's target (target_date, is_overdue,
+    overdue_business_days). Rows with source="partner_portal" come from the
+    partner-portal trackers (L&D's synced workbooks) — they count as on file
+    too, just without a prep clock. Also returns the person's name
+    (employee_name, first_name) and status counts. Use this for any "my status" / "what am
+    I working on" / "how long have I been preparing" question, and to check
+    whether a certification the user mentions is already in progress or
+    completed before offering to start it.
 
     Args:
         as_employee_id: The employee_id of the person asking.
-
-    Returns:
-        dict with status and, on success, next_certifications (a list,
-        each with its own certification details, optional track_label,
-        and reason) plus a data-as-of timestamp.
     """
     resp = await _client.get(
-        "/api/learning-paths/next",
+        "/api/certifications/my-progress",
         params={"employee_id": as_employee_id},
         headers=await _headers(as_employee_id),
     )
     return _handle(resp)
 
 
-async def get_learning_path_overview(as_employee_id: str) -> dict:
-    """Get the FULL certification prerequisite graph for the caller's own
-    practice path, with their own status against every certification in
-    it (completed / in_progress / gave_exam_but_failed / not_started) —
-    not just the eligible-now frontier.
+async def start_certification_prep(as_employee_id: str, cert_name: str) -> dict:
+    """Mark a certification as IN PROGRESS for the caller, starting their
+    prep clock today (business days are counted from now, and they'll be
+    reminded in the app if prep runs past the level's target). Only call
+    this AFTER the user has said yes to starting it — never on your own.
+    No form is needed. Pass the exact catalog name when you know it (from
+    search_certification_catalog); the backend also matches close names.
+    If it's already in progress or completed for them, nothing new is
+    created (already_tracked=true) and the existing record is returned.
 
-    Call this together with get_next_certification_for_practice (the
-    rule-based ground truth of what's unlocked right now) and
-    get_tracker_records (full submission history — dates, verification,
-    failed attempts) whenever you're making a real recommendation, not
-    just answering "what's next": this is the context that lets you
-    explain WHY something is or isn't available, which locked track
-    someone is closest to finishing, or which failed attempt they should
-    probably retry before starting something new. Never use this to
-    decide eligibility yourself — every certification's actual
-    availability is exactly and only what get_next_certification_for_practice
-    returns; this tool exists to add reasoning and personalization on top
-    of that ground truth, never to override it.
+    Args:
+        as_employee_id: The employee_id of the person.
+        cert_name: The certification they're starting.
+
+    Returns:
+        dict with status and, on success, already_tracked plus the
+        certification (cert_name, level, prep_start_date,
+        target_business_days, target_date).
+    """
+    resp = await _client.post(
+        "/api/certifications/start",
+        json={"employee_id": as_employee_id, "cert_name": cert_name},
+        headers=await _headers(as_employee_id),
+    )
+    return _handle(resp)
+
+
+async def get_next_certification_recommendations(as_employee_id: str, top_n: int = 5) -> dict:
+    """Ranked next-certification recommendations for the caller, chosen
+    ONLY from the partner certification catalog (AWS, Google/Gemini,
+    Anthropic, Databricks, Azure). The backend does all the reasoning about
+    eligibility and priority — this is the single source of truth for what
+    to recommend; never recommend a certification that isn't in the
+    returned `recommendations` list.
+
+    Each recommendation has a `kind` (mandatory | renewal | retry |
+    partnership_gap | next_step | stretch), `reasons` (already
+    human-readable — quote/paraphrase them), `score_breakdown`, and
+    `partnership_programs` (partner programs short on people with it).
+    The result also includes:
+    - profile: seniority (early_career/mid_career/senior + why),
+      per-domain proficiency with its evidence, completed and in_progress
+      certs, and missing_signals — profile fields that aren't on file yet
+      (years_experience, expertise, career_goals, practice).
+    - skippable: catalog certs this person can skip, with the reason
+      (e.g. already associate-level in that area).
+    - signals_unavailable: inputs that were empty (partner_catalog,
+      partnership_requirements, peer_signal, partner_portal) — the ranking
+      isn't based on these, say so if relevant.
 
     Args:
         as_employee_id: The employee_id of the person asking.
-
-    Returns:
-        dict with status and, on success, practice, path_name, and
-        certifications (a list — each with the certification's catalog
-        details, is_required, employee_status, prerequisite_logic, and
-        incoming_prerequisites: the exact named edges required to unlock
-        it) plus a data-as-of timestamp. If practice_missing=true, this
-        employee has no practice on file yet — say so plainly rather than
-        guessing one; same meaning as on get_next_certification_for_practice.
+        top_n: Upper bound only (default 5, max 15). The backend returns the
+            single most-needed certification, or two when tied at the same
+            priority — that focused result is intentional.
     """
     resp = await _client.get(
-        "/api/learning-paths/overview",
-        params={"employee_id": as_employee_id},
+        "/api/recommendations/next-certifications",
+        params={"employee_id": as_employee_id, "top_n": top_n},
         headers=await _headers(as_employee_id),
     )
+    return _handle(resp)
+
+
+async def update_my_skill_profile(
+    as_employee_id: str,
+    years_experience: float | None = None,
+    expertise: dict | None = None,
+    career_goals: list[str] | None = None,
+) -> dict:
+    """Save what the employee TELLS you about their experience, so
+    recommendations can skip levels they don't need. Only call this with
+    information the user actually stated — never guess or infer values.
+
+    Args:
+        as_employee_id: The employee_id of the person.
+        years_experience: Total years of professional experience, if stated.
+        expertise: Map of skill-domain key -> proficiency, either 0-4 or a
+            level name: 0/"none", 1/"foundational", 2/"associate",
+            3/"professional", 4/"expert". Merged into what's already saved.
+            Domain keys: cloud_architecture, devops, software_development,
+            data_engineering, data_analytics, machine_learning,
+            generative_ai, security, networking, database.
+            e.g. "I've run AWS infrastructure for 5 years" ->
+            {"cloud_architecture": "associate", "devops": "associate"};
+            a self-described expert/lead in an area -> "professional".
+        career_goals: Domain keys the person wants to grow into (replaces
+            the saved list).
+
+    Returns:
+        dict with status and, on success, the updated learner profile.
+    """
+    payload = {"employee_id": as_employee_id}
+    if years_experience is not None:
+        payload["years_experience"] = years_experience
+    if expertise is not None:
+        payload["expertise"] = expertise
+    if career_goals is not None:
+        payload["career_goals"] = career_goals
+    resp = await _client.put("/api/recommendations/profile", json=payload, headers=await _headers(as_employee_id))
+    return _handle(resp)
+
+
+async def record_recommendation_feedback(
+    as_employee_id: str, provider: str, certification_name: str, action: str, reason: str | None = None
+) -> dict:
+    """Record the user's reaction to a recommendation. action="dismissed"
+    when they say they're not interested / it's not relevant (it's hidden
+    from their recommendations for 90 days; mandatory-drive certs are never
+    hidden); action="interested" when they say they'll pursue it.
+
+    Args:
+        as_employee_id: The employee_id of the person.
+        provider: The recommendation's provider value exactly as returned.
+        certification_name: The certification name exactly as returned.
+        action: "dismissed" or "interested".
+        reason: Optional — the user's own words.
+    """
+    resp = await _client.post(
+        "/api/recommendations/feedback",
+        json={"employee_id": as_employee_id, "provider": provider, "certification_name": certification_name,
+              "action": action, "reason": reason},
+        headers=await _headers(as_employee_id),
+    )
+    return _handle(resp)
+
+
+async def get_partnership_gaps() -> dict:
+    """Org-wide partnership scale-up status: every active partner program
+    requirement with required vs. currently-certified headcount and the
+    gap, largest gap first. Aggregate counts only. Use for "where are we
+    short on certifications for our partnerships?" questions.
+
+    Returns:
+        dict with status and, on success, a list of requirements (provider,
+        program_name, certification_name/min_level/skill_domain filter,
+        required_count, current_count, gap, deadline, priority).
+    """
+    resp = await _client.get("/api/recommendations/partnership-gaps")
     return _handle(resp)
 
 

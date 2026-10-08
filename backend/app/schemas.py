@@ -116,83 +116,141 @@ class LearningPathOut(BaseModel):
         from_attributes = True
 
 
-class NextCertificationCandidate(BaseModel):
-    certification: CatalogEntryOut
-    track_label: str | None
+# --- Next-certification recommender (services/recommender/) ---------------
+class RecommendationOut(BaseModel):
+    provider: str
+    certification_name: str
+    level: str | None
+    domains: list[str]
+    kind: str  # mandatory | renewal | retry | partnership_gap | next_step | stretch
+    score: float
+    score_breakdown: dict[str, float]
+    reasons: list[str]
+    sources: list[str]
+    partnership_programs: list[str]
+
+
+class SkippableOut(BaseModel):
+    provider: str
+    certification_name: str
+    level: str | None
     reason: str
 
 
-class LearningPathNextOut(BaseModel):
-    """A frontier, not a single answer: every certification in the
-    employee's practice path whose prerequisites are satisfied and that
-    isn't already completed. Zero, one, or several candidates — several
-    means a real branch point (or the path's start, if nothing has
-    prerequisites), not an error.
+class DomainProficiencyOut(BaseModel):
+    domain: str
+    domain_label: str
+    level: int  # 0 none - 4 expert
+    level_label: str
+    basis: str
 
-    This is the RULE-BASED ground truth of what's actually unlocked right
-    now — computed deterministically from the prerequisite graph, never by
-    the agent guessing. The agent may reason about which of these to
-    recommend first (using LearningPathOverviewOut + the employee's
-    history), but must never treat a certification as available unless
-    it appears here.
 
-    practice_missing=True means the employee has no practice on file yet
-    (always false with a real one — routers/teams.py can auto-provision an
-    employee with practice=None on first Teams contact, before any
-    directory sync or admin has filled it in). Distinct from an empty
-    next_certifications list with a real practice set (which means "path
-    complete" or "nothing configured") — this means "can't compute a path
-    at all, the practice itself isn't known." The agent must say so
-    plainly, never guess or default a practice."""
+class HeldCertOut(BaseModel):
+    provider: str | None
+    certification_name: str
+    status: str
+    source: str
 
+
+class LearnerProfileOut(BaseModel):
+    employee_id: str
     practice: str | None
-    path_name: str | None
-    next_certifications: list[NextCertificationCandidate]
+    role: str | None
+    seniority: str  # early_career | mid_career | senior
+    seniority_basis: str
+    years_experience: float | None
+    proficiency: list[DomainProficiencyOut]
+    career_goals: list[str]
+    completed: list[HeldCertOut]
+    in_progress: list[HeldCertOut]
+    missing_signals: list[str]
+
+
+class NextCertificationsOut(BaseModel):
+    """Ranked, explained, partner-catalog-only recommendations — the ground
+    truth the agent explains, never re-derives. `recommendations` is
+    ordered best-first after diversity re-ranking; `in_progress` in the
+    profile is "finish what you started", deliberately not re-recommended;
+    `skippable` lists catalog certs this person can skip and why (the
+    experienced-hire case). `signals_unavailable` names inputs that were
+    empty/unreachable (e.g. partner_catalog, partnership_requirements,
+    peer_signal) so the agent can say what the ranking is *not* based on."""
+
+    profile: LearnerProfileOut
+    recommendations: list[RecommendationOut]
+    skippable: list[SkippableOut]
+    catalog_size: int
+    catalog_source: str  # partner_catalog | portal_records
+    signals_unavailable: list[str]
     data_as_of: datetime
-    practice_missing: bool = False
 
 
-class PathPrerequisiteEdgeOut(BaseModel):
-    """One edge, named rather than ID-keyed so the agent can quote it
-    directly without a lookup — both endpoints are always certifications
-    already listed in the same PathCertificationStatusOut.certifications."""
+class SkillProfileIn(BaseModel):
+    """Partial update — omitted fields are left unchanged. expertise values
+    are 0-4 or a level name (foundational/associate/professional/expert);
+    keys and career_goals must be taxonomy domain keys (GET
+    /api/recommendations/taxonomy)."""
 
-    prerequisite_name: str
-    track_label: str | None
-
-
-class PathCertificationStatusOut(BaseModel):
-    """One certification's place in the path graph plus this employee's
-    current status against it — the context an LLM needs to explain *why*
-    something is or isn't next, not just recite a bare list."""
-
-    certification: CatalogEntryOut
-    is_required: bool
-    employee_status: str  # "completed" | "in_progress" | "gave_exam_but_failed" | "not_started"
-    prerequisite_logic: str  # "any" | "all" — duplicated from certification for convenience
-    incoming_prerequisites: list[PathPrerequisiteEdgeOut]  # edges required to unlock this cert
+    employee_id: str
+    years_experience: float | None = Field(default=None, ge=0, le=60)
+    expertise: dict[str, int | str] | None = None
+    career_goals: list[str] | None = None
 
 
-class LearningPathOverviewOut(BaseModel):
-    """The full prerequisite graph for the employee's practice path, with
-    a per-certification status against their own record — every node and
-    edge, not just the eligible-now frontier (that's next_certifications
-    above). Meant to be read alongside LearningPathNextOut and the
-    employee's tracker history (get_tracker_records) so the agent can
-    reason about a real recommendation — which locked certs are close,
-    which track someone's furthest along in, why something isn't
-    available yet — grounded in real graph facts it was handed, never
-    inferred or guessed.
+class RecommendationFeedbackIn(BaseModel):
+    employee_id: str
+    provider: str
+    certification_name: str
+    action: str  # dismissed | interested
+    reason: str | None = None
 
-    practice_missing=True — same meaning as LearningPathNextOut's field of
-    the same name: this employee has no practice on file yet, say so
-    plainly rather than guessing one."""
 
+class PartnershipGapOut(BaseModel):
+    requirement_id: str
+    provider: str
+    program_name: str
+    certification_name: str | None
+    min_level: str | None
+    skill_domain: str | None
     practice: str | None
-    path_name: str | None
-    certifications: list[PathCertificationStatusOut]
-    data_as_of: datetime
-    practice_missing: bool = False
+    required_count: int
+    current_count: int
+    gap: int
+    deadline: date | None
+    priority: int
+
+
+class PartnerCertificationIn(BaseModel):
+    provider: str
+    certification_name: str
+    level: str | None = None
+    skill_domains: list[str] = []
+    relevant_practices: list[str] = []
+    prerequisite_names: list[str] = []
+    validity_months: int | None = None
+    is_active: bool = True
+
+
+class PartnerCertificationOut(PartnerCertificationIn):
+    id: int
+
+
+class PartnershipRequirementIn(BaseModel):
+    provider: str
+    program_name: str
+    required_count: int = Field(..., ge=0)
+    certification_name: str | None = None
+    min_level: str | None = None
+    skill_domain: str | None = None
+    practice: str | None = None
+    deadline: date | None = None
+    priority: int = Field(default=3, ge=1, le=5)
+    notes: str | None = None
+    is_active: bool = True
+
+
+class PartnershipRequirementOut(PartnershipRequirementIn):
+    id: int
 
 
 class SubmissionIn(BaseModel):
@@ -520,6 +578,7 @@ class SweepReportOut(BaseModel):
     drive_reminders_created: int
     drive_escalations_created: int
     cert_expiry_reminders_created: int
+    prep_overdue_reminders_created: int = 0
     skipped_duplicate: int
     escalations_skipped_unresolved_recipient: int
     sent: int

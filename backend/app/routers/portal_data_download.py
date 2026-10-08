@@ -46,7 +46,7 @@ router = APIRouter(prefix="/api/portal/data-download", tags=["portal-data-downlo
 # provider dropdown label so "gemini" reads as "Google" here too.
 _PROVIDER_LABELS = {
     Provider.aws: "AWS", Provider.anthropic: "Anthropic", Provider.azure: "Azure",
-    Provider.databricks: "Databricks", Provider.gemini: "Google", Provider.snowflake: "Snowflake",
+    Provider.databricks: "Databricks", Provider.gemini: "Google",
 }
 
 _STATUS_LABELS = {

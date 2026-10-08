@@ -2,7 +2,7 @@
 — reads exclusively from the lnd_portal database (app/portal_db.py,
 app/portal_models.py), the real Anthropic/Gemini/AWS/Databricks certification
 data ingested by scripts/ingest_real_excel_data.py, plus the 4 catalog
-providers with no ingested data yet (Azure/Bedrock/Google/Snowflake — shown
+providers with no ingested data yet (Azure/Bedrock/Google — shown
 as a real, honest 0, not hidden). Deliberately open, no auth gate: matches
 routers/dashboards.py's leadership-dashboard precedent (a live, no-login
 read-only screen), and this router only ever reads. (Writing a provider's
@@ -108,19 +108,22 @@ def dashboard_overview(db: Session = Depends(get_portal_db)):
             .group_by(CertificationRecord.practice_canonical)
         ).all()
     )
-    pd_map = dict(
+    # Most common PD per practice (ties -> alphabetically first, matching
+    # Postgres' mode()). Computed here because Databricks has no
+    # mode() WITHIN GROUP aggregate.
+    pd_map: dict[str, str] = {}
+    for practice, pd_name, n in sorted(
         db.execute(
-            select(
-                CertificationRecord.practice_canonical,
-                func.mode().within_group(CertificationRecord.pd_leader_name),
-            )
+            select(CertificationRecord.practice_canonical, CertificationRecord.pd_leader_name, func.count())
             .where(
                 CertificationRecord.practice_canonical.is_not(None),
                 CertificationRecord.pd_leader_name.is_not(None),
             )
-            .group_by(CertificationRecord.practice_canonical)
-        ).all()
-    )
+            .group_by(CertificationRecord.practice_canonical, CertificationRecord.pd_leader_name)
+        ).all(),
+        key=lambda r: (r[0], -r[2], r[1]),
+    ):
+        pd_map.setdefault(practice, pd_name)
     practices_out = [
         PracticeMetaOut(practice=practice, pd_leader_name=pd_map.get(practice), headcount=headcount)
         for practice, headcount in sorted(headcount_map.items(), key=lambda kv: kv[1], reverse=True)

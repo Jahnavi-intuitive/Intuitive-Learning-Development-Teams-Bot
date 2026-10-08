@@ -97,6 +97,7 @@ from app.schemas import SubmissionIn
 from app.services import activity_dedup, teams_auth_resilience
 from app.services.audit import serialize_row, write_audit_entry
 from app.services.graph_client import GraphLookupError, GraphUser, get_user_with_manager
+from app.services.recommender.taxonomy import match_practice
 
 teams_auth_resilience.apply()
 
@@ -144,7 +145,8 @@ def _auto_provision_employee(db: Session, aad_object_id: str, graph_user: GraphU
     yet — actor="system", same pattern the reminder-sweep job
     (services/notification_sweep.py) already uses for its own writes."""
     department = (graph_user.department or "").strip()
-    practice = department if department in PRACTICE_VALUES else None
+    # Whitespace/&-insensitive, so "Data + AI" or "App+DB Mod" still map.
+    practice = match_practice(department, PRACTICE_VALUES)
     if department and practice is None:
         logger.warning(
             "Graph department %r for aad_object_id=%s doesn't match any known practice "
@@ -517,6 +519,32 @@ async def messages(payload: dict, request: Request, db: Session = Depends(get_db
     if activity.id:
         activity_dedup.mark_done(activity.id)
     return {}
+
+
+@router.post("/portal-identity/{aad_object_id}")
+def resolve_portal_identity(aad_object_id: str, db: Session = Depends(get_db)):
+    """Portal.html's equivalent of the bot's first-contact lookup in
+    _handle_recognized_or_reply: map the Teams user's aad_object_id to their
+    own employees row, auto-provisioning it from Graph (User.Read.All —
+    name, email, job title, department→practice, manager) when it doesn't
+    exist yet. The portal then chats/submits as this employee_id instead of
+    a seeded stand-in, so the prefill shows the user's real manager."""
+    employee = db.scalar(select(Employee).where(Employee.aad_object_id == aad_object_id))
+    if not employee:
+        try:
+            graph_user = get_user_with_manager(aad_object_id)
+        except GraphLookupError as exc:
+            logger.warning("Portal identity: Graph lookup failed for aad_object_id=%s: %s", aad_object_id, exc)
+            raise HTTPException(status_code=404, detail="Could not resolve this Teams user via Graph.")
+        employee = _auto_provision_employee(db, aad_object_id, graph_user)
+    return {
+        "employee_id": employee.employee_id,
+        "name": employee.name,
+        "email": employee.email,
+        "role": employee.role,
+        "manager_name": employee.manager_name,
+        "practice": employee.practice,
+    }
 
 
 @router.get("/user-display-name/{aad_object_id}")

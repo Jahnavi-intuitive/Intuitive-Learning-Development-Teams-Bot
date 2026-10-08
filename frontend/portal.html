@@ -19,13 +19,13 @@
   } catch (e) {}
 })();
 </script>
-<script src="https://res.cdn.office.net/teams-js/2.19.0/js/MicrosoftTeamsLibrary.js" onerror="window.__teamsSdkLoadFailed = true"></script>
+<script src="https://res.cdn.office.net/teams-js/2.19.0/js/MicrosoftTeams.min.js" onerror="window.__teamsSdkLoadFailed = true"></script>
 <style>
   :root {
     --bg: #f5f5f7; --panel: #ffffff; --border: #e5e5e9; --text: #1c1c1e; --muted: #6f6f76;
     --accent: #c0392b; --accent-soft: #fbe9e7; --radius: 12px;
     --shadow: 0 1px 2px rgba(20,20,25,0.04), 0 4px 14px rgba(20,20,25,0.06);
-    --sidebar-w: 232px; --sidebar-w-collapsed: 68px; --header-h: 60px;
+    --sidebar-w: 232px; --sidebar-w-collapsed: 68px; --header-h: 50px;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-size: 14px;
@@ -68,26 +68,36 @@
     padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 0 rgba(0,0,0,0.02); z-index: 10;
   }
-  #hamburgerBtn {
-    border: none; background: none; cursor: pointer; padding: 7px; border-radius: 8px; color: var(--text);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  #hamburgerBtn:hover { background: var(--bg); }
-  #hamburgerBtn svg { width: 20px; height: 20px; stroke: currentColor; }
 
-  .logo-placeholder {
-    width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: #fff; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: -0.02em;
+  /* Menu toggle — lives at the top of the sidebar. Its three lines form
+     a "←" (collapse) while the sidebar is expanded and ☰ when collapsed. */
+  .side-head { display: flex; align-items: center; gap: 4px; padding: 2px 0 4px; }
+  .side-head .side-section-label { padding: 0 4px; }
+  #sidebar.collapsed .side-head { justify-content: center; }
+  .hb-btn {
+    border: none; background: none; cursor: pointer; padding: 7px; border-radius: 9px; color: var(--text);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background .15s, color .15s, transform .2s cubic-bezier(.34,1.56,.64,1);
   }
-  #brandTitle { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
-  #brandTitle .brand-sub { color: var(--muted); font-weight: 500; }
+  .hb-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .hb-btn:active { transform: scale(.9); }
+  .hb-ico { width: 20px; height: 20px; stroke: currentColor; overflow: visible; }
+  .hb-ico path { transform-box: view-box; }
+  .hb-ico .hb-l1 { transform-origin: 4px 7px; }
+  .hb-ico .hb-l2 { transform-origin: 4px 12px; }
+  .hb-ico .hb-l3 { transform-origin: 4px 17px; }
+  /* ☰ → ←: outer lines shorten and swing down/up onto the arrowhead. */
+  #sidebar:not(.collapsed) #hamburgerBtn .hb-l1 { transform: translateY(5px) rotate(-45deg) scaleX(.5); }
+  #sidebar:not(.collapsed) #hamburgerBtn .hb-l3 { transform: translateY(-5px) rotate(45deg) scaleX(.5); }
+  #mobileMenuBtn { display: none; }
+
 
   .header-spacer { flex: 1.15; }
   .header-spacer.right { flex: 0.85; }
 
   .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; position: relative; }
   .header-btn {
-    display: flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border);
     background: var(--panel); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text);
     transition: background 0.12s, border-color 0.12s, filter 0.12s; white-space: nowrap;
   }
@@ -95,6 +105,13 @@
   .header-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .header-btn.primary:hover { filter: brightness(1.08); }
   .header-btn.secondary:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .header-btn .ico-cert, .header-btn .ico-status { width: 20px; height: 20px; overflow: visible; }
+  .header-btn { transition: background 0.12s, border-color 0.12s, filter 0.12s, transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .25s; }
+  .header-btn:hover { transform: translateY(-1px); }
+  .header-btn:active { transform: translateY(0) scale(.97); }
+  .header-btn.primary { box-shadow: 0 2px 8px -2px rgba(192,57,43,.45); }
+  .header-btn.primary:hover { box-shadow: 0 6px 16px -4px rgba(192,57,43,.6); }
+
 
   /* ---------------- "View My Status" popover — a small anchored panel
      under the header button, not a page navigation or tab switch.
@@ -204,6 +221,164 @@
     background: var(--panel); border: 1px dashed var(--border); border-radius: var(--radius);
     padding: 48px 24px; text-align: center; color: var(--muted); box-shadow: var(--shadow);
   }
+
+  /* ---- Notifications tab ---- */
+  .nav-item { position: relative; }
+  .nav-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff;
+    font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--panel); }
+  .nav-badge[hidden], .notif-pill[hidden] { display: none; }
+  #sidebar.collapsed .nav-badge { position: absolute; top: 4px; right: 8px; margin: 0; min-width: 16px; height: 16px; font-size: 9.5px; }
+  .notif-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .notif-head h1 { font-size: 19px; margin: 0; }
+  .notif-pill { font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 3px 10px; border-radius: 999px; }
+  .notif-progress { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .np-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .np-card.overdue { border-color: color-mix(in srgb, #d03b3b 45%, var(--border)); }
+  .np-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .np-name { font-size: 13.5px; font-weight: 700; margin: 4px 0 10px; color: var(--text); }
+  .np-track { height: 8px; border-radius: 6px; background: var(--bg); overflow: hidden; }
+  .np-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #2F7BEA, #2E9E6B); transform-origin: left; animation: np-grow .9s cubic-bezier(.22,1,.36,1) both; }
+  .np-card.overdue .np-fill { background: linear-gradient(90deg, #E07A1F, #d03b3b); }
+  @keyframes np-grow { from { transform: scaleX(0); } }
+  .np-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 7px; }
+  .np-meta b { color: var(--text); }
+  .np-card.overdue .np-meta b.od { color: #d03b3b; }
+  .notif-list { display: flex; flex-direction: column; gap: 8px; }
+  .notif-item { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+    animation: notif-in .35s ease-out both; animation-delay: calc(var(--i, 0) * 40ms); }
+  @keyframes notif-in { from { opacity: 0; transform: translateY(6px); } }
+  .notif-item.unread { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 4%, var(--panel)); }
+  .notif-ico { width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--ni, var(--accent)); }
+  .notif-ico svg { width: 17px; height: 17px; stroke: currentColor; }
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-title { font-size: 12.5px; font-weight: 700; color: var(--text); }
+  .notif-msg { font-size: 13px; color: var(--text); margin-top: 3px; line-height: 1.45; }
+  .notif-time { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .notif-empty { text-align: center; color: var(--muted); padding: 36px 0; font-size: 13px; }
+
+  /* ---- Ask Me chat ---- */
+  .chat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; height: calc(100vh - 140px); min-height: 360px; }
+  .chat-log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { max-width: 80%; padding: 9px 13px; border-radius: 14px; font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; word-wrap: break-word; }
+  .chat-msg.bot { background: var(--bg); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .chat-msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .chat-msg.pending { opacity: 0.6; font-style: italic; }
+  .chat-msg.md { white-space: normal; }
+  .chat-msg.md p { margin: 0 0 8px; }
+  .chat-msg.md p:last-child, .chat-msg.md ul:last-child, .chat-msg.md ol:last-child { margin-bottom: 0; }
+  .chat-msg.md ul, .chat-msg.md ol { margin: 4px 0 8px; padding-left: 22px; }
+  .chat-msg.md li { margin: 3px 0; }
+  .chat-msg.md li > ul, .chat-msg.md li > ol { margin: 4px 0 6px; }
+  .chat-msg.md ol > li::marker { font-weight: 700; }
+  .chat-msg.md strong { font-weight: 700; }
+  .chat-msg.md code { font-family: Consolas, monospace; font-size: 12.5px; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  .chat-msg.md a { color: var(--accent); }
+  .chat-msg.md hr { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+  .chat-msg.md .md-h { font-weight: 700; margin: 8px 0 4px; }
+  .chat-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
+  .chat-chip { background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; color: var(--text); }
+  .chat-chip:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .chat-form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+  .chat-form input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); color: var(--text); font-size: 13.5px; }
+  .chat-form button { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 0 20px; font-weight: 600; cursor: pointer; }
+  .chat-form button:disabled { opacity: 0.5; cursor: default; }
+
+  /* ---- Certification Catalog ----
+     One section per provider: a brand-coloured header band (brand gradient
+     + the provider's own pattern + a watermark of its logo), then a level
+     ladder Foundational -> Associate -> Professional -> Specialty -> Expert,
+     every level shown for every provider. Each certification card carries
+     a badge emblem in that provider's badge shape, ringed and ribboned in
+     its level's colour. */
+  .cat-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .cat-toolbar input, .cat-toolbar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); font-size: 13px; }
+  .cat-toolbar input { flex: 1; min-width: 200px; }
+  .cat-count { font-size: 12.5px; color: var(--muted); margin-left: auto; }
+  .cat-empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+  .cat-providers { display: flex; flex-direction: column; gap: 22px; }
+  .cat-provider { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+  /* Entrance only on the catalog's first render, not on every search keystroke. */
+  .cat-intro .cat-provider { animation: cat-rise .5s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(var(--n, 0) * 70ms); }
+  @keyframes cat-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  .cat-band { position: relative; overflow: hidden; border-radius: 15px 15px 0 0; display: flex; align-items: center; gap: 14px; padding: 16px 20px; color: #fff;
+    background: var(--pat), linear-gradient(120deg, var(--b-from), var(--b-to)); }
+  .cat-band::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--b-accent); }
+  .cat-band-logo { width: 44px; height: 44px; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,.25); flex-shrink: 0; }
+  .cat-band-logo svg { width: 28px; height: 28px; }
+  .cat-band-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+  .cat-band-sub { font-size: 12px; opacity: .85; margin-top: 2px; }
+  .cat-band-levels { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; position: relative; z-index: 1; }
+  .cat-band-chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.28); white-space: nowrap; }
+  .cat-band-chip b { font-weight: 800; }
+  .cat-band-mark { position: absolute; right: -18px; top: 50%; width: 130px; height: 130px; transform: translateY(-50%) rotate(-12deg); opacity: .13; pointer-events: none; }
+  .cat-band-mark svg { width: 100%; height: 100%; }
+  .cat-band-mark svg * { fill: #fff !important; }
+
+  .cat-ladder { position: relative; padding: 8px 20px 16px; }
+  .cat-lane { position: relative; display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 12px 0; border-top: 1px dashed var(--border); }
+  .cat-lane:first-child { border-top: 0; }
+  .cat-lvl { position: relative; display: flex; align-items: flex-start; gap: 10px; padding-top: 6px; }
+  .cat-lvl-step { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 11.5px; font-weight: 800; color: #fff; background: var(--lv); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lv) 18%, transparent); position: relative; z-index: 1; }
+  /* The ladder rail joining each level's step to the next. */
+  .cat-lane:not(:last-child) .cat-lvl::after { content: ''; position: absolute; left: 12px; top: 34px; bottom: -22px; width: 2px;
+    background: linear-gradient(var(--lv), var(--lv-next, var(--border))); opacity: .55; }
+  .cat-lvl-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .cat-lvl-count { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .cat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; align-content: start; }
+
+  /* Every card occupies an identical fixed-size cell. At rest the card is
+     clipped to the cell (soft fade where text runs on); on hover it grows
+     to its full content height, floating over the row below instead of
+     reflowing the grid. */
+  .cat-cell { position: relative; height: 152px; }
+  .cat-card { position: absolute; top: 0; left: 0; right: 0; min-height: 100%; max-height: 100%; overflow: hidden; box-sizing: border-box;
+    display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px;
+    background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--lv);
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s, border-color .2s, max-height .35s cubic-bezier(.22,1,.36,1); }
+  .cat-card::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26px; pointer-events: none;
+    background: linear-gradient(transparent, var(--panel) 85%); transition: opacity .2s; }
+  .cat-cell:hover { z-index: 6; }
+  .cat-cell:hover .cat-card { max-height: 420px; transform: translateY(-3px); border-color: color-mix(in srgb, var(--lv) 55%, var(--border));
+    box-shadow: 0 16px 34px -10px color-mix(in srgb, var(--lv) 50%, transparent), 0 4px 12px rgba(0,0,0,.08); }
+  .cat-cell:hover .cat-card::after { opacity: 0; }
+  .cat-card h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cat-cell:hover .cat-card h3 { -webkit-line-clamp: unset; }
+  .cat-badge { width: 54px; height: 60px; flex-shrink: 0; position: relative; filter: drop-shadow(0 3px 5px rgba(0,0,0,.18));
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+  .cat-badge svg { width: 100%; height: 100%; display: block; }
+  .cat-cell:hover .cat-badge { transform: rotate(-6deg) scale(1.08); }
+  /* Shine sweeping across the badge on hover. */
+  .cat-badge::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.65) 50%, transparent 65%);
+    background-size: 250% 100%; background-position: 120% 0; -webkit-mask: var(--shape) center / contain no-repeat; mask: var(--shape) center / contain no-repeat; opacity: 0; }
+  .cat-cell:hover .cat-badge::after { opacity: 1; animation: cat-shine .8s ease-out; }
+  @keyframes cat-shine { to { background-position: -60% 0; } }
+  .cat-badge.real { width: 66px; height: 66px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.16)); }
+  .cat-badge.real img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .cat-badge.real::after { -webkit-mask: none; mask: none; border-radius: 50%; }
+  a.cat-badge { cursor: pointer; }
+  .cat-tag.code { font-family: Consolas, ui-monospace, monospace; font-weight: 700; color: var(--text); background: var(--panel); }
+  .cat-link { font-size: 11px; color: var(--accent); text-decoration: none; font-weight: 600; margin-top: 6px; display: inline-block; }
+  .cat-link:hover { text-decoration: underline; }
+  .cat-card-body { min-width: 0; flex: 1; }
+  .cat-card h3 { font-size: 13.5px; margin: 1px 0 6px; line-height: 1.3; color: var(--text); }
+  .cat-meta { display: flex; flex-wrap: wrap; gap: 5px; }
+  .cat-tag { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+  .cat-tag.lvl { color: var(--lv); border-color: color-mix(in srgb, var(--lv) 40%, transparent); background: color-mix(in srgb, var(--lv) 9%, transparent); font-weight: 700; }
+  .cat-detail { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+  .cat-detail b { color: var(--text); font-weight: 600; }
+  @media (max-width: 720px) {
+    .cat-lane { grid-template-columns: 1fr; gap: 8px; }
+    .cat-lane .cat-lvl::after { display: none; }
+    .cat-band-levels { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .cat-provider, .cat-badge::after { animation: none !important; } }
+
   .placeholder-card .ph-icon { width: 40px; height: 40px; margin: 0 auto 14px; color: var(--accent); opacity: 0.75; }
   .placeholder-card .ph-icon svg { width: 100%; height: 100%; stroke: currentColor; }
   .placeholder-card h3 { font-size: 14.5px; color: var(--text); margin: 0 0 6px; }
@@ -339,6 +514,102 @@
   .pd-card-name { font-size: 13px; font-weight: 600; color: var(--ink); }
   .pd-card-practice { font-size: 11.5px; color: var(--ink-soft); margin: 1px 0 3px; }
   .pd-card-count { font-size: 11.5px; color: var(--ink-soft); font-family: var(--font-mono); }
+
+  /* Analytics tab — partnership certification tracker. */
+  .an-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .an-head .dash-section-sub { max-width: 720px; }
+  .an-actions { display: flex; gap: 8px; flex-shrink: 0; margin-bottom: 10px; }
+  .an-btn { font-family: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+  .an-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .an-asof { margin-left: 8px; font-size: 11px; font-weight: 500; color: var(--ink-soft); }
+  .an-scroll { overflow-x: auto; }
+  .an-table { width: 100%; min-width: 1000px; border-collapse: collapse; }
+  .an-table > thead th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft);
+    font-weight: 600; padding: 6px 12px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .an-row > td { padding: 14px 12px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); vertical-align: top; text-align: left; }
+  .an-row { cursor: pointer; }
+  .an-row:hover > td, .an-row.open > td { background: var(--surface-2); }
+  .an-row.open > td { border-bottom-color: transparent; }
+  .an-row:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+  .an-chev { width: 16px; height: 16px; stroke: var(--ink-soft); transition: transform .2s; }
+  .an-row.open .an-chev { transform: rotate(90deg); }
+  .an-provider { display: flex; align-items: center; gap: 9px; font-weight: 600; white-space: nowrap; }
+  .an-tier { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap;
+    background: var(--surface-2); border: 1px solid var(--line); }
+  .an-tier.next { background: color-mix(in srgb, var(--lc) 12%, transparent); border-color: color-mix(in srgb, var(--lc) 45%, transparent); }
+  .an-blank { color: var(--ink-soft); }
+  .an-date { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+  .an-days { display: block; margin-top: 3px; font-size: 11px; color: var(--ink-soft); font-family: var(--font-mono); }
+  .an-days.soon { color: var(--critical); }
+  .an-date-label { display: block; margin-top: 2px; font-size: 11px; color: var(--ink-soft); max-width: 170px; }
+  .an-jr { margin: 10px 0 9px; min-width: 240px; max-width: 290px; }
+  .an-jr-track { display: flex; align-items: center; padding: 0 2px; }
+  .an-jr-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; background: var(--lc);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--lc) 22%, transparent); }
+  .an-jr-goal { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--lc); background: var(--surface); }
+  .an-jr-goal.unset { border-style: dashed; border-color: var(--ink-soft); }
+  .an-jr-line { position: relative; flex: 1; height: 4px; margin: 0 5px; border-radius: 2px; overflow: hidden;
+    background: color-mix(in srgb, var(--lc) 20%, var(--surface-2)); }
+  .an-jr-line.unknown { background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--lc) 55%, transparent) 0 5px, transparent 5px 9px); background-color: transparent; }
+  .an-jr-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--lc); }
+  .an-jr-labels { display: flex; justify-content: space-between; gap: 14px; margin-top: 6px; }
+  .an-jr-labels > div:last-child { text-align: right; }
+  .an-jr-k { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+  .an-jr-v { font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .an-jr-v.unset { color: var(--ink-soft); font-weight: 500; font-style: italic; }
+  .an-status { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .an-status.gap { background: var(--critical-tint); color: var(--critical); }
+  .an-status.close { background: var(--good-tint); color: var(--good); }
+  .an-status.nodata { background: var(--warning-tint); color: var(--warning); }
+  .an-stand { font-weight: 600; margin-bottom: 6px; }
+  .an-cell-sub { font-size: 11.5px; color: var(--ink-soft); margin-top: 4px; line-height: 1.4; }
+  .an-gap-num { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--critical); line-height: 1.1; }
+  .an-gap-num.unknown { font-size: 15px; color: var(--ink); }
+  .an-gap-unit { font-size: 12px; color: var(--ink-soft); }
+  .an-bds { display: flex; flex-wrap: wrap; gap: 5px; max-width: 300px; }
+  .an-bd { font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
+  .an-row:hover .an-bd, .an-row.open .an-bd { background: var(--surface); }
+  .an-bd b { font-family: var(--font-mono); }
+  .an-metrics { display: flex; flex-direction: column; gap: 8px; min-width: 230px; }
+  .an-metric-top { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; color: var(--ink-soft); margin-bottom: 3px; }
+  .an-metric-val { font-family: var(--font-mono); font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .an-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .an-row:hover .an-bar, .an-row.open .an-bar { background: var(--surface); }
+  .an-bar-fill { height: 100%; border-radius: 3px; background: var(--lc, var(--teal)); }
+  .an-bar.unknown, .an-row:hover .an-bar.unknown, .an-row.open .an-bar.unknown {
+    background-image: repeating-linear-gradient(135deg, var(--hatch-color) 0 3px, transparent 3px 6px); }
+  .an-needed { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; min-width: 200px; }
+  .an-needed li { position: relative; padding-left: 13px; line-height: 1.35; }
+  .an-needed li::before { content: ''; position: absolute; left: 0; top: .55em; width: 5px; height: 5px; border-radius: 50%; background: var(--lc, var(--ink-soft)); }
+
+  .an-detail > td { padding: 0 12px 18px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+  .an-blocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(max(360px, calc(50% - 6px)), 1fr)); gap: 12px; }
+  .an-block { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+  .an-block.wide { grid-column: 1 / -1; }
+  .an-block-title { font-size: 12.5px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .an-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .an-pill { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .an-pill.open { background: var(--critical-tint, var(--surface-2)); color: var(--critical); }
+  .an-pill.met { background: var(--good-tint, var(--surface-2)); color: var(--good); }
+  .an-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0 8px; }
+  .an-chip { font-size: 11px; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink-soft); background: var(--surface-2); }
+  .an-block-sub { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 8px; }
+  .an-block-note { font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; line-height: 1.45; }
+  .an-sub { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .an-sub th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); font-weight: 600;
+    padding: 4px 8px 6px; border-bottom: 1px solid var(--line); }
+  .an-sub td { padding: 7px 8px; border-bottom: 1px solid var(--line); color: var(--ink); vertical-align: top; }
+  .an-sub th.num, .an-sub td.num { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
+  .an-sub tr:last-child td { border-bottom: 0; }
+  .an-sub tr.total td { font-weight: 700; border-top: 1px solid var(--line); }
+  .an-sub .gap-open { color: var(--critical); font-weight: 600; }
+  .an-sub .gap-met { color: var(--good); font-weight: 600; }
+  .an-facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 12.5px; }
+  .an-facts dt { color: var(--ink-soft); }
+  .an-facts dd { margin: 0; color: var(--ink); }
+  .an-source { margin-top: 10px; font-size: 11.5px; color: var(--ink-soft); }
+  @media (max-width: 640px) { .an-blocks { grid-template-columns: 1fr; } .an-facts { grid-template-columns: 1fr; } }
 
   @media (max-width: 640px) {
     .pw-label { flex-basis: 110px; }
@@ -549,10 +820,11 @@
     #sidebar.collapsed .nav-item .nav-label { display: block; }
     #sidebar.collapsed .side-section-label { opacity: 1; height: auto; padding: 12px 10px 6px; }
     #sidebarBackdrop.show { display: block; position: fixed; inset: 0; background: rgba(20,20,25,0.35); z-index: 15; }
+    #mobileMenuBtn { display: flex; }
+    #sidebar.collapsed .side-head { justify-content: flex-start; }
   }
 
   @media (max-width: 720px) {
-    #brandTitle .brand-sub { display: none; }
     .header-btn .btn-label { display: none; }
     .header-btn { padding: 8px 10px; }
     #welcomeText .full-name { display: none; }
@@ -560,8 +832,244 @@
     #tabContent { padding: 16px; }
   }
 
-  @media (max-width: 480px) {
-    #brandTitle { display: none; }
+
+  /* =================== Dashboard motion & highlights ===================
+     Entrance animations only run while #panel-dashboard has .dash-animate
+     (first load, and each time the Dashboard tab is opened) — the 60s data
+     refresh re-renders silently, so nothing replays under the user's eyes.
+     Hover effects and "action required" highlights are always on. */
+  .insights-panel { --ease-out: cubic-bezier(.22,1,.36,1); --ease-spring: cubic-bezier(.34,1.56,.64,1); }
+
+  @keyframes dash-rise   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes dash-fade   { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes dash-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes dash-pop    { 0% { opacity: 0; transform: scale(.55); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes dash-shimmer { from { transform: translateX(-100%); } to { transform: translateX(220%); } }
+  @keyframes dash-alert-ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(208,59,59,0); border-color: var(--line); }
+    50%      { box-shadow: 0 0 0 3px rgba(208,59,59,.18); border-color: rgba(208,59,59,.55); }
+  }
+  @keyframes dash-dot-pulse { 0% { box-shadow: 0 0 0 0 currentColor; } 80%, 100% { box-shadow: 0 0 0 6px transparent; } }
+  @keyframes dash-flash { 0% { background: var(--warning-tint); } 100% { background: var(--surface-2); } }
+  @keyframes dash-float-up { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; } 80% { opacity: 1; transform: translateY(-10px); } 100% { opacity: 0; transform: translateY(-14px); } }
+
+  /* Section titles + cards glide in, staggered top-to-bottom. */
+  .dash-animate .dash-section-title, .dash-animate .dash-section-sub { animation: dash-fade .5s var(--ease-out) both; }
+  .dash-animate .dash-card { animation: dash-rise .6s var(--ease-out) both; }
+  .dash-animate .dash-col:nth-child(2) .dash-card { animation-delay: .08s; }
+  .dash-animate .dash-section:nth-child(2) .dash-card { animation-delay: .16s; }
+
+  /* Every card lifts a little on hover. */
+  .dash-card { transition: box-shadow .25s var(--ease-out), transform .25s var(--ease-out), border-color .25s; }
+  .dash-card:hover { box-shadow: 0 10px 28px rgba(15,30,45,.10); }
+
+  /* ---- Leaderboard cards ---- */
+  .lb-card { --c: var(--ink-soft); cursor: default; z-index: 0;
+    box-shadow: 0 1px 2px rgba(15,30,45,.04);
+    transition: transform .25s var(--ease-spring), box-shadow .3s var(--ease-out), border-color .2s, background .2s; }
+  /* z-index lifts the hovered card above its neighbours, so its shadow
+     isn't painted over by the next card in the grid. */
+  .lb-card:hover { transform: translateY(-4px); border-color: var(--c); background: var(--surface); z-index: 3;
+    box-shadow:
+      0 2px 4px rgba(15,30,45,.06),
+      0 10px 22px -4px rgba(15,30,45,.14),
+      0 12px 28px -8px color-mix(in srgb, var(--c) 55%, transparent); }
+  :root[data-theme="dark"] .lb-card:hover, :root[data-theme="contrast"] .lb-card:hover {
+    box-shadow: 0 10px 24px -4px rgba(0,0,0,.55), 0 0 0 1px var(--c), 0 12px 30px -8px color-mix(in srgb, var(--c) 60%, transparent); }
+  /* Hover replays the progress fill (numbers stay as they are). */
+  .lb-card:hover .lb-dot { transform: scale(1.35); }
+  .lb-dot { transition: transform .25s var(--ease-spring); }
+  .dash-animate .lb-card { animation: dash-rise .55s var(--ease-out) both; animation-delay: calc(.12s + var(--i, 0) * 70ms); }
+  .lb-bar-solid { position: relative; overflow: hidden; transform-origin: left center; }
+  .dash-animate .lb-bar-solid { animation: dash-grow-x 1.1s var(--ease-out) both; animation-delay: calc(.3s + var(--i, 0) * 70ms); }
+  .dash-animate .lb-bar-hatch { animation: dash-fade .6s ease both; animation-delay: calc(.9s + var(--i, 0) * 70ms); }
+  /* Light sweep across the bar — once on entrance, and on hover. */
+  .lb-bar-solid::after { content: ''; position: absolute; inset: 0; width: 45%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); transform: translateX(-100%); }
+  .dash-animate .lb-bar-solid::after { animation: dash-shimmer 1s ease-in-out both; animation-delay: calc(1.25s + var(--i, 0) * 70ms); }
+  .lb-card:hover .lb-bar-solid::after { animation: dash-shimmer .9s ease-in-out .7s both; }
+  .lb-bar-track { transition: height .2s var(--ease-out); }
+  .lb-card:hover .lb-bar-track { height: 7px; }
+
+  /* Status badge: what needs action at a glance. */
+  .lb-head { position: relative; }
+  .lb-badge { margin-left: auto; flex-shrink: 0; font-size: 8.5px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 999px; line-height: 1.5; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .lb-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .lb-badge.met     { color: var(--good);     background: var(--good-tint); }
+  .lb-badge.near    { color: var(--warning);  background: var(--warning-tint); }
+  .lb-badge.alert   { color: var(--critical); background: var(--critical-tint); }
+  .lb-badge.alert::before { animation: dash-dot-pulse 1.6s ease-out infinite; }
+  .dash-animate .lb-badge { animation: dash-pop .45s var(--ease-spring) both; animation-delay: calc(1.2s + var(--i, 0) * 70ms); }
+  .lb-card.lb-alert { animation: dash-alert-ring 2.6s ease-in-out 1.8s infinite; }
+  .dash-animate .lb-card.lb-alert { animation: dash-rise .55s var(--ease-out) both, dash-alert-ring 2.6s ease-in-out 1.8s infinite;
+    animation-delay: calc(.12s + var(--i, 0) * 70ms), 1.8s; }
+  /* The alert ring animates box-shadow, which would override the hover
+     shadow — hand over to the hover style while the card is hovered. */
+  .lb-grid .lb-card.lb-alert:hover { animation: none; }
+  .lb-card.lb-met { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+  .lb-card.lb-met .lb-completed { color: var(--good); }
+  /* A value that changed since the last refresh flashes and shows its delta. */
+  .lb-card.lb-changed { animation: dash-flash 1.6s ease-out; }
+  .lb-delta { position: absolute; right: 10px; bottom: 18px; font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    color: var(--good); pointer-events: none; animation: dash-float-up 2.2s ease-out forwards; }
+  .lb-delta.down { color: var(--critical); }
+
+  /* ---- Provider drill-down ---- */
+  /* Tabs: a provider-colored underline draws out from the centre, the dot
+     sends out a ripple, the label lifts a touch. */
+  .pd-tab { position: relative; transition: color .2s, background .2s, border-color .25s var(--ease-out); }
+  .pd-tab::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -3px; height: 3px; border-radius: 3px;
+    background: var(--c, var(--ink-soft)); transform: scaleX(0); transition: transform .35s var(--ease-out); }
+  .pd-tab:not(.active):hover::after { transform: scaleX(1); }
+  .pd-tab .lb-dot { color: var(--c, var(--ink-soft)); transition: transform .25s var(--ease-spring); }
+  .pd-tab:hover .lb-dot { animation: dash-dot-pulse 1s ease-out; }
+  .pd-tab.active .lb-dot { transform: scale(1.3); }
+  .pd-tab:hover { transform: translateY(-1px); }
+  .pd-enter .pd-panel-section { animation: dash-rise .45s var(--ease-out) both; }
+  .pd-enter .pd-panel-section:nth-child(2) { animation-delay: .08s; }
+  .pd-enter .cert-table tbody tr { animation: dash-rise .4s var(--ease-out) both; animation-delay: calc(var(--r, 0) * 40ms); }
+  .cert-comp-solid, .cert-comp-pending, .pw-fill { transform-origin: left center; }
+  .pd-enter .cert-comp-track, .pd-enter .pw-fill { animation: dash-grow-x .9s var(--ease-out) both; transform-origin: left center;
+    animation-delay: calc(.15s + var(--r, 0) * 50ms); }
+  .pd-enter .pw-hatch { animation: dash-fade .5s ease both; animation-delay: calc(.7s + var(--r, 0) * 50ms); }
+  /* Certificate rows: a tint sweeps in from the left behind an accent
+     edge, the completed count picks up the provider colour, and the
+     composition bar comes alive — "in progress" stripes march and the
+     completion share slides in above the bar. */
+  /* Diagonal stripes at 135deg repeat every 6px*sqrt(2) horizontally per
+     6px of stripe period; sliding by exactly one period loops seamlessly. */
+  @keyframes dash-march-sm { to { transform: translateX(8.485px); } }
+  @keyframes dash-march-lg { to { transform: translateX(16.97px); } }
+  @keyframes dash-pill-pop { 0% { opacity: 0; transform: translate(-8px, -50%) scale(.6); } 100% { opacity: 1; transform: translate(0, -50%) scale(1); } }
+  .cert-table tbody td { transition: color .2s; }
+  .cert-table tbody tr { background-image: linear-gradient(90deg, color-mix(in srgb, var(--c, #888) 12%, transparent), transparent 70%);
+    background-repeat: no-repeat; background-size: 0% 100%; transition: background-size .45s var(--ease-out); }
+  .cert-table tbody tr td:first-child { box-shadow: inset 0 0 0 0 var(--c, #888); transition: box-shadow .25s var(--ease-out), color .2s; }
+  .cert-table tbody tr:hover { background-size: 100% 100%; }
+  .cert-table tbody tr:hover td:first-child { box-shadow: inset 4px 0 0 0 var(--c, #888); font-weight: 600; }
+  .cert-table td.num { transition: color .2s, transform .25s var(--ease-spring); }
+  .cert-table tbody tr:hover td.num:nth-child(2) { color: var(--c, var(--ink)); transform: scale(1.12); }
+  .cert-comp-cell { position: relative; }
+  .cert-comp-track { position: relative; overflow: visible; transition: height .25s var(--ease-out), box-shadow .25s; }
+  .cert-comp-track > .cert-comp-solid:first-of-type { border-radius: 5px 0 0 5px; }
+  .cert-comp-track > .cert-comp-pending { border-radius: 0 5px 5px 0; }
+  .cert-comp-track > .cert-comp-pending[style^="width:0%"] { display: none; }
+  .cert-comp-track > .cert-comp-solid:nth-last-child(2):has(+ .cert-comp-pending[style^="width:0%"]) { border-radius: 5px; }
+  .cert-table tbody tr:hover .cert-comp-track { height: 12px; box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--c, #888) 50%, transparent); }
+  .cert-comp-pending { position: relative; overflow: hidden; }
+  .cert-comp-pending::after { content: ''; position: absolute; top: 0; bottom: 0; left: -17px; right: 0; opacity: 0;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.7) 0 6px, transparent 6px 12px); transition: opacity .2s; }
+  .cert-table tbody tr:hover .cert-comp-pending { opacity: .6; }
+  .cert-table tbody tr:hover .cert-comp-pending::after { opacity: 1; animation: dash-march-lg .8s linear infinite; }
+  .cert-comp-pct { position: absolute; left: calc(100% + 8px); top: 50%; transform: translate(0, -50%); opacity: 0; pointer-events: none;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: #fff; background: var(--c, #555);
+    padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+  .cert-table tbody tr:hover .cert-comp-pct { animation: dash-pill-pop .35s var(--ease-spring) .1s both; }
+
+  /* Practice rows: a soft colour wash fills the row, the label takes the
+     provider colour, the fill glows, the remaining-hatch starts drifting,
+     and the practice's share pops out at the end of the bar. */
+  .pw-row { position: relative; border-radius: 8px; padding: 4px 8px;
+    background-image: linear-gradient(90deg, color-mix(in srgb, var(--c, #888) 10%, transparent), transparent 80%);
+    background-repeat: no-repeat; background-size: 0% 100%; transition: background-size .45s var(--ease-out); }
+  .pw-row:hover { background-size: 100% 100%; }
+  .pw-label, .pw-frac { transition: color .2s, transform .25s var(--ease-out); }
+  .pw-row:hover .pw-label { color: var(--c, var(--ink)); font-weight: 600; transform: translateX(4px); }
+  .pw-track { position: relative; overflow: visible; transition: height .25s var(--ease-out); }
+  .pw-track > .pw-fill { border-radius: 4px 0 0 4px; transition: box-shadow .25s; }
+  .pw-track > .pw-hatch { border-radius: 0 4px 4px 0; }
+  .pw-track > .pw-fill:last-child { border-radius: 4px; }
+  .pw-row:hover .pw-track { height: 10px; }
+  .pw-row:hover .pw-fill { box-shadow: 0 0 12px 1px color-mix(in srgb, var(--c, #888) 55%, transparent); }
+  .pw-hatch { position: relative; overflow: hidden; }
+  .pw-hatch::after { content: ''; position: absolute; top: 0; bottom: 0; left: -9px; right: 0; opacity: 0;
+    background-image: repeating-linear-gradient(135deg, var(--hatch-color) 0 3px, transparent 3px 6px); }
+  .pw-row:hover .pw-hatch { background-image: none; }
+  .pw-row:hover .pw-hatch::after { opacity: 1; animation: dash-march-sm .9s linear infinite; }
+  .pw-share { position: absolute; left: var(--pct-x, 0%); top: 50%; transform: translate(-50%, -160%); opacity: 0; pointer-events: none;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: #fff; background: var(--c, #555);
+    padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+  .pw-row:hover .pw-share { animation: dash-share-pop .35s var(--ease-spring) .05s both; }
+  @keyframes dash-share-pop { 0% { opacity: 0; transform: translate(-50%, -100%) scale(.6); } 100% { opacity: 1; transform: translate(-50%, -160%) scale(1); } }
+
+
+
+  /* ---- Registered Certificates: section hover + per-card spotlight ----
+     Hovering the section replays every bar in a left-to-right cascade.
+     Hovering one card spotlights it: the others dim, a provider-coloured
+     light runs around its border, the bar refills with a springy overshoot
+     and a pulsing marker lands on the progress point, the count pops in the
+     provider colour, and the % / remaining figures turn into highlights. */
+  @property --lb-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  @keyframes lb-spin { to { --lb-angle: 360deg; } }
+  @keyframes lb-refill { 0% { transform: scaleX(0); } 65% { transform: scaleX(1.05); } 82% { transform: scaleX(.98); } 100% { transform: scaleX(1); } }
+  @keyframes lb-tip-land { 0% { transform: translate(-50%, -50%) scale(0); } 70% { transform: translate(-50%, -50%) scale(1.35); } 100% { transform: translate(-50%, -50%) scale(1); } }
+  @keyframes lb-ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 60%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
+  @keyframes lb-nudge { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-6deg) scale(1.08); } 40% { transform: rotate(5deg) scale(1.08); } 60% { transform: rotate(-3deg); } 80% { transform: rotate(2deg); } }
+
+  /* .lb-replay is added for one cascade when the pointer enters the section
+     (see bindLbSectionReplay) — not tied to :hover, so leaving a card while
+     still inside the section doesn't replay its bar; it just stays put. */
+  .lb-section.lb-replay .lb-card:not(:hover) .lb-bar-solid { animation: dash-grow-x .9s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 80ms); }
+  .lb-section.lb-replay .lb-card:not(:hover) .lb-bar-hatch { animation: dash-fade .5s ease both; animation-delay: calc(.4s + var(--i, 0) * 80ms); }
+
+  .lb-card { transition: transform .25s var(--ease-spring), box-shadow .3s var(--ease-out), border-color .2s, background .2s, opacity .25s, filter .25s; }
+  .lb-grid:has(.lb-card:hover) .lb-card:not(:hover) { opacity: .55; filter: saturate(.55); }
+
+  .lb-card::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+    background: conic-gradient(from var(--lb-angle), transparent 0 55%, var(--c) 78%, color-mix(in srgb, var(--c) 30%, transparent) 90%, transparent 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); opacity: 0; transition: opacity .3s; }
+  .lb-card:hover::before { opacity: 1; animation: lb-spin 2.4s linear infinite; }
+
+  .lb-bar-wrap { position: relative; }
+  .lb-section .lb-card:hover .lb-bar-solid { animation: lb-refill .9s var(--ease-out) both; animation-delay: 0s; }
+  .lb-section .lb-card:hover .lb-bar-hatch { animation: dash-fade .4s ease .5s both; }
+  .lb-tip { position: absolute; top: 50%; left: var(--p); width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box;
+    background: var(--c); border: 2px solid var(--surface); transform: translate(-50%, -50%) scale(0); pointer-events: none; z-index: 1; }
+  .lb-card:hover .lb-tip { animation: lb-tip-land .4s var(--ease-spring) .75s both, lb-ping 1.3s ease-out 1.15s infinite; }
+
+  .lb-completed { display: inline-block; transform-origin: left bottom; transition: transform .3s var(--ease-spring), color .2s; }
+  .lb-card:hover .lb-completed { color: var(--c); transform: scale(1.14); }
+  .lb-caption span { transition: background .2s, color .2s, padding .2s; border-radius: 999px; }
+  .lb-card:hover .lb-caption span:first-child { background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c); font-weight: 700; padding: 0 6px; }
+  .lb-card:hover .lb-caption span:last-child { color: var(--ink); font-weight: 700; }
+  .lb-card:hover .lb-badge { animation: lb-nudge .6s ease-in-out; }
+
+  /* Provider logo tile — same surface/line language as the cards. */
+  .insights-panel { --logo-anthropic: #191919; --logo-aws: #232F3E; }
+  :root[data-theme="dark"] .insights-panel, :root[data-theme="contrast"] .insights-panel { --logo-anthropic: #F0EEE6; --logo-aws: #FFFFFF; }
+  /* No tile behind the mark: the logo itself is the highlight — a crisp
+     contact shadow for definition plus a soft glow in the provider's own
+     colour, so it stands out on white and grey surfaces alike. */
+  .pv-logo { --lc: var(--ink-soft); flex-shrink: 0; width: 22px; height: 22px; padding: 0; box-sizing: border-box;
+    display: inline-flex; align-items: center; justify-content: center; background: none; border: 0; }
+  .pv-logo svg { filter: drop-shadow(0 1px 1px rgba(15,30,45,.28)) drop-shadow(0 0 3px color-mix(in srgb, var(--lc) 45%, transparent)); }
+  :root[data-theme="dark"] .pv-logo svg, :root[data-theme="contrast"] .pv-logo svg {
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)) drop-shadow(0 0 4px color-mix(in srgb, var(--lc) 60%, transparent)); }
+  .pv-logo svg { width: 100%; height: 100%; display: block; }
+  .pv-logo.pv-logo-sm { width: 19px; height: 19px; }
+  .pv-logo.pv-logo-tab { width: 20px; height: 20px; margin-right: 2px; }
+  .pd-tab { display: inline-flex; align-items: center; gap: 7px; }
+  .pd-tab.active .pv-logo svg, .pd-tab:hover .pv-logo svg, .lb-card:hover .pv-logo svg {
+    filter: drop-shadow(0 1px 1px rgba(15,30,45,.3)) drop-shadow(0 0 6px color-mix(in srgb, var(--lc) 75%, transparent)); }
+  /* Logos made the header taller than the old dot — let cards grow. */
+  .lb-card { height: auto; min-height: 68px; }
+  .hm-row-label { gap: 8px; }
+
+  /* Heatmap: every practice column the same width (fixed layout splits the
+     space evenly after the provider column); long practice names wrap onto
+     two lines instead of stretching their column. */
+  .hm-table { table-layout: fixed; width: 100%; min-width: calc(118px + var(--hm-cols, 6) * 52px); }
+  .hm-table th.hm-row-head { width: 118px; vertical-align: bottom; }
+  .hm-table th:not(.hm-row-head) { white-space: normal; line-height: 1.25; vertical-align: bottom; padding: 3px 2px 6px;
+    font-size: 10.5px; text-transform: none; letter-spacing: 0; font-weight: 600; word-break: normal; overflow-wrap: normal; hyphens: manual; }
+  .hm-table .hm-cell { min-width: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .insights-panel *, .insights-panel *::before, .insights-panel *::after {
+      animation: none !important; transition: none !important;
+    }
   }
 </style>
 </head>
@@ -572,59 +1080,84 @@
 
   <aside id="sidebar">
     <div class="side-scroll" role="tablist" aria-orientation="vertical" aria-label="Portal sections">
-      <div class="side-section-label">Menu</div>
+      <div class="side-head">
+        <button id="hamburgerBtn" class="hb-btn" title="Collapse menu" aria-label="Collapse menu">
+          <svg class="hb-ico" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path class="hb-l1" d="M4 7h16"/><path class="hb-l2" d="M4 12h16"/><path class="hb-l3" d="M4 17h16"/></svg>
+        </button>
+        <div class="side-section-label">Menu</div>
+      </div>
       <div class="nav-item active" id="tab-dashboard" data-tab="dashboard" title="Dashboard" role="tab" tabindex="0" aria-selected="true" aria-controls="panel-dashboard">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-dash"><rect class="t1" x="3" y="3" width="7" height="9" rx="1.6"/><rect class="t2" x="14" y="3" width="7" height="5" rx="1.6"/><rect class="t3" x="14" y="12" width="7" height="9" rx="1.6"/><rect class="t4" x="3" y="16" width="7" height="5" rx="1.6"/><path class="b1" d="M6.5 9.5v-2"/><path class="b2" d="M17.5 18.5v-3"/></svg></span>
         <span class="nav-label">Dashboard</span>
       </div>
+      <div class="nav-item" id="tab-analytics" data-tab="analytics" title="Analytics" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-analytics">
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-analytics"><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/></svg></span>
+        <span class="nav-label">Analytics</span>
+      </div>
       <div class="nav-item" id="tab-trends" data-tab="trends" title="Trends" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-trends">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg></span>
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-trend"><path class="axis" d="M3 3.5v17h17.5"/><polyline class="line" points="6.5 15.5 10.5 11 13.5 13.8 19.5 7"/><path class="head" d="M15.6 7h3.9v3.9"/></svg></span>
         <span class="nav-label">Trends</span>
       </div>
       <div class="nav-item" id="tab-data-download" data-tab="data-download" title="Data Download" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-data-download">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M4 19h16"/></svg></span>
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-dl"><g class="arrow"><path d="M12 3v10.5"/><path d="M7.8 9.4 12 13.6l4.2-4.2"/></g><path class="tray" d="M4 15.5v2.7A1.8 1.8 0 0 0 5.8 20h12.4a1.8 1.8 0 0 0 1.8-1.8v-2.7"/></svg></span>
         <span class="nav-label">Data Download</span>
       </div>
       <div class="nav-item" id="tab-find-my-team" data-tab="find-my-team" title="Find My Team" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-find-my-team">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-team"><circle cx="8.5" cy="7.5" r="3"/><path d="M3 18.5a5.5 5.5 0 0 1 9.6-3.7"/><circle cx="15.8" cy="6.8" r="2.4"/><path d="M14.6 11.6a4.6 4.6 0 0 1 5.3 1.4"/><g class="lens"><circle cx="16.8" cy="16.6" r="2.9"/><path d="m18.9 18.7 2.4 2.4"/></g></svg></span>
         <span class="nav-label">Find My Team</span>
       </div>
       <div class="nav-item" id="tab-ask-me" data-tab="ask-me" title="Ask Me" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-ask-me">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-chat"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/><circle class="d1" cx="8.4" cy="11.5" r="1.1" fill="currentColor" stroke="none"/><circle class="d2" cx="12.3" cy="11.5" r="1.1" fill="currentColor" stroke="none"/><circle class="d3" cx="16.2" cy="11.5" r="1.1" fill="currentColor" stroke="none"/></svg></span>
         <span class="nav-label">Ask Me</span>
       </div>
       <div class="nav-item" id="tab-catalog" data-tab="catalog" title="Certification Catalog" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-catalog">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg></span>
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-cat"><rect class="back" x="6.5" y="2.8" width="14.5" height="10.5" rx="1.8"/><g class="front"><rect x="3" y="6.8" width="14.5" height="10.5" rx="1.8" fill="var(--panel)"/><path d="M6 10.6h6M6 13.6h3.4"/><circle cx="13.6" cy="13.3" r="1.8"/><path d="m12.8 15-.5 2.9 1.3-.75 1.3.75-.5-2.9"/></g></svg></span>
         <span class="nav-label">Certification Catalog</span>
       </div>
-      <div class="nav-item" id="tab-learning-paths" data-tab="learning-paths" title="Learning Paths" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-learning-paths">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.3"/><circle cx="19" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M6.8 8 11 16M17.2 8 13 16"/></svg></span>
-        <span class="nav-label">Learning Paths</span>
-      </div>
       <div class="nav-item" id="tab-notifications" data-tab="notifications" title="Notifications" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-notifications">
-        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
+        <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ni ni-bell"><g class="bell"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9Z"/><path class="clap" d="M10 19.5a2 2 0 0 0 4 0"/></g><circle class="badge" cx="18.4" cy="4.6" r="2.4" fill="var(--accent)" stroke="var(--panel)" stroke-width="1.4"/></svg></span>
         <span class="nav-label">Notifications</span>
+        <span class="nav-badge" id="notifNavBadge" hidden></span>
       </div>
     </div>
   </aside>
 
   <div id="mainColumn">
     <header id="topHeader">
-      <button id="hamburgerBtn" title="Toggle menu" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <!-- Phone widths only: the sidebar is off-canvas there, so it needs an opener outside it. -->
+      <button id="mobileMenuBtn" class="hb-btn" title="Open menu" aria-label="Open menu">
+        <svg class="hb-ico" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path class="hb-l1" d="M4 7h16"/><path class="hb-l2" d="M4 12h16"/><path class="hb-l3" d="M4 17h16"/></svg>
       </button>
-      <div class="logo-placeholder" title="Logo">L&amp;D</div>
-      <div id="brandTitle">Intuitive <span class="brand-sub">L&amp;D AGI</span></div>
 
       <div class="header-spacer"></div>
 
       <div class="header-actions">
         <button class="header-btn primary" id="submitCertBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-          <span class="btn-label">Submit Your Certification</span>
+          <svg class="ico-cert" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <g class="ico-cert-doc">
+              <rect x="1.8" y="5.2" width="15.6" height="11.4" rx="1.8"/>
+              <path class="ico-cert-line l1" d="M5.2 9h7.6"/>
+              <path class="ico-cert-line l2" d="M5.2 12.2h4.4"/>
+              <g class="ico-cert-seal">
+                <path d="m13.9 17.9-.8 3.8 2.1-1.2 2.1 1.2-.8-3.8"/>
+                <circle cx="15.2" cy="15.6" r="2.7" fill="currentColor" fill-opacity=".28"/>
+              </g>
+            </g>
+            <g class="ico-cert-arrow"><path d="M20.4 10.6V2.6M17.6 5.4l2.8-2.8 2.8 2.8"/></g>
+          </svg>
+          <span class="btn-label">Submit My Certification</span>
         </button>
         <button class="header-btn secondary" id="viewStatusBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          <svg class="ico-status" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <g class="ico-status-board">
+              <rect x="4.2" y="4" width="15.6" height="18" rx="2.2"/>
+              <path d="M8.8 4V3.1a1 1 0 0 1 1-1h4.4a1 1 0 0 1 1 1V4"/>
+              <path class="ico-status-check c1" d="m7.8 10.2 1.5 1.5 2.7-2.8"/>
+              <path class="ico-status-row r1" d="M14.2 10.4h2.6"/>
+              <path class="ico-status-check c2" d="m7.8 16 1.5 1.5 2.7-2.8"/>
+              <path class="ico-status-row r2" d="M14.2 16.2h2.6"/>
+            </g>
+          </svg>
           <span class="btn-label">View My Status</span>
         </button>
         <div class="status-popover" id="statusPopover" hidden>
@@ -652,9 +1185,8 @@
           <div class="dash-section">
             <div class="dash-two-col">
               <div class="dash-col">
-                <div class="dash-section-title">Certified employees by provider — progress to target</div>
-                <p class="dash-section-sub">Solid = completed. Hatched = remaining to reach this provider's org target.</p>
-                <div class="dash-card">
+                <div class="dash-section-title">Registered Certificates</div>
+                <div class="dash-card lb-section">
                   <div class="lb-legend-row">
                     <span><span class="ll-swatch solid"></span>Completed</span>
                     <span><span class="ll-swatch hatch"></span>Remaining to target</span>
@@ -664,7 +1196,6 @@
               </div>
               <div class="dash-col">
                 <div class="dash-section-title">Provider &times; Practice</div>
-                <p class="dash-section-sub">Where each provider's certified headcount sits across the org.</p>
                 <div class="dash-card">
                   <div class="hm-scroll"><table class="hm-table" id="hmTable"></table></div>
                   <div class="hm-legend"><span>Fewer</span><span class="hm-legend-bar"></span><span>More</span></div>
@@ -675,13 +1206,30 @@
 
           <div class="dash-section">
             <div class="dash-section-title">Provider drill-down</div>
-            <p class="dash-section-sub">Certificate mix, practice split, and Practice-Director-wise reach for one provider at a time.</p>
             <div class="dash-card">
               <div class="pd-tabs" id="pdTabs"></div>
               <div id="pdPanel"></div>
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <section class="tab-panel insights-panel" id="panel-analytics" role="tabpanel" aria-labelledby="tab-analytics">
+        <div class="dash-section">
+          <div class="an-head">
+            <div>
+              <div class="dash-section-title">Partnership certification tracker<span class="an-asof" id="analyticsAsOf"></span></div>
+              <p class="dash-section-sub">Where each partnership stands, the tier we're targeting next, and the certifications still needed. Click a partner to open its breakdown. A dash means we don't have that figure yet.</p>
+            </div>
+            <div class="an-actions">
+              <button type="button" class="an-btn" id="analyticsToggleAll">Expand all</button>
+              <button type="button" class="an-btn" id="analyticsExport">Export CSV</button>
+            </div>
+          </div>
+          <div class="dash-card">
+            <div class="an-scroll"><table class="an-table" id="analyticsTable"></table></div>
+          </div>
         </div>
       </section>
 
@@ -806,51 +1354,39 @@
       </section>
 
       <section class="tab-panel" id="panel-ask-me" role="tabpanel" aria-labelledby="tab-ask-me">
-        <div class="panel-header">
-          <h1>Ask Me</h1>
-          <p>Chat with the L&amp;D assistant about certifications and learning paths.</p>
-        </div>
-        <div class="placeholder-card">
-          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.06-4.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></div>
-          <h3>Content coming soon</h3>
-          <p>The assistant experience will be embedded here.</p>
+        <div class="chat-card">
+          <div id="chatLog" class="chat-log" aria-live="polite">
+            <div class="chat-msg bot">Hi! I'm the L&amp;D assistant. Ask me about certifications, exam prep, or what to take next.</div>
+          </div>
+          <div id="chatChips" class="chat-chips">
+            <button type="button" class="chat-chip">What certification should I take next?</button>
+            <button type="button" class="chat-chip">Show my certification status</button>
+            <button type="button" class="chat-chip">I want to submit a certification</button>
+          </div>
+          <form id="chatForm" class="chat-form" autocomplete="off">
+            <input type="text" id="chatInput" placeholder="Type your question…" aria-label="Message the L&D assistant">
+            <button type="submit" id="chatSend">Send</button>
+          </form>
         </div>
       </section>
 
       <section class="tab-panel" id="panel-catalog" role="tabpanel" aria-labelledby="tab-catalog">
-        <div class="panel-header">
-          <h1>Certification Catalog</h1>
-          <p>Browse certifications available across the organization.</p>
+        <div class="cat-toolbar">
+          <input type="search" id="catSearch" placeholder="Search certifications…" aria-label="Search certifications">
+          <select id="catProvider" aria-label="Filter by provider"><option value="">All providers</option></select>
+          <select id="catLevel" aria-label="Filter by level"><option value="">All levels</option></select>
+          <span id="catCount" class="cat-count"></span>
         </div>
-        <div class="placeholder-card">
-          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg></div>
-          <h3>Content coming soon</h3>
-          <p>The full catalog will be listed here.</p>
-        </div>
-      </section>
-
-      <section class="tab-panel" id="panel-learning-paths" role="tabpanel" aria-labelledby="tab-learning-paths">
-        <div class="panel-header">
-          <h1>Learning Paths</h1>
-          <p>Structured tracks toward role-relevant certifications.</p>
-        </div>
-        <div class="placeholder-card">
-          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.3"/><circle cx="19" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M6.8 8 11 16M17.2 8 13 16"/></svg></div>
-          <h3>Content coming soon</h3>
-          <p>Your assigned or recommended learning paths will show up here.</p>
-        </div>
+        <div id="catList" class="cat-providers"><div class="cat-empty">Loading catalog…</div></div>
       </section>
 
       <section class="tab-panel" id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications">
-        <div class="panel-header">
+        <div class="notif-head">
           <h1>Notifications</h1>
-          <p>Reminders, expiring certifications, and drive deadlines.</p>
+          <span id="notifUnreadPill" class="notif-pill" hidden></span>
         </div>
-        <div class="placeholder-card">
-          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
-          <h3>Content coming soon</h3>
-          <p>Your notifications will be listed here.</p>
-        </div>
+        <div id="notifProgress" class="notif-progress"></div>
+        <div id="notifList" class="notif-list"><div class="notif-empty">Loading…</div></div>
       </section>
 
     </div>
@@ -940,6 +1476,12 @@ function saveCollapsedPref(collapsed) {
 
 if (!isMobile() && loadCollapsedPref()) sidebar.classList.add('collapsed');
 
+function syncMenuBtnLabel() {
+  const label = isMobile() ? 'Close menu' : (sidebar.classList.contains('collapsed') ? 'Expand menu' : 'Collapse menu');
+  hamburgerBtn.title = label;
+  hamburgerBtn.setAttribute('aria-label', label);
+}
+
 function toggleSidebar() {
   if (isMobile()) {
     const open = sidebar.classList.toggle('mobile-open');
@@ -948,9 +1490,13 @@ function toggleSidebar() {
     const collapsed = sidebar.classList.toggle('collapsed');
     saveCollapsedPref(collapsed);
   }
+  syncMenuBtnLabel();
 }
 
 hamburgerBtn.addEventListener('click', toggleSidebar);
+document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
+syncMenuBtnLabel();
+window.addEventListener('resize', syncMenuBtnLabel);
 sidebarBackdrop.addEventListener('click', () => {
   sidebar.classList.remove('mobile-open');
   sidebarBackdrop.classList.remove('show');
@@ -967,7 +1513,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
     sidebar.classList.remove('mobile-open');
     sidebarBackdrop.classList.remove('show');
-    hamburgerBtn.focus();
+    document.getElementById('mobileMenuBtn').focus();
   }
 });
 
@@ -978,7 +1524,10 @@ function activateNavItem(item) {
     n.classList.toggle('active', active);
     n.setAttribute('aria-selected', active ? 'true' : 'false');
   });
+  const wasActive = document.getElementById(`panel-${tab}`)?.classList.contains('active');
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tab}`));
+  if (tab === 'dashboard' && !wasActive && typeof playDashboardIntro === 'function') playDashboardIntro();
+  if (tab === 'notifications' && typeof loadNotifications === 'function') loadNotifications({ markRead: true });
   if (isMobile()) {
     sidebar.classList.remove('mobile-open');
     sidebarBackdrop.classList.remove('show');
@@ -1094,27 +1643,34 @@ async function loadCurrentUser() {
   // (see the microsoftTeams init block below) — this stand-in employee
   // record is a different, unrelated person and must never be shown there,
   // even while the Teams lookup is still in flight.
-  const inTeams = !!window.microsoftTeams;
+  // The welcome name never comes from this seeded list — only from the
+  // signed-in Teams user (resolveTeamsUserName). The list is used only to
+  // pick an employee_id for chat/submission: the row matching the Teams
+  // user's email/name once known, else the first row as a stand-in.
   try {
     const resp = await fetch('/api/employees');
     if (!resp.ok) throw new Error(`${resp.status}`);
-    const employees = await resp.json();
-    if (!employees.length) throw new Error('no employees');
-    currentEmployeeId = employees[0].employee_id;
-    const name = employees[0].name || 'Guest';
-    currentEmployeeName = employees[0].name || null;
-    if (inTeams) return;
-    const parts = name.trim().split(/\s+/);
-    const first = parts[0] || name;
-    const last = parts.slice(1).join(' ');
-    document.getElementById('welcomeName').innerHTML =
-      `${esc(first)} <span class="full-name">${esc(last)}</span>`;
-    document.getElementById('avatarBadge').textContent = initials(name);
-  } catch (e) {
-    if (inTeams) return;
+    knownEmployees = await resp.json();
+    if (!currentEmployeeId && knownEmployees.length) currentEmployeeId = knownEmployees[0].employee_id;
+    matchEmployeeToTeamsUser();
+  } catch (e) { /* chat/submission will report they can't identify the user */ }
+  if (!window.microsoftTeams) {
     document.getElementById('welcomeName').textContent = 'Guest';
     document.getElementById('avatarBadge').textContent = '–';
   }
+}
+
+let knownEmployees = [];
+let teamsUserEmail = null;
+let identityFromGraph = false;  // set once /api/teams/portal-identity resolved the real employee_id
+
+function matchEmployeeToTeamsUser() {
+  if (identityFromGraph || !knownEmployees.length) return;
+  const email = (teamsUserEmail || '').toLowerCase();
+  const name = (currentEmployeeName || '').toLowerCase();
+  const match = knownEmployees.find(e => email && (e.email || '').toLowerCase() === email)
+    || knownEmployees.find(e => name && (e.name || '').toLowerCase() === name);
+  if (match) currentEmployeeId = match.employee_id;
 }
 
 loadCurrentUser();
@@ -1175,13 +1731,15 @@ async function openCertModal() {
   certOnStatusChange();
   document.getElementById('certModalOverlay').hidden = false;
 
-  fetch('/api/portal/data-download/certifications')
-    .then(r => r.ok ? r.json() : [])
-    .then(rows => {
-      certCatalogNames = [...new Set(rows.map(r => r.certification_name))].sort();
-      document.getElementById('certCatalogOptions').innerHTML = certCatalogNames.map(n => `<option value="${esc(n)}">`).join('');
-    })
-    .catch(() => { /* non-fatal — the field still works as free text */ });
+  // Typeahead = the full Certification Catalog (every provider and level)
+  // plus any other names already tracked in the synced trackers.
+  Promise.all([
+    fetch('/api/portal/catalog').then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('/api/portal/data-download/certifications').then(r => r.ok ? r.json() : []).catch(() => []),
+  ]).then(([catalog, tracked]) => {
+    certCatalogNames = [...new Set([...catalog, ...tracked].map(r => r.certification_name))].sort((a, b) => a.localeCompare(b));
+    document.getElementById('certCatalogOptions').innerHTML = certCatalogNames.map(n => `<option value="${esc(n)}">`).join('');
+  });
 
   if (!currentEmployeeId) {
     showCertFormMessage('error', "Couldn't determine the current employee — try reloading the page.");
@@ -1272,20 +1830,36 @@ document.getElementById('certFormSubmitBtn').addEventListener('click', submitCer
 // labels, drill-down tabs/bars/rings) so a provider's color never drifts
 // between components. New providers must NOT get an auto-generated hue —
 // come back and pick one checked for colorblind-safe separation instead.
-// 6 providers, per direct instruction (2026-09-17): the real source data is
+// 5 providers, per direct instruction (2026-09-17): the real source data is
 // Anthropic/Databricks/AWS/Google (the SharePoint folder's own naming for
 // what this app's Provider enum still calls "gemini" internally — same
-// provider, one canonical value, not two), plus Azure and Snowflake kept in
-// the catalog with no data yet. "Bedrock" and a separate "google" provider
-// were removed — neither ever had any real data under it.
+// provider, one canonical value, not two), plus Azure kept in the catalog
+// with no data yet. "Bedrock", a separate "google" provider and Snowflake
+// were removed — none ever had any real data under it.
 const PROVIDER_META = {
   aws:        { label: 'AWS',        color: { light: '#2a78d6', dark: '#3987e5' } },
   anthropic:  { label: 'Anthropic',  color: { light: '#eb6834', dark: '#d95926' } },
   azure:      { label: 'Azure',      color: { light: '#1baf7a', dark: '#199e70' } },
   databricks: { label: 'Databricks', color: { light: '#e87ba4', dark: '#d55181' } },
   gemini:     { label: 'Google',     color: { light: '#008300', dark: '#008300' } },
-  snowflake:  { label: 'Snowflake',  color: { light: '#e34948', dark: '#e66767' } },
 };
+// Official provider marks (Simple Icons, CC0; Google's four-colour "G"),
+// inlined so the portal never depends on a CDN for them. Monochrome marks
+// take their brand colour from --logo-* tokens (theme-aware for the dark ones).
+const PROVIDER_LOGOS = {
+  anthropic:  { vb: '0 0 24 24', fill: 'var(--logo-anthropic)', d: 'M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z' },
+  databricks: { vb: '0 0 24 24', fill: '#FF3621', d: 'M.95 14.184L12 20.403l9.919-5.55v2.21L12 22.662l-10.484-5.96-.565.308v.77L12 24l11.05-6.218v-4.317l-.515-.309L12 19.118l-9.867-5.653v-2.21L12 16.805l11.05-6.218V6.32l-.515-.308L12 11.974 2.647 6.681 12 1.388l7.76 4.368.668-.411v-.566L12 0 .95 6.27v.72L12 13.207l9.919-5.55v2.26L12 15.52 1.516 9.56l-.565.308Z' },
+  aws:        { vb: '0 0 24 24', fill: 'var(--logo-aws)', d: 'M6.763 10.036c0 .296.032.535.088.71.064.176.144.368.256.576.04.063.056.127.056.183 0 .08-.048.16-.152.24l-.503.335a.383.383 0 0 1-.208.072c-.08 0-.16-.04-.239-.112a2.47 2.47 0 0 1-.287-.375 6.18 6.18 0 0 1-.248-.471c-.622.734-1.405 1.101-2.347 1.101-.67 0-1.205-.191-1.596-.574-.391-.384-.59-.894-.59-1.533 0-.678.239-1.23.726-1.644.487-.415 1.133-.623 1.955-.623.272 0 .551.024.846.064.296.04.6.104.918.176v-.583c0-.607-.127-1.03-.375-1.277-.255-.248-.686-.367-1.3-.367-.28 0-.568.031-.863.103-.295.072-.583.16-.862.272a2.287 2.287 0 0 1-.28.104.488.488 0 0 1-.127.023c-.112 0-.168-.08-.168-.247v-.391c0-.128.016-.224.056-.28a.597.597 0 0 1 .224-.167c.279-.144.614-.264 1.005-.36a4.84 4.84 0 0 1 1.246-.151c.95 0 1.644.216 2.091.647.439.43.662 1.085.662 1.963v2.586zm-3.24 1.214c.263 0 .534-.048.822-.144.287-.096.543-.271.758-.51.128-.152.224-.32.272-.512.047-.191.08-.423.08-.694v-.335a6.66 6.66 0 0 0-.735-.136 6.02 6.02 0 0 0-.75-.048c-.535 0-.926.104-1.19.32-.263.215-.39.518-.39.917 0 .375.095.655.295.846.191.2.47.296.838.296zm6.41.862c-.144 0-.24-.024-.304-.08-.064-.048-.12-.16-.168-.311L7.586 5.55a1.398 1.398 0 0 1-.072-.32c0-.128.064-.2.191-.2h.783c.151 0 .255.025.31.08.065.048.113.16.16.312l1.342 5.284 1.245-5.284c.04-.16.088-.264.151-.312a.549.549 0 0 1 .32-.08h.638c.152 0 .256.025.32.08.063.048.12.16.151.312l1.261 5.348 1.381-5.348c.048-.16.104-.264.16-.312a.52.52 0 0 1 .311-.08h.743c.127 0 .2.065.2.2 0 .04-.009.08-.017.128a1.137 1.137 0 0 1-.056.2l-1.923 6.17c-.048.16-.104.263-.168.311a.51.51 0 0 1-.303.08h-.687c-.151 0-.255-.024-.32-.08-.063-.056-.119-.16-.15-.32l-1.238-5.148-1.23 5.14c-.04.16-.087.264-.15.32-.065.056-.177.08-.32.08zm10.256.215c-.415 0-.83-.048-1.229-.143-.399-.096-.71-.2-.918-.32-.128-.071-.215-.151-.247-.223a.563.563 0 0 1-.048-.224v-.407c0-.167.064-.247.183-.247.048 0 .096.008.144.024.048.016.12.048.2.08.271.12.566.215.878.279.319.064.63.096.95.096.502 0 .894-.088 1.165-.264a.86.86 0 0 0 .415-.758.777.777 0 0 0-.215-.559c-.144-.151-.416-.287-.807-.415l-1.157-.36c-.583-.183-1.014-.454-1.277-.813a1.902 1.902 0 0 1-.4-1.158c0-.335.073-.63.216-.886.144-.255.335-.479.575-.654.24-.184.51-.32.83-.415.32-.096.655-.136 1.006-.136.175 0 .359.008.535.032.183.024.35.056.518.088.16.04.312.08.455.127.144.048.256.096.336.144a.69.69 0 0 1 .24.2.43.43 0 0 1 .071.263v.375c0 .168-.064.256-.184.256a.83.83 0 0 1-.303-.096 3.652 3.652 0 0 0-1.532-.311c-.455 0-.815.071-1.062.223-.248.152-.375.383-.375.71 0 .224.08.416.24.567.159.152.454.304.877.44l1.134.358c.574.184.99.44 1.237.767.247.327.367.702.367 1.117 0 .343-.072.655-.207.926-.144.272-.336.511-.583.703-.248.2-.543.343-.886.447-.36.111-.734.167-1.142.167zM21.698 16.207c-2.626 1.94-6.442 2.969-9.722 2.969-4.598 0-8.74-1.7-11.87-4.526-.247-.223-.024-.527.272-.351 3.384 1.963 7.559 3.153 11.877 3.153 2.914 0 6.114-.607 9.06-1.852.439-.2.814.287.383.607zM22.792 14.961c-.336-.43-2.22-.207-3.074-.103-.255.032-.295-.192-.063-.36 1.5-1.053 3.967-.75 4.254-.399.287.36-.08 2.826-1.485 4.007-.215.184-.423.088-.327-.151.32-.79 1.03-2.57.695-2.994z' },
+  azure:      { vb: '0 0 24 24', fill: '#0078D4', d: 'M22.379 23.343a1.62 1.62 0 0 0 1.536-2.14v.002L17.35 1.76A1.62 1.62 0 0 0 15.816.657H8.184A1.62 1.62 0 0 0 6.65 1.76L.086 21.204a1.62 1.62 0 0 0 1.536 2.139h4.741a1.62 1.62 0 0 0 1.535-1.103l.977-2.892 4.947 3.675c.28.208.618.32.966.32m-3.084-12.531 3.624 10.739a.54.54 0 0 1-.51.713v-.001h-.03a.54.54 0 0 1-.322-.106l-9.287-6.9h4.853m6.313 7.006c.116-.326.13-.694.007-1.058L9.79 1.76a1.722 1.722 0 0 0-.007-.02h6.034a.54.54 0 0 1 .512.366l6.562 19.445a.54.54 0 0 1-.338.684' },
+  gemini:     { vb: '0 0 48 48', raw: '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>' },
+};
+function providerLogo(id, extraClass = '') {
+  const logo = PROVIDER_LOGOS[id];
+  const label = esc(providerLabel(id));
+  if (!logo) return `<span class="lb-dot" style="background:${providerColor(id)}"></span>`;
+  const inner = logo.raw || `<path fill="${logo.fill}" d="${logo.d}"/>`;
+  return `<span class="pv-logo ${extraClass}" style="--lc:${providerColor(id)}" role="img" aria-label="${label}"><svg viewBox="${logo.vb}" aria-hidden="true">${inner}</svg></span>`;
+}
 function currentAppTheme() {
   const t = document.documentElement.getAttribute('data-theme');
   return t === 'dark' || t === 'contrast' ? 'dark' : 'light'; // contrast reuses the dark provider hues
@@ -1337,11 +1911,26 @@ let dashboardOverview = null;
 let activeProviderId = null;
 
 // ---------------- Section 1: provider leaderboard ----------------
+// Status thresholds for the "action required" highlight on each card.
+const LB_ALERT_BELOW_PCT = 40;   // well short of target → pulsing red ring + "Needs push"
+const LB_NEAR_FROM_PCT = 80;     // close → amber "Almost there"
+let lastProviderCounts = null;   // provider → completed, from the previous render (for change flashes)
+
 function renderLeaderboard(sortedProviders) {
-  document.getElementById('lbGrid').innerHTML = sortedProviders.map(p => {
+  document.getElementById('lbGrid').innerHTML = sortedProviders.map((p, i) => {
     const color = providerColor(p.provider);
     const hasTarget = p.target !== null && p.target !== undefined;
     let barHtml, captionHtml, tooltipText;
+    let badgeHtml = '', stateClass = '';
+    if (hasTarget && p.target > 0) {
+      const ratio = (p.completed / p.target) * 100;
+      if (ratio >= 100) { badgeHtml = '<span class="lb-badge met">Target met</span>'; stateClass = ' lb-met'; }
+      else if (ratio >= LB_NEAR_FROM_PCT) { badgeHtml = '<span class="lb-badge near">Almost there</span>'; }
+      else if (ratio < LB_ALERT_BELOW_PCT) { badgeHtml = '<span class="lb-badge alert">Needs push</span>'; stateClass = ' lb-alert'; }
+    }
+    const prev = lastProviderCounts ? lastProviderCounts[p.provider] : undefined;
+    const delta = prev === undefined ? 0 : p.completed - prev;
+    if (delta) stateClass += ' lb-changed';
     if (!hasTarget) {
       barHtml = `<div class="lb-bar-track"></div>`;
       captionHtml = `<span class="lb-caption-muted">No target set</span>`;
@@ -1351,9 +1940,12 @@ function renderLeaderboard(sortedProviders) {
       const solidPct = p.target > 0 ? Math.min(100, (p.completed / p.target) * 100) : 100;
       const remaining = p.target - p.completed;
       barHtml = `
-        <div class="lb-bar-track">
-          <div class="lb-bar-solid" style="width:${solidPct}%;background:${color}"></div>
-          ${remaining > 0 ? `<div class="lb-bar-hatch" style="width:${100 - solidPct}%"></div>` : ''}
+        <div class="lb-bar-wrap">
+          <div class="lb-bar-track">
+            <div class="lb-bar-solid" style="width:${solidPct}%;background:${color}"></div>
+            ${remaining > 0 ? `<div class="lb-bar-hatch" style="width:${100 - solidPct}%"></div>` : ''}
+          </div>
+          ${solidPct > 0 ? `<span class="lb-tip" style="--p:${solidPct}%"></span>` : ''}
         </div>`;
       captionHtml = remaining >= 0
         ? `<span>${pct}% of target</span><span>${esc(remaining)} left</span>`
@@ -1363,16 +1955,76 @@ function renderLeaderboard(sortedProviders) {
         : `${p.completed} completed of ${p.target} target (${pct}%) · ${-remaining} over target`;
     }
     return `
-      <div class="lb-card">
-        <div class="lb-head"><span class="lb-dot" style="background:${color}"></span><span class="lb-name">${esc(providerLabel(p.provider))}</span></div>
-        <div class="lb-big"><span class="lb-completed">${esc(p.completed)}</span><span class="lb-slash">/</span><span class="lb-target">${hasTarget ? esc(p.target) : '—'}</span></div>
+      <div class="lb-card${stateClass}" style="--i:${i};--c:${color}">
+        <div class="lb-head">${providerLogo(p.provider, 'pv-logo-sm')}<span class="lb-name">${esc(providerLabel(p.provider))}</span>${badgeHtml}</div>
+        <div class="lb-big"><span class="lb-completed" data-count="${esc(p.completed)}">${esc(p.completed)}</span><span class="lb-slash">/</span><span class="lb-target">${hasTarget ? esc(p.target) : '—'}</span></div>
         ${barHtml}
         <div class="lb-caption">${captionHtml}</div>
         <div class="lb-tooltip">${esc(tooltipText)}</div>
+        ${delta ? `<span class="lb-delta${delta < 0 ? ' down' : ''}">${delta > 0 ? '+' : ''}${esc(delta)}</span>` : ''}
       </div>
     `;
   }).join('');
   document.querySelectorAll('#lbGrid .lb-card').forEach(bindTapHover);
+  bindLbSectionReplay();
+  setTimeout(() => document.querySelectorAll('#lbGrid .lb-changed').forEach(c => c.classList.remove('lb-changed')), 1700);
+  lastProviderCounts = Object.fromEntries(sortedProviders.map(p => [p.provider, p.completed]));
+}
+
+// One left-to-right bar cascade each time the pointer enters the
+// Registered Certificates section; cleared once it has played so moving
+// between cards (or out of one) never re-triggers it.
+function bindLbSectionReplay() {
+  const section = document.querySelector('.lb-section');
+  if (!section || section._replayBound) return;
+  section._replayBound = true;
+  section.addEventListener('mouseenter', () => {
+    if (prefersReducedMotion()) return;
+    section.classList.remove('lb-replay');
+    void section.offsetWidth;
+    section.classList.add('lb-replay');
+    clearTimeout(section._replayTimer);
+    section._replayTimer = setTimeout(() => section.classList.remove('lb-replay'), 1700);
+  });
+}
+
+// Count a number up from 0 on entrance (eased), staggered like its card.
+function countUp(el, delayMs) {
+  const target = Number(el.dataset.count);
+  if (!Number.isFinite(target) || target <= 0) return;
+  const duration = 1100;
+  el.textContent = '0';
+  setTimeout(() => {
+    const start = performance.now();
+    const step = (now) => {
+      // rAF's frame timestamp can predate `start` by a few ms — clamp, or the
+      // first frame computes a negative count.
+      const t = Math.min(1, Math.max(0, (now - start) / duration));
+      el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, delayMs);
+  // rAF pauses in background/hidden tabs — never leave a number mid-count.
+  setTimeout(() => { el.textContent = target; }, delayMs + duration + 150);
+}
+
+const prefersReducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Plays the dashboard entrance (cards rise, bars grow, numbers count up,
+// heatmap cells pop in). Only on first load and when the tab is opened —
+// the periodic refresh re-renders without it.
+let dashIntroTimer = null;
+function playDashboardIntro() {
+  const panel = document.getElementById('panel-dashboard');
+  if (!dashboardOverview || prefersReducedMotion()) { renderDashboard(); return; }
+  panel.classList.remove('dash-animate');
+  void panel.offsetWidth;  // restart CSS animations
+  panel.classList.add('dash-animate');
+  renderDashboard({ animatePanel: true });
+  panel.querySelectorAll('#lbGrid .lb-completed[data-count]').forEach((el, i) => countUp(el, 300 + i * 70));
+  clearTimeout(dashIntroTimer);
+  dashIntroTimer = setTimeout(() => panel.classList.remove('dash-animate'), 3200);
 }
 
 // ---------------- Section 2: provider x practice heatmap ----------------
@@ -1387,9 +2039,11 @@ function renderHeatmap(sortedProviders, practices, matrix) {
       const { bg, text } = heatCellColor(count / maxCell);
       return `<td class="hm-cell" style="background:${bg};color:${text}" title="${esc(providerLabel(p.provider))} · ${esc(pr.practice)}: ${esc(count)}">${esc(count)}</td>`;
     }).join('');
-    return `<tr><td><div class="hm-row-label"><span class="lb-dot" style="background:${color}"></span>${esc(providerLabel(p.provider))}</div></td>${cells}</tr>`;
+    return `<tr><td><div class="hm-row-label">${providerLogo(p.provider)}${esc(providerLabel(p.provider))}</div></td>${cells}</tr>`;
   }).join('');
-  document.getElementById('hmTable').innerHTML = `<thead>${headHtml}</thead><tbody>${bodyHtml}</tbody>`;
+  const hmTable = document.getElementById('hmTable');
+  hmTable.style.setProperty('--hm-cols', practices.length);
+  hmTable.innerHTML = `<thead>${headHtml}</thead><tbody>${bodyHtml}</tbody>`;
 }
 
 // ---------------- Section 3: provider drill-down ----------------
@@ -1402,21 +2056,22 @@ function renderProviderTabs(sortedProviders) {
     // background, plus a matching colored underline.
     const activeStyle = isActive ? `background:${hexToRgba(color, 0.14)};border-bottom-color:${color};` : '';
     return `
-    <button class="pd-tab${isActive ? ' active' : ''}" data-provider="${p.provider}" type="button" style="${activeStyle}">
-      <span class="lb-dot" style="background:${color}"></span>${esc(providerLabel(p.provider))}
+    <button class="pd-tab${isActive ? ' active' : ''}" data-provider="${p.provider}" type="button" style="--c:${color};${activeStyle}">
+      ${providerLogo(p.provider, 'pv-logo-tab')}${esc(providerLabel(p.provider))}
     </button>
   `;
   }).join('');
   document.querySelectorAll('#pdTabs .pd-tab').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (activeProviderId === btn.dataset.provider) return;
       activeProviderId = btn.dataset.provider;
       renderProviderTabs(sortedProviders);
-      renderProviderPanel();
+      renderProviderPanel({ animate: true });
     });
   });
 }
 
-function renderProviderPanel() {
+function renderProviderPanel({ animate = false } = {}) {
   if (!dashboardOverview || !activeProviderId) return;
   const provider = activeProviderId;
   const color = providerColor(provider);
@@ -1425,16 +2080,17 @@ function renderProviderPanel() {
 
   // (a) Certificates under this provider
   const certs = certifications.filter(c => c.provider === provider);
-  const certRows = certs.map(c => {
+  const certRows = certs.map((c, r) => {
     const denom = c.completed + c.pending;
     const solidPct = denom ? (c.completed / denom) * 100 : 0;
     const pendingPct = denom ? (c.pending / denom) * 100 : 0;
     return `
-      <tr>
+      <tr style="--r:${r}">
         <td>${esc(c.certification_name)}</td>
         <td class="num">${esc(c.completed)}</td>
         <td class="num">${esc(c.pending)}</td>
-        <td class="cert-comp-cell last-col"><div class="cert-comp-track">
+        <td class="cert-comp-cell last-col"><div class="cert-comp-track" title="${esc(Math.round(solidPct))}% completed · ${esc(Math.round(pendingPct))}% in progress">
+          <span class="cert-comp-pct">${esc(Math.round(solidPct))}%</span>
           <div class="cert-comp-solid" style="width:${solidPct}%;background:${color}"></div>
           <div class="cert-comp-pending" style="width:${pendingPct}%;background:${color}"></div>
         </div></td>
@@ -1455,13 +2111,14 @@ function renderProviderPanel() {
   // <provider> cert," not "this practice's completion rate."
   const practiceValues = practices.map(pr => ({ practice: pr.practice, count: matrixCount(map, provider, pr.practice) }));
   const totalForProvider = Math.max(1, practiceValues.reduce((sum, pv) => sum + pv.count, 0));
-  const practiceRowsHtml = practiceValues.map(pv => {
+  const practiceRowsHtml = practiceValues.map((pv, r) => {
     const solidPct = (pv.count / totalForProvider) * 100;
     return `
-    <div class="pw-row">
+    <div class="pw-row" style="--r:${r}">
       <div class="pw-label" title="${esc(pv.practice)}">${esc(pv.practice)}</div>
       <div class="pw-frac">${esc(pv.count)}<span class="pw-frac-total"> / ${esc(totalForProvider)}</span></div>
       <div class="pw-track">
+        <span class="pw-share" style="--pct-x:${Math.min(Math.max(solidPct, 4), 96)}%">${esc(Math.round(solidPct))}%</span>
         <div class="pw-fill" style="width:${solidPct}%;background:${color}"></div>
         ${pv.count < totalForProvider ? `<div class="pw-hatch" style="width:${100 - solidPct}%"></div>` : ''}
       </div>
@@ -1490,7 +2147,16 @@ function renderProviderPanel() {
     `;
   }).join('');
 
-  document.getElementById('pdPanel').innerHTML = `
+  const pdPanel = document.getElementById('pdPanel');
+  pdPanel.classList.remove('pd-enter');
+  if (animate && !prefersReducedMotion()) {
+    void pdPanel.offsetWidth;  // restart the entrance animation
+    pdPanel.classList.add('pd-enter');
+    clearTimeout(pdPanel._enterTimer);
+    pdPanel._enterTimer = setTimeout(() => pdPanel.classList.remove('pd-enter'), 1600);
+  }
+  pdPanel.style.setProperty('--c', color);
+  pdPanel.innerHTML = `
     <div class="pd-panel-section">
       <div class="pd-panel-title">Certificates under ${esc(providerLabel(provider))}</div>
       ${certTableHtml}
@@ -1506,7 +2172,7 @@ function renderProviderPanel() {
   `;
 }
 
-function renderDashboard() {
+function renderDashboard({ animatePanel = false } = {}) {
   if (!dashboardOverview) return;
   const sortedProviders = [...dashboardOverview.providers].sort((a, b) => b.completed - a.completed);
   renderLeaderboard(sortedProviders);
@@ -1515,15 +2181,19 @@ function renderDashboard() {
     activeProviderId = sortedProviders[0] ? sortedProviders[0].provider : null;
   }
   renderProviderTabs(sortedProviders);
-  renderProviderPanel();
+  renderProviderPanel({ animate: animatePanel });
 }
 
+let dashboardLoadedOnce = false;
 async function loadDashboard() {
   try {
     const resp = await fetch('/api/portal/dashboard/overview');
     if (!resp.ok) throw new Error(`${resp.status}`);
     dashboardOverview = await resp.json();
-    renderDashboard();
+    const dashVisible = document.getElementById('panel-dashboard').classList.contains('active');
+    if (!dashboardLoadedOnce && dashVisible) playDashboardIntro();
+    else renderDashboard();
+    dashboardLoadedOnce = true;
   } catch (e) {
     document.getElementById('dashShell').innerHTML = `<div class="dash-error">Couldn't load dashboard data: ${esc(e.message)}</div>`;
   }
@@ -2116,6 +2786,867 @@ if (window.matchMedia) {
   });
 }
 
+function setWelcomeName(fullName) {
+  const parts = fullName.trim().split(/\s+/);
+  document.getElementById('welcomeName').innerHTML =
+    `${esc(parts[0] || fullName)} <span class="full-name">${esc(parts.slice(1).join(' '))}</span>`;
+  document.getElementById('avatarBadge').textContent = initials(fullName);
+  currentEmployeeName = fullName;
+  matchEmployeeToTeamsUser();
+}
+
+// Name for the signed-in Teams user, best source first: the authoritative
+// directory name via the backend's Graph lookup (User.Read.All, app-only),
+// then Teams' own displayName, then a name derived from the sign-in email.
+async function resolveTeamsUserName(user) {
+  if (!user) { setWelcomeName('Guest'); return; }
+  teamsUserEmail = user.userPrincipalName || user.loginHint || null;
+  const aadId = user.id || user.objectId;
+  if (aadId) {
+    try {
+      // Resolves (or Graph-provisions) this Teams user's own employees row,
+      // so chat and the submission prefill run as them, not a stand-in.
+      const resp = await fetch(`/api/teams/portal-identity/${encodeURIComponent(aadId)}`, { method: 'POST' });
+      if (resp.ok) {
+        const body = await resp.json();
+        if (body.employee_id) { currentEmployeeId = body.employee_id; identityFromGraph = true; }
+        if (body.name) { setWelcomeName(body.name); return; }
+      }
+    } catch (e) { /* fall through to the Teams-provided name */ }
+  }
+  if (user.displayName) { setWelcomeName(user.displayName); return; }
+  if (teamsUserEmail) {
+    setWelcomeName(teamsUserEmail.split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+    return;
+  }
+  setWelcomeName('Guest');
+}
+
+// ---------------------------------------------------------------------
+// Analytics tab — partnership certification tracker. Figures below are
+// the partnership team's numbers as of ANALYTICS_AS_OF; null means "we
+// don't have this yet" and renders as a dash. Each partner program is
+// shaped differently, so the summary row is common (tier, date, headline
+// metrics, what's still needed) and the click-to-open detail is a list of
+// typed blocks: 'table' | 'facts'. Replace PARTNERSHIPS with a backend
+// source once one exists; the renderer doesn't need to change.
+const ANALYTICS_AS_OF = '2026-10-07';
+
+// Gap cell for a current-vs-required pair: open gap, met (with surplus), or unknown.
+function anGap(current, required) {
+  if (current == null || required == null) return null;
+  const d = required - current;
+  return d > 0 ? { text: String(d), tone: 'open', value: d }
+               : { text: d === 0 ? 'Met' : `Met (+${-d})`, tone: 'met', value: 0 };
+}
+
+// AWS: the 34 certs still needed to go from 66 to 100, split by level.
+// Largest-remainder rounding so the whole-cert counts still add up to 34.
+function anSplit(total, shares) {
+  const raw = shares.map(s => total * s.pct / 100);
+  const out = raw.map(Math.floor);
+  let left = total - out.reduce((a, b) => a + b, 0);
+  raw.map((r, i) => [r - Math.floor(r), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { out[i]++; left--; } });
+  return shares.map((s, i) => ({ ...s, exact: raw[i], count: out[i] }));
+}
+const AWS_SPLIT = anSplit(100 - 66, [
+  { level: 'Specialty', pct: 10 }, { level: 'Professional', pct: 20 },
+  { level: 'Associate', pct: 30 }, { level: 'Foundational', pct: 40 },
+]);
+
+const GCP_COSELL = [
+  { level: 'Professional', current: 19, required: 20 },
+  { level: 'Associate', current: 14, required: 20 },
+  { level: 'Foundational', current: 47, required: 20 },
+];
+const GCP_NEEDED = [
+  { label: 'Professional (AI-related)', count: 15, covers: 'Competencies (AI, Gemini Enterprise), Co-sell, Services' },
+  { label: 'Foundational (AI-related)', count: 8, covers: 'Competencies (AI, Gemini Enterprise)' },
+  { label: 'Associate (any)', count: 6, covers: 'Co-sell' },
+];
+
+const PARTNERSHIPS = [
+  {
+    provider: 'azure', currentTier: 'Solutions Partner', nextTier: 'Azure Expert MSP',
+    review: { date: '2026-11-08', label: 'Renewal window 10 Oct – 8 Nov 2026' },
+    source: 'Microsoft Partner Center → Insights → Solutions Partner (Skilling eligibility)',
+    stand: { text: 'Cert holders not tracked', sub: '10 certs required to keep current tier' },
+    gap: { value: null, unit: 'certs', text: '23 required', sub: '+13 over the maintain level' },
+    breakdown: [{ label: 'AZ-104', value: 15 }, { label: 'AZ-305', value: 5 }, { label: 'AZ-400', value: 3 }],
+    breakdownNote: 'Total required for Azure Expert MSP',
+    blocks: [
+      {
+        type: 'table', wide: true, title: 'Certifications by level',
+        sub: 'Next-target counts are cumulative totals, not extra certs on top of the maintain numbers.',
+        columns: ['Certification', 'Level', { h: 'Current holders', num: true }, { h: 'To maintain current tier', num: true },
+                  { h: 'For Azure Expert MSP', num: true }, { h: 'Extra needed', num: true }],
+        rows: [
+          ['Azure Administrator Associate (AZ-104)', 'Associate', null, 8, 15, { text: '+7', tone: 'open' }],
+          ['Azure Solutions Architect Expert (AZ-305)', 'Expert', null, 2, 5, { text: '+3', tone: 'open' }],
+          ['Azure DevOps Engineer Expert (AZ-400)', 'Expert', null, null, 3, { text: '+3', tone: 'open' }],
+        ],
+        total: ['Total', '', null, 10, 23, { text: '+13', tone: 'open' }],
+        note: 'AZ-400 has no maintain requirement listed. Current holder counts aren\'t tracked yet. Data & AI and Security certs (e.g. DP-203, SC-300) aren\'t in this list.',
+      },
+      {
+        type: 'table', wide: true, title: 'Solutions Partner pathways',
+        sub: 'Each pathway is scored out of 100. To qualify: 70+ points and every metric (Performance, Skilling, Customer success) above 0.',
+        columns: ['Badge', 'Pathway', 'Status', 'Track', { h: 'Score / 100', num: true }, { h: 'Certs needed', num: true }, 'Why we need it'],
+        rows: [
+          ['Cloud & AI Platforms', 'Data & AI (Azure)', null, null, null, null, null],
+          ['Cloud & AI Platforms', 'Digital & App Innovation (Azure)', null, null, null, null, null],
+          ['Cloud & AI Platforms', 'Infrastructure (Azure)', null, null, null, null, null],
+          ['Security', 'Security', null, null, null, null, null],
+          ['AI Business Solutions', 'Business Applications', null, null, null, null, null],
+          ['AI Business Solutions', 'Modern Work', null, null, null, null, null],
+        ],
+        note: 'Pathway data not available yet. Pull status, track (Enterprise / SMB) and score per pathway from Partner Center.',
+      },
+      {
+        type: 'facts', title: 'How the Azure program works',
+        items: [
+          ['Tier', 'No Bronze/Silver/Gold ladder. Tier = which Solutions Partner designations we hold.'],
+          ['Qualify', '70+ points in the pathway with every metric above 0, on at least one day in the eligibility window.'],
+          ['Skilling', 'Counts intermediate and advanced certs linked to our organisation in Partner Center.'],
+          ['Enrol', 'Qualifying alone doesn\'t grant the designation; it must also be enrolled (paid) to unlock benefits.'],
+          ['Renewal', 'Anniversary date + 30-day grace period. Current window: 10 Oct – 8 Nov 2026.'],
+        ],
+      },
+      {
+        type: 'facts', title: 'Next target',
+        items: [
+          ['Program', 'Azure Expert MSP (separate audited program)'],
+          ['Target date', '1 Dec 2026 (to confirm)'],
+          ['Specializations', 'Up to 5; require the matching designation first; audited'],
+          ['Certs', '23 total: 15× AZ-104, 5× AZ-305, 3× AZ-400'],
+        ],
+      },
+    ],
+  },
+  {
+    provider: 'anthropic', currentTier: 'Preferred', nextTier: 'Global Premier', review: null,
+    source: 'Anthropic Partner Portal',
+    stand: { text: 'Cert count not tracked' },
+    gap: { value: null, unit: 'certs', text: '1,000 required', sub: 'for Global Premier' },
+    breakdown: [],
+    breakdownNote: 'Level split not defined yet',
+    blocks: [
+      {
+        type: 'table', title: 'Certification requirement',
+        columns: ['Requirement', { h: 'Current', num: true }, { h: 'Required', num: true }, { h: 'Still needed', num: true }],
+        rows: [['Anthropic certifications (all levels)', null, 1000, null]],
+        note: 'Current certified count and level split not available yet.',
+      },
+      {
+        type: 'facts', title: 'Tier',
+        items: [['Current', 'Preferred'], ['Next target', 'Global Premier'], ['Review date', null]],
+      },
+    ],
+  },
+  {
+    provider: 'aws', currentTier: 'Premier', nextTier: null, review: null,
+    source: 'AWS Partner Central',
+    stand: { text: '66 active certs', progress: { current: 66, target: 100, label: 'of 100 target' } },
+    gap: { value: 34, unit: 'certs' },
+    breakdown: AWS_SPLIT.map(s => ({ label: s.level, value: s.count })),
+    blocks: [
+      {
+        type: 'table', title: 'Remaining 34 certs by level',
+        sub: 'Required mix of the certs still needed to go from 66 to 100.',
+        columns: ['Level', { h: 'Share', num: true }, { h: 'Exact', num: true }, { h: 'Certs needed', num: true }],
+        rows: AWS_SPLIT.map(s => [s.level, `${s.pct}%`, s.exact.toFixed(1), { text: String(s.count), tone: 'open', value: s.count }]),
+        total: ['Total', '100%', '34.0', { text: '34', tone: 'open', value: 34 }],
+        note: 'Rounded to whole certs so the total stays at 34.',
+      },
+      {
+        type: 'facts', title: 'Certification count',
+        items: [['Current tier', 'Premier'], ['Active certs', '66'], ['Target', '100'], ['Remaining', '34'], ['Next tier name', null], ['Review date', null]],
+      },
+    ],
+  },
+  {
+    provider: 'databricks', currentTier: 'Bronze', nextTier: 'Silver', review: null,
+    source: 'Databricks Partner Portal',
+    stand: { text: '2 of 4 champions', sub: '102 certified individuals', progress: { current: 2, target: 4, label: 'champions' } },
+    gap: { value: 2, unit: 'champions' },
+    breakdown: [{ label: 'People with Associate + Professional', value: 2 }],
+    blocks: [
+      {
+        type: 'table', title: 'Requirements',
+        columns: ['Requirement', { h: 'Current', num: true }, { h: 'Target', num: true }, { h: 'Still needed', num: true }],
+        rows: [
+          ['Champions', 2, 4, anGap(2, 4)],
+          ['Certified individuals', 102, null, null],
+        ],
+      },
+      {
+        type: 'facts', title: 'What counts as a champion',
+        items: [
+          ['Champion', 'One person holding both an Associate and a Professional Databricks certification'],
+          ['Counted', 'Per individual, not per certification'],
+          ['Next tier', 'Silver'], ['Review date', null],
+        ],
+      },
+    ],
+  },
+  {
+    provider: 'gemini', currentTier: 'Select', nextTier: 'Premier',
+    review: { date: '2027-03-31', label: 'Co-sell expires first (Services 10 Jul 2027)' },
+    source: 'Google Cloud Partner Advantage',
+    stand: { text: `${GCP_COSELL.reduce((n, r) => n + r.current, 0)} active certs`, sub: 'Co-sell, Services, AI + Gemini Enterprise competencies' },
+    gap: { value: GCP_NEEDED.reduce((n, r) => n + r.count, 0), unit: 'certs' },
+    breakdown: GCP_NEEDED.map(r => ({ label: r.label.replace('-related', ''), value: r.count })),
+    blocks: [
+      {
+        type: 'table', title: 'Co-sell', chips: ['Expires 31 Mar 2027', 'Target: Premier'], status: true,
+        columns: ['Level', { h: 'Active', num: true }, { h: 'Required', num: true }, { h: 'Gap', num: true }],
+        rows: GCP_COSELL.map(r => [r.level, r.current, r.required, anGap(r.current, r.required)]),
+      },
+      {
+        type: 'table', title: 'Services', chips: ['Expires 10 Jul 2027', 'Target: Premier'], status: true,
+        columns: ['Level', { h: 'Active', num: true }, { h: 'Required', num: true }, { h: 'Gap', num: true }],
+        rows: [['Professional', 19, 20, anGap(19, 20)]],
+      },
+      {
+        type: 'table', wide: true, title: 'Competencies', chips: ['AI', 'Gemini Enterprise', 'Target: Premier'], status: true,
+        sub: 'Both competencies have the same requirement. Only AI-related certifications count; all counts are active certs.',
+        columns: ['Competency', 'Level', { h: 'Competency count', num: true }, { h: 'Active AI certs', num: true }, { h: 'Still needed', num: true }],
+        rows: ['AI', 'Gemini Enterprise'].flatMap(c => [
+          [c, 'Foundational', 0, 22, { text: '8', tone: 'open', value: 8 }],
+          ['', 'Professional', 4, 15, { text: '15', tone: 'open', value: 15 }],
+        ]),
+      },
+      {
+        type: 'table', wide: true, title: 'Total still needed for Premier',
+        sub: 'One cert can count toward more than one track, so this is less than adding up the gaps of each track.',
+        columns: ['Certification', 'Counts toward', { h: 'Needed', num: true }],
+        rows: GCP_NEEDED.map(r => [r.label, r.covers, { text: String(r.count), tone: 'open', value: r.count }]),
+        total: ['Total', '', { text: String(GCP_NEEDED.reduce((n, r) => n + r.count, 0)), tone: 'open' }],
+      },
+    ],
+  },
+];
+
+const anFmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const anBlank = '<span class="an-blank" title="Not available yet">&mdash;</span>';
+const anNum = (n) => n == null ? anBlank : esc(typeof n === 'number' ? n.toLocaleString() : n);
+
+function anCell(v) {
+  if (v === '') return '';
+  if (v == null) return anBlank;
+  if (typeof v === 'object') return `<span class="gap-${v.tone}">${esc(v.text)}</span>`;
+  return anNum(v);
+}
+
+// Summary status: no current count -> can't size the gap; 80%+ of target -> almost there.
+function anStatus(p) {
+  if (p.gap.value == null) return { key: 'nodata', label: 'Needs current count' };
+  const pr = p.stand.progress;
+  if (pr && pr.current / pr.target >= 0.8) return { key: 'close', label: 'Almost there' };
+  return { key: 'gap', label: 'Gap open' };
+}
+
+// Tier journey: "Now" dot -> line -> "Target" ring. The line fills with
+// progress where we know it; hatched when the current count isn't tracked.
+function anJourney(p) {
+  const pr = p.stand.progress;
+  const pct = pr ? Math.min(100, Math.round(pr.current / pr.target * 100)) : null;
+  const line = pct == null
+    ? '<div class="an-jr-line unknown"></div>'
+    : `<div class="an-jr-line"><div class="an-jr-fill" style="width:${pct}%"></div></div>`;
+  const label = `${p.currentTier || 'Current tier not set'} to ${p.nextTier || 'next tier not set'}`;
+  return `<div class="an-jr" role="img" aria-label="${esc(label)}">
+    <div class="an-jr-track"><span class="an-jr-dot"></span>${line}<span class="an-jr-goal${p.nextTier ? '' : ' unset'}"></span></div>
+    <div class="an-jr-labels">
+      <div><div class="an-jr-k">Now</div><div class="an-jr-v">${p.currentTier ? esc(p.currentTier) : anBlank}</div></div>
+      <div><div class="an-jr-k">Target</div><div class="an-jr-v${p.nextTier ? '' : ' unset'}">${p.nextTier ? esc(p.nextTier) : 'Not set'}</div></div>
+    </div>
+  </div>`;
+}
+
+function anStandCell(st) {
+  const pr = st.progress;
+  const pct = pr ? Math.min(100, Math.round(pr.current / pr.target * 100)) : null;
+  // The progress bar itself is drawn on the tier journey; here just the figure.
+  const bar = pr ? `<div class="an-cell-sub">${pct}% ${esc(pr.label)}</div>` : '';
+  return `<div class="an-stand">${esc(st.text)}</div>${bar}${st.sub ? `<div class="an-cell-sub">${esc(st.sub)}</div>` : ''}`;
+}
+
+function anGapCell(g) {
+  if (g.value == null) {
+    return `<div class="an-gap-num unknown">${esc(g.text)}</div>
+      <div class="an-cell-sub">${g.sub ? `${esc(g.sub)} · ` : ''}gap unknown until current count is tracked</div>`;
+  }
+  return `<div><span class="an-gap-num">${g.value.toLocaleString()}</span> <span class="an-gap-unit">${esc(g.unit)}</span></div>
+    ${g.sub ? `<div class="an-cell-sub">${esc(g.sub)}</div>` : ''}`;
+}
+
+function anBreakdownCell(p) {
+  const chips = p.breakdown.map(b => `<span class="an-bd"><b>${b.value.toLocaleString()}</b> ${esc(b.label)}</span>`).join('');
+  return `${chips ? `<div class="an-bds">${chips}</div>` : ''}${p.breakdownNote ? `<div class="an-cell-sub">${esc(p.breakdownNote)}</div>` : ''}`;
+}
+
+function anBlock(b) {
+  let body = '';
+  if (b.type === 'table') {
+    const cols = b.columns.map(c => typeof c === 'string' ? { h: c } : c);
+    const tr = (cells, cls = '') => `<tr${cls ? ` class="${cls}"` : ''}>${cells.map((v, i) =>
+      `<td${cols[i].num ? ' class="num"' : ''}>${anCell(v)}</td>`).join('')}</tr>`;
+    body = `<div class="an-scroll"><table class="an-sub"><thead><tr>${cols.map(c =>
+      `<th${c.num ? ' class="num"' : ''}>${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${
+      b.rows.map(r => tr(r)).join('')}${b.total ? tr(b.total, 'total') : ''}</tbody></table></div>`;
+  } else if (b.type === 'facts') {
+    body = `<dl class="an-facts">${b.items.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v == null ? anBlank : esc(v)}</dd>`).join('')}</dl>`;
+  }
+  // Optional header pill: how many rows still have an open gap.
+  let pill = '';
+  if (b.status && b.type === 'table') {
+    const open = b.rows.filter(r => r.some(v => v && typeof v === 'object' && v.tone === 'open')).length;
+    pill = open ? `<span class="an-pill open">${open} open gap${open === 1 ? '' : 's'}</span>` : '<span class="an-pill met">All met</span>';
+  }
+  const chips = (b.chips || []).map(c => `<span class="an-chip">${esc(c)}</span>`).join('');
+  return `<div class="an-block${b.wide ? ' wide' : ''}">
+    <div class="an-block-head"><div class="an-block-title">${esc(b.title)}</div>${pill}</div>
+    ${chips ? `<div class="an-chips">${chips}</div>` : ''}${b.sub ? `<div class="an-block-sub">${esc(b.sub)}</div>` : ''}
+    ${body}${b.note ? `<div class="an-block-note">${esc(b.note)}</div>` : ''}</div>`;
+}
+
+function renderAnalyticsTable() {
+  const table = document.getElementById('analyticsTable');
+  if (!table) return;
+  const asOf = document.getElementById('analyticsAsOf');
+  if (asOf) asOf.textContent = `as of ${anFmtDate(ANALYTICS_AS_OF)}`;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  // Soonest review first — that's the partnership that needs attention now; undated last.
+  const sorted = [...PARTNERSHIPS].sort((a, b) =>
+    (a.review ? a.review.date : '9999').localeCompare(b.review ? b.review.date : '9999'));
+  const rows = sorted.map(p => {
+    const lc = providerColor(p.provider);
+    const st = anStatus(p);
+    let dateCell = `${anBlank}<span class="an-date-label">No review date set</span>`;
+    if (p.review) {
+      const days = Math.round((new Date(`${p.review.date}T00:00:00`) - today) / 86400000);
+      const daysLabel = days < 0 ? `${-days} days overdue` : days === 0 ? 'today' : `in ${days} days`;
+      dateCell = `<span class="an-date">${esc(anFmtDate(p.review.date))}</span>
+        <span class="an-days${days <= 60 ? ' soon' : ''}">${daysLabel}</span>
+        <span class="an-date-label">${esc(p.review.label)}</span>`;
+    }
+    const id = `an-detail-${p.provider}`;
+    return `<tr class="an-row" data-provider="${p.provider}" tabindex="0" role="button" aria-expanded="false" aria-controls="${id}" style="--lc:${lc}">
+      <td>
+        <div class="an-provider">${providerLogo(p.provider, 'pv-logo-sm')}${esc(providerLabel(p.provider))}</div>
+        ${anJourney(p)}
+        <span class="an-status ${st.key}">${st.label}</span>
+      </td>
+      <td>${anStandCell(p.stand)}</td>
+      <td>${anGapCell(p.gap)}</td>
+      <td>${anBreakdownCell(p)}</td>
+      <td>${dateCell}</td>
+      <td><svg class="an-chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></td>
+    </tr>
+    <tr class="an-detail" id="${id}" hidden><td colspan="6">
+      <div class="an-blocks">${p.blocks.map(anBlock).join('')}</div>
+      <div class="an-source">Source: ${esc(p.source)}</div>
+    </td></tr>`;
+  }).join('');
+  table.innerHTML = `<thead><tr>
+      <th>Partnership</th><th>Where we stand</th><th>Gap to next tier</th><th>Where the gap is</th><th>Deadline</th><th aria-label="Expand"></th>
+    </tr></thead><tbody>${rows}</tbody>`;
+}
+
+function anSetOpen(row, open) {
+  row.classList.toggle('open', open);
+  row.setAttribute('aria-expanded', String(open));
+  document.getElementById(row.getAttribute('aria-controls')).hidden = !open;
+}
+
+function anSyncToggleAll() {
+  const btn = document.getElementById('analyticsToggleAll');
+  const rows = document.querySelectorAll('#analyticsTable .an-row');
+  if (btn) btn.textContent = [...rows].every(r => r.classList.contains('open')) ? 'Collapse all' : 'Expand all';
+}
+
+// Long-format export (one value per line) so it pivots cleanly in Excel / Power BI.
+function exportAnalyticsCsv() {
+  const out = [['As of', 'Partner', 'Section', 'Item', 'Field', 'Value']];
+  const add = (p, section, item, field, v) => out.push([ANALYTICS_AS_OF, providerLabel(p.provider), section, item, field,
+    v == null ? '' : typeof v === 'object' ? (v.value ?? v.text) : v]);
+  PARTNERSHIPS.forEach(p => {
+    add(p, 'Summary', 'Tier', 'Current tier', p.currentTier);
+    add(p, 'Summary', 'Tier', 'Next target', p.nextTier);
+    add(p, 'Summary', 'Review', 'Date', p.review && p.review.date);
+    add(p, 'Summary', 'Review', 'Label', p.review && p.review.label);
+    add(p, 'Summary', 'Status', 'Value', anStatus(p).label);
+    add(p, 'Summary', 'Where we stand', 'Value', p.stand.text);
+    if (p.stand.progress) { add(p, 'Summary', 'Progress', 'Current', p.stand.progress.current); add(p, 'Summary', 'Progress', 'Target', p.stand.progress.target); }
+    add(p, 'Summary', 'Gap to next tier', p.gap.unit, p.gap.value ?? p.gap.text);
+    p.breakdown.forEach(b => add(p, 'Summary', 'Where the gap is', b.label, b.value));
+    p.blocks.forEach(b => {
+      if (b.type === 'facts') b.items.forEach(([k, v]) => add(p, b.title, k, 'Value', v));
+      if (b.type === 'table') {
+        const heads = b.columns.map(c => typeof c === 'string' ? c : c.h);
+        [...b.rows, ...(b.total ? [b.total] : [])].forEach(r =>
+          r.slice(1).forEach((v, i) => add(p, b.title, r[0], heads[i + 1], v)));
+      }
+    });
+    add(p, 'Summary', 'Source', 'Value', p.source);
+  });
+  const csv = out.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `partnership-certifications-${ANALYTICS_AS_OF}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+renderAnalyticsTable();
+(() => {
+  const table = document.getElementById('analyticsTable');
+  if (!table) return;
+  const toggle = (e) => {
+    const row = e.target.closest('.an-row');
+    if (!row) return;
+    anSetOpen(row, !row.classList.contains('open'));
+    anSyncToggleAll();
+  };
+  table.addEventListener('click', toggle);
+  table.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('an-row')) { e.preventDefault(); toggle(e); }
+  });
+  document.getElementById('analyticsToggleAll')?.addEventListener('click', () => {
+    const rows = [...table.querySelectorAll('.an-row')];
+    const open = !rows.every(r => r.classList.contains('open'));
+    rows.forEach(r => anSetOpen(r, open));
+    anSyncToggleAll();
+  });
+  document.getElementById('analyticsExport')?.addEventListener('click', exportAnalyticsCsv);
+})();
+
+// Certification Catalog tab — the partner catalog (GET /api/portal/catalog).
+// ---------------------------------------------------------------------
+let catalogRows = [];
+
+const CAT_LEVELS = [
+  { key: 'foundational', label: 'Foundational', color: '#2E9E6B' },
+  { key: 'associate',    label: 'Associate',    color: '#2F7BEA' },
+  { key: 'professional', label: 'Professional', color: '#7B4FD6' },
+  { key: 'specialty',    label: 'Specialty',    color: '#E07A1F' },
+  { key: 'expert',       label: 'Expert',       color: '#B8862B' },
+];
+const CAT_LEVEL_BY_KEY = Object.fromEntries(CAT_LEVELS.map((l, i) => [l.key, { ...l, step: i + 1 }]));
+
+// Brand look per provider: band gradient, accent rule, background pattern,
+// and the outline its certification badges use.
+// Single-quoted url(): these values go inside double-quoted style="" attributes.
+const svgUrl = (svg) => `url('data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, '%27')}')`;
+const CAT_PATTERNS = {
+  stripes: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M-4 20 20-4M4 20 20 4" stroke="#fff" stroke-opacity=".09" stroke-width="3"/></svg>'),
+  grid:    svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><path d="M18 0H0V18" fill="none" stroke="#fff" stroke-opacity=".1"/></svg>'),
+  dots:    svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="1.5" fill="#fff" fill-opacity=".16"/></svg>'),
+  hex:     svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="42"><path d="M12 0 24 7v14L12 28 0 21V7zM12 28v14" fill="none" stroke="#fff" stroke-opacity=".1"/></svg>'),
+  layers:  svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="22" height="14"><path d="M0 7 11 1l11 6M0 13l11-6 11 6" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="1.5"/></svg>'),
+};
+const CAT_BRAND = {
+  aws:        { from: '#232F3E', to: '#3A4B60', accent: '#FF9900', pattern: 'stripes', shape: 'shield' },
+  azure:      { from: '#004E9A', to: '#0078D4', accent: '#50E6FF', pattern: 'grid',    shape: 'hex' },
+  gemini:     { from: '#1967D2', to: '#4285F4', accent: '#FBBC05', pattern: 'dots',    shape: 'circle' },
+  databricks: { from: '#A11B0C', to: '#FF3621', accent: '#FFC2B5', pattern: 'layers',  shape: 'hex' },
+  anthropic:  { from: '#141413', to: '#3D3A2E', accent: '#D97757', pattern: 'hex',     shape: 'seal' },
+};
+const CAT_PROVIDER_ORDER = ['aws', 'azure', 'gemini', 'databricks', 'anthropic'];
+
+// Brand pattern: the provider's own mark tiled across its band (two
+// offset rows, faint white), layered over its brand gradient.
+function brandPattern(provider) {
+  const logo = PROVIDER_LOGOS[provider];
+  if (!logo) return 'none';
+  const inner = logo.raw ? logo.raw.replace(/fill="[^"]*"/g, 'fill="#fff"') : `<path fill="#fff" d="${logo.d}"/>`;
+  const [, , vw, vh] = logo.vb.split(' ').map(Number);
+  const mark = (x, y, size, rot) =>
+    `<g transform="translate(${x} ${y}) rotate(${rot} ${size / 2} ${size / 2}) scale(${size / vw} ${size / vh})">${inner}</g>`;
+  const tile = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><g fill-opacity=".1" opacity=".55">${mark(8, 8, 20, -12)}${mark(44, 44, 20, -12)}</g></svg>`;
+  return svgUrl(tile);
+}
+
+// Official badge artwork (frontend/assets/badges/, see manifest.json):
+// Credly images for AWS / Google Cloud / Anthropic / Microsoft
+// Fundamentals, Microsoft Learn's per-level badges for Microsoft role-based
+// certifications. Keyed like the backend's cert_key normaliser.
+let BADGE_MANIFEST = {};
+const badgeKey = (name) => name.replace(/[\s\u2013\u2014-]+/g, ' ').trim().toLowerCase();
+
+// Short title for a drawn badge: the certification name without the
+// programme prefix and level words.
+function badgeTitle(name) {
+  return name
+    .replace(/^(AWS Certified|Microsoft Certified:|Google Cloud|Databricks Certified|Databricks|Claude Certified|SnowPro)\s*/i, '')
+    .replace(/\b(Advanced|Specialty|Associate)\s*:\s*/gi, '')
+    .replace(/\b(Associate|Professional|Specialty|Expert|Certification|Accreditation)\b/gi, '')
+    .replace(/\s+-\s*/g, ' ').replace(/\s{2,}/g, ' ').trim() || name;
+}
+function wrapWords(text, max) {
+  const lines = [];
+  for (const w of text.split(' ')) {
+    const last = lines[lines.length - 1];
+    if (last && (last + ' ' + w).length <= max) lines[lines.length - 1] = last + ' ' + w;
+    else lines.push(w);
+  }
+  return lines;
+}
+
+const BADGE_SHAPES = {
+  shield: 'M10 3h44a5 5 0 0 1 5 5v31c0 12-12 21-27 30C17 60 5 51 5 39V8a5 5 0 0 1 5-5Z',
+  hex:    'M32 2 59 17.5v33L32 66 5 50.5v-33Z',
+  circle: 'M32 3a31 31 0 1 1 0 62 31 31 0 1 1 0-62Z',
+  seal:   'M32 2l6.5 5.2 8.3-.9 3 7.8 7.8 3-.9 8.3L62 32l-5.2 6.5.9 8.3-7.8 3-3 7.8-8.3-.9L32 62l-6.5-5.2-8.3.9-3-7.8-7.8-3 .9-8.3L2 32l5.2-6.5-.9-8.3 7.8-3 3-7.8 8.3.9Z',
+};
+
+// Badge for one certification: its official artwork when we have it,
+// otherwise a badge drawn in the provider's badge shape carrying that
+// certification's own name, ringed and ribboned in its level colour.
+function certBadge(row) {
+  const provider = row.provider, levelKey = row.level;
+  const lv = CAT_LEVEL_BY_KEY[levelKey] || { label: levelKey || '—', color: '#888', step: 0 };
+  const official = BADGE_MANIFEST[badgeKey(row.certification_name)];
+  if (official && official.img) {
+    const tag = official.url ? 'a' : 'div';
+    const href = official.url ? ` href="${esc(official.url)}" target="_blank" rel="noopener"` : '';
+    return `<${tag} class="cat-badge real"${href} title="${esc(row.certification_name)} — official badge"><img src="${esc(official.img)}" alt="${esc(row.certification_name)} badge" loading="lazy"></${tag}>`;
+  }
+  const brand = CAT_BRAND[provider] || { from: '#555', to: '#888', shape: 'hex' };
+  const shape = BADGE_SHAPES[brand.shape];
+  const id = `cb-${provider}-${levelKey}`;
+  const logo = PROVIDER_LOGOS[provider];
+  const mark = logo ? `<svg x="25.5" y="7.5" width="13" height="13" viewBox="${logo.vb}">${logo.raw || `<path fill="${logo.fill}" d="${logo.d}"/>`}</svg>` : '';
+  const lines = wrapWords(badgeTitle(row.certification_name).toUpperCase(), 11).slice(0, 3);
+  const fs = lines.length === 3 ? 4.9 : lines.length === 2 ? 5.6 : 6.4;
+  const top = 35 - ((lines.length - 1) * (fs + 1.2)) / 2 + fs / 3;
+  const title = lines.map((t, i) =>
+    `<text x="32" y="${(top + i * (fs + 1.2)).toFixed(1)}" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="${fs}" font-weight="800" fill="${brand.from}"${t.length > 10 ? ' textLength="40" lengthAdjust="spacingAndGlyphs"' : ''}>${esc(t)}</text>`).join('');
+  const label = lv.label.toUpperCase();
+  const svg = `<svg viewBox="0 0 64 72" aria-hidden="true">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${brand.to}"/><stop offset="1" stop-color="${brand.from}"/></linearGradient></defs>
+    <path d="${shape}" fill="url(#${id})" stroke="${lv.color}" stroke-width="2.5"/>
+    <circle cx="32" cy="14" r="8.5" fill="#fff" stroke="${lv.color}" stroke-width="1.6"/>
+    ${mark}
+    <rect x="9" y="24.5" width="46" height="21" rx="4" fill="#fff" opacity=".96"/>
+    ${title}
+    <rect x="7" y="51" width="50" height="12" rx="3" fill="${lv.color}"/>
+    <path d="M7 54 3 57l4 3M57 54l4 3-4 3" fill="${lv.color}" opacity=".75"/>
+    <text x="32" y="59.3" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="${label.length > 9 ? 5.6 : 6.6}" font-weight="800" letter-spacing="${label.length > 9 ? 0 : .5}" fill="#fff"${label.length > 9 ? ' textLength="44" lengthAdjust="spacingAndGlyphs"' : ''}>${esc(label)}</text>
+  </svg>`;
+  const maskSvg = svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72"><path d="${shape}"/></svg>`);
+  return `<div class="cat-badge" style="--shape:${maskSvg}" title="${esc(row.certification_name)}">${svg}</div>`;
+}
+
+// "· Foundational to Professional" — the span of levels a provider really offers.
+function levelRange(rows) {
+  const present = CAT_LEVELS.filter(l => rows.some(r => r.level === l.key));
+  if (!present.length) return '';
+  const first = present[0].label, last = present[present.length - 1].label;
+  return first === last ? ` · ${first}` : ` · ${first} to ${last}`;
+}
+
+function renderCatalog() {
+  const q = document.getElementById('catSearch').value.trim().toLowerCase();
+  const prov = document.getElementById('catProvider').value;
+  const lvl = document.getElementById('catLevel').value;
+  const filtering = !!(q || lvl);
+  const rows = catalogRows.filter(r =>
+    (!prov || r.provider === prov) && (!lvl || r.level === lvl) &&
+    (!q || r.certification_name.toLowerCase().includes(q)));
+  document.getElementById('catCount').textContent = `${rows.length} of ${catalogRows.length} certifications`;
+
+  const providers = [...new Set(catalogRows.map(r => r.provider))]
+    .sort((a, b) => (CAT_PROVIDER_ORDER.indexOf(a) + 99) % 99 - (CAT_PROVIDER_ORDER.indexOf(b) + 99) % 99)
+    .filter(p => !prov || p === prov);
+
+  const sections = providers.map((p, n) => {
+    const mine = rows.filter(r => r.provider === p);
+    if (filtering && !mine.length) return '';
+    const all = catalogRows.filter(r => r.provider === p);
+    const brand = CAT_BRAND[p] || { from: '#444', to: '#777', accent: '#bbb', pattern: 'dots' };
+    const chips = CAT_LEVELS.map(l => {
+      const c = all.filter(r => r.level === l.key).length;
+      return c ? `<span class="cat-band-chip"><b>${c}</b> ${esc(l.label)}</span>` : '';
+    }).join('');
+    // Only the levels this provider actually has (and that match the current
+    // filters) get a rung — no empty placeholders.
+    const lanes = CAT_LEVELS.filter(l => (!lvl || l.key === lvl) && mine.some(r => r.level === l.key)).map((l, i, arr) => {
+      const certs = mine.filter(r => r.level === l.key);
+      const next = arr[i + 1];
+      const cards = certs.map(r => `
+        <div class="cat-cell"><div class="cat-card" style="--lv:${l.color}">
+          ${certBadge(r)}
+          <div class="cat-card-body">
+            <h3>${esc(r.certification_name)}</h3>
+            <div class="cat-meta">
+              <span class="cat-tag lvl">${esc(l.label)}</span>
+              ${(BADGE_MANIFEST[badgeKey(r.certification_name)] || {}).code ? `<span class="cat-tag code">${esc(BADGE_MANIFEST[badgeKey(r.certification_name)].code)}</span>` : ''}
+              ${r.validity_months ? `<span class="cat-tag">Valid ${esc(Math.round(r.validity_months / 12 * 10) / 10)} yr</span>` : ''}
+              ${(r.skill_domains || []).slice(0, 2).map(d => `<span class="cat-tag">${esc(d.replace(/_/g, ' '))}</span>`).join('')}
+            </div>
+            ${r.prerequisite_names && r.prerequisite_names.length ? `<div class="cat-detail">Recommended first: <b>${esc(r.prerequisite_names.join(', '))}</b></div>` : ''}
+            ${(BADGE_MANIFEST[badgeKey(r.certification_name)] || {}).url ? `<a class="cat-link" href="${esc(BADGE_MANIFEST[badgeKey(r.certification_name)].url)}" target="_blank" rel="noopener">View official badge ↗</a>` : ''}
+          </div>
+        </div></div>`).join('');
+      return `
+        <div class="cat-lane" style="--lv:${l.color};${next ? `--lv-next:${next.color}` : ''}">
+          <div class="cat-lvl">
+            <span class="cat-lvl-step" style="--lv:${l.color}">${i + 1}</span>
+            <div><div class="cat-lvl-name">${esc(l.label)}</div><div class="cat-lvl-count">${certs.length} certification${certs.length === 1 ? '' : 's'}</div></div>
+          </div>
+          <div class="cat-cards">${cards}</div>
+        </div>`;
+    }).join('');
+    const logo = providerLogo(p).replace('pv-logo', 'pv-logo-raw');
+    return `
+      <section class="cat-provider" style="--n:${n}">
+        <div class="cat-band" style="--b-from:${brand.from};--b-to:${brand.to};--b-accent:${brand.accent};--pat:${brandPattern(p)}">
+          <div class="cat-band-logo">${logo}</div>
+          <div>
+            <div class="cat-band-title">${esc(providerLabel(p))} certifications</div>
+            <div class="cat-band-sub">${all.length} certification${all.length === 1 ? '' : 's'}${levelRange(all)}</div>
+          </div>
+          <div class="cat-band-levels">${chips}</div>
+          <div class="cat-band-mark">${logo}</div>
+        </div>
+        <div class="cat-ladder">${lanes}</div>
+      </section>`;
+  }).join('');
+  const list = document.getElementById('catList');
+  if (!list.dataset.introDone) {
+    list.dataset.introDone = '1';
+    list.classList.add('cat-intro');
+    setTimeout(() => list.classList.remove('cat-intro'), 1400);
+  }
+  list.innerHTML = sections || '<div class="cat-empty">No certifications match.</div>';
+}
+
+async function loadCatalog() {
+  try {
+    const resp = await fetch('/api/portal/catalog');
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    catalogRows = await resp.json();
+    try {
+      const m = await fetch('assets/badges/manifest.json');
+      if (m.ok) BADGE_MANIFEST = await m.json();
+    } catch (e) { /* no manifest — every badge is drawn */ }
+    const provs = [...new Set(catalogRows.map(r => r.provider))]
+      .sort((a, b) => (CAT_PROVIDER_ORDER.indexOf(a) + 99) % 99 - (CAT_PROVIDER_ORDER.indexOf(b) + 99) % 99);
+    document.getElementById('catProvider').innerHTML = '<option value="">All providers</option>' +
+      provs.map(p => `<option value="${esc(p)}">${esc(providerLabel(p))}</option>`).join('');
+    document.getElementById('catLevel').innerHTML = '<option value="">All levels</option>' +
+      CAT_LEVELS.map(l => `<option value="${l.key}">${l.label}</option>`).join('');
+    renderCatalog();
+  } catch (e) {
+    document.getElementById('catList').innerHTML = `<div class="cat-empty">Couldn't load the catalog: ${esc(e.message)}</div>`;
+  }
+}
+['catSearch', 'catProvider', 'catLevel'].forEach(id => {
+  document.getElementById(id).addEventListener(id === 'catSearch' ? 'input' : 'change', renderCatalog);
+});
+loadCatalog();
+
+// ---------------------------------------------------------------------
+// Notifications tab — in-app delivery of the reminder sweep's
+// notifications (GET /api/notifications/mine), plus the employee's
+// in-progress certifications with their business-day prep clock
+// (GET /api/certifications/my-progress). Email is a later channel.
+// ---------------------------------------------------------------------
+const NOTIF_META = {
+  prep_overdue_reminder: { title: 'Certification prep overdue', color: '#d03b3b', icon: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/>' },
+  cert_expiry_reminder:  { title: 'Certification expiring',     color: '#E07A1F', icon: '<path d="M12 3 2 21h20L12 3Z"/><path d="M12 10v4M12 17.5v.5"/>' },
+  drive_reminder:        { title: 'Certification drive',        color: '#2F7BEA', icon: '<path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/>' },
+  drive_escalation:      { title: 'Drive escalation',           color: '#7B4FD6', icon: '<path d="M12 19V5M5 12l7-7 7 7"/>' },
+  new_certification_added: { title: 'New certification',        color: '#2E9E6B', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>' },
+};
+function timeAgo(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)} d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function fmtDate(iso) { return iso ? new Date(iso + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : ''; }
+
+function setNotifBadge(unread) {
+  const b = document.getElementById('notifNavBadge');
+  b.hidden = !unread;
+  b.textContent = unread > 9 ? '9+' : String(unread);
+  const pill = document.getElementById('notifUnreadPill');
+  pill.hidden = !unread;
+  pill.textContent = `${unread} unread`;
+}
+
+async function loadNotifications({ markRead = false } = {}) {
+  if (!currentEmployeeId) return;
+  const headers = { 'X-Employee-Id': currentEmployeeId };
+  const id = encodeURIComponent(currentEmployeeId);
+  try {
+    const [nResp, pResp] = await Promise.all([
+      fetch(`/api/notifications/mine?employee_id=${id}`, { headers }),
+      fetch(`/api/certifications/my-progress?employee_id=${id}`, { headers }),
+    ]);
+    const notes = nResp.ok ? await nResp.json() : { notifications: [], unread: 0 };
+    const prog = pResp.ok ? await pResp.json() : { certifications: [] };
+    setNotifBadge(notes.unread);
+
+    const inProg = (prog.certifications || []).filter(c => c.submission_status === 'in_progress' && c.target_business_days);
+    document.getElementById('notifProgress').innerHTML = inProg.map(c => {
+      const pct = Math.min(100, Math.round((c.business_days_elapsed / c.target_business_days) * 100));
+      return `<div class="np-card${c.is_overdue ? ' overdue' : ''}">
+        <div class="np-label">${c.is_overdue ? 'Overdue' : 'In progress'} · ${esc(c.level)}</div>
+        <div class="np-name">${esc(c.cert_name)}</div>
+        <div class="np-track"><div class="np-fill" style="width:${Math.max(pct, 3)}%"></div></div>
+        <div class="np-meta"><span>Day <b>${esc(c.business_days_elapsed)}</b> of ${esc(c.target_business_days)} business days</span>
+          <span>${c.is_overdue ? `<b class="od">${esc(c.overdue_business_days)} over</b>` : `Target <b>${esc(fmtDate(c.target_date))}</b>`}</span></div>
+      </div>`;
+    }).join('');
+
+    const list = notes.notifications || [];
+    document.getElementById('notifList').innerHTML = list.length ? list.map((n, i) => {
+      const m = NOTIF_META[n.notification_type] || { title: 'Notification', color: 'var(--accent)', icon: '<circle cx="12" cy="12" r="9"/>' };
+      return `<div class="notif-item${n.read_at ? '' : ' unread'}" style="--i:${i}">
+        <div class="notif-ico" style="--ni:${m.color}"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${m.icon}</svg></div>
+        <div class="notif-body"><div class="notif-title">${esc(m.title)}</div><div class="notif-msg">${esc(n.message)}</div><div class="notif-time">${esc(timeAgo(n.created_at))}</div></div>
+      </div>`;
+    }).join('') : `<div class="notif-empty">You're all caught up — no notifications yet.${inProg.length ? ' Reminders appear here if a certification\'s prep runs past its target.' : ''}</div>`;
+
+    if (markRead && notes.unread) {
+      await fetch(`/api/notifications/mark-read?employee_id=${id}`, { method: 'POST', headers });
+      setNotifBadge(0);
+    }
+  } catch (e) { /* non-fatal: the tab just keeps its last state */ }
+}
+// Badge refresh: once the user is identified, then every minute.
+setTimeout(() => loadNotifications(), 2500);
+setInterval(() => {
+  const open = document.getElementById('panel-notifications').classList.contains('active');
+  loadNotifications({ markRead: open });
+}, 60000);
+
+
+// ---------------------------------------------------------------------
+// Ask Me tab — same agent as the Teams bot, via POST /api/agent/chat.
+// ---------------------------------------------------------------------
+const chatLog = document.getElementById('chatLog');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+let chatBusy = false;
+
+// Minimal Markdown → HTML for agent replies (bold, italics, inline code,
+// links, headings, rules, nested -/1. lists). Escapes everything first, so
+// only the tags generated here can ever reach the DOM.
+function mdInline(s) {
+  return s
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+
+function renderMarkdown(text) {
+  const lines = esc(text).split(/\r?\n/);
+  let html = '';
+  let para = [];
+  const stack = [];  // open lists: { type: 'ul' | 'ol', indent }
+  const flushPara = () => {
+    if (para.length) { html += `<p>${para.map(mdInline).join('<br>')}</p>`; para = []; }
+  };
+  const closeLists = (indent = -1) => {
+    while (stack.length && stack[stack.length - 1].indent > indent) html += `</li></${stack.pop().type}>`;
+  };
+  for (const line of lines) {
+    const item = line.match(/^(\s*)([-*•]|\d+[.)])\s+(.*)$/);
+    if (item) {
+      flushPara();
+      const indent = item[1].replace(/\t/g, '  ').length;
+      const type = /\d/.test(item[2]) ? 'ol' : 'ul';
+      const top = stack[stack.length - 1];
+      if (!top || indent > top.indent) {
+        html += `<${type}>`;
+        stack.push({ type, indent });
+      } else {
+        closeLists(indent);
+        const cur = stack[stack.length - 1];
+        if (cur && cur.indent === indent && cur.type === type) {
+          html += '</li>';
+        } else {
+          if (cur && cur.indent === indent) html += `</li></${stack.pop().type}>`;
+          html += `<${type}>`;
+          stack.push({ type, indent });
+        }
+      }
+      html += `<li>${mdInline(item[3])}`;
+      continue;
+    }
+    if (!line.trim()) { flushPara(); continue; }  // blank lines keep a list open (e.g. "1. …\n\n2. …")
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { flushPara(); closeLists(); html += '<hr>'; continue; }
+    const heading = line.match(/^\s*#{1,6}\s+(.*)$/);
+    if (heading) { flushPara(); closeLists(); html += `<div class="md-h">${mdInline(heading[1])}</div>`; continue; }
+    if (stack.length && /^\s+\S/.test(line)) { html += `<br>${mdInline(line.trim())}`; continue; }  // continuation of a list item
+    closeLists();
+    para.push(line);
+  }
+  flushPara();
+  closeLists();
+  return html;
+}
+
+function addChatMessage(kind, text) {
+  const el = document.createElement('div');
+  el.className = `chat-msg ${kind}`;
+  el.textContent = text;
+  chatLog.appendChild(el);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return el;
+}
+
+async function sendChat(text) {
+  text = text.trim();
+  if (!text || chatBusy) return;
+  if (!currentEmployeeId) {
+    addChatMessage('bot', "I couldn't identify you yet — please reload the page and try again.");
+    return;
+  }
+  chatBusy = true;
+  chatSend.disabled = true;
+  document.getElementById('chatChips').hidden = true;
+  addChatMessage('user', text);
+  const pending = addChatMessage('bot pending', 'Thinking…');
+  try {
+    const resp = await fetch('/api/agent/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Employee-Id': currentEmployeeId },
+      body: JSON.stringify({ employee_id: currentEmployeeId, message: text }),
+    });
+    if (!resp.ok) throw new Error(resp.status === 429 ? 'Too many messages — wait a moment.' : `Error ${resp.status}`);
+    const data = await resp.json();
+    pending.classList.remove('pending');
+    pending.classList.add('md');
+    pending.innerHTML = renderMarkdown(data.reply_text || '(no reply)');
+    if ((data.actions || []).some(a => a.action === 'open_certification_form')) openCertModal();
+    loadNotifications();  // a certification started from chat shows up in the Notifications tab right away
+  } catch (e) {
+    pending.classList.remove('pending');
+    pending.textContent = `Sorry, I couldn't get a reply. ${e.message}`;
+  } finally {
+    chatBusy = false;
+    chatSend.disabled = false;
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+}
+
+document.getElementById('chatForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const t = chatInput.value;
+  chatInput.value = '';
+  sendChat(t);
+});
+document.querySelectorAll('.chat-chip').forEach(b => b.addEventListener('click', () => sendChat(b.textContent)));
+
 if (window.microsoftTeams) {
   microsoftTeams.app.initialize()
     .then(() => microsoftTeams.app.getContext())
@@ -2123,32 +3654,21 @@ if (window.microsoftTeams) {
       teamsThemeActive = true;
       applyTheme(ctx.app.theme);
       microsoftTeams.app.registerOnThemeChangeHandler(applyTheme);
-      // Whoever has Teams open IS the signed-in user in their own tenant —
-      // Teams itself already knows this, no Graph/backend call needed (and
-      // a Graph lookup against this app's own tenant can't resolve a user
-      // from a different tenant anyway). Pulled straight from getContext(),
-      // never the /api/employees[0] stand-in — that hardcoded name never
-      // shows once we're inside Teams.
-      const emailFallback = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
-      const teamsName = (ctx.user && ctx.user.displayName)
-        || (emailFallback ? emailFallback.split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : null);
-      if (teamsName) {
-        const parts = teamsName.trim().split(/\s+/);
-        document.getElementById('welcomeName').innerHTML =
-          `${esc(parts[0] || teamsName)} <span class="full-name">${esc(parts.slice(1).join(' '))}</span>`;
-        document.getElementById('avatarBadge').textContent = initials(teamsName);
-      }
-      // TEMPORARY DEBUG — remove once the welcome-name issue is diagnosed.
-      // Prints the raw ctx.user object Teams actually handed back, right on
-      // the page, so it can be read/screenshotted without opening dev tools.
-      const dbg = document.createElement('pre');
-      dbg.id = 'teamsDebugCtx';
-      dbg.style.cssText = 'position:fixed;bottom:8px;right:8px;max-width:420px;max-height:200px;overflow:auto;background:#000;color:#0f0;font-size:10px;padding:8px;z-index:9999;white-space:pre-wrap;';
-      dbg.textContent = 'ctx.user = ' + JSON.stringify(ctx.user, null, 2) + '\n\nresolved teamsName = ' + JSON.stringify(teamsName);
-      document.body.appendChild(dbg);
-      console.log('TEAMS DEBUG ctx.user:', ctx.user, 'resolved teamsName:', teamsName);
+      // The signed-in Teams user's directory name (Graph, User.Read.All) —
+      // never the seeded /api/employees list.
+      resolveTeamsUserName(ctx.user);
     })
-    .catch(() => { /* not running inside Teams — OS-preference fallback already applied */ });
+    .catch(() => {
+      // Not running inside Teams (SDK loaded in a plain browser) — OS-preference
+      // theme fallback already applied; no signed-in user to name.
+      document.getElementById('welcomeName').textContent = 'Guest';
+      document.getElementById('avatarBadge').textContent = '–';
+    });
+  // initialize() can hang instead of rejecting outside a Teams host.
+  setTimeout(() => {
+    const el = document.getElementById('welcomeName');
+    if (el.textContent === '…') { el.textContent = 'Guest'; document.getElementById('avatarBadge').textContent = '–'; }
+  }, 8000);
 }
 
 loadDashboard();

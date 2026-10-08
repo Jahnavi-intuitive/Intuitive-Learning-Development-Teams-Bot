@@ -11,6 +11,32 @@ class Settings(BaseSettings):
     # new tables in lnd_certification, per direct instruction to keep this
     # real data isolated from the existing seeded/demo data above.
     portal_database_url: str = "postgresql+psycopg://lnd_app:change_me_locally@localhost:5432/lnd_portal"
+    # Databricks (the live database). When all three connection values are
+    # set, both the main app and the portal use this one Unity Catalog schema
+    # instead of the two Postgres URLs above — see effective_database_url.
+    databricks_server_hostname: str = ""
+    databricks_http_path: str = ""
+    databricks_token: str = ""
+    databricks_catalog: str = "dbx-ai-agents"
+    databricks_schema: str = "lnd_agent"
+
+    @property
+    def use_databricks(self) -> bool:
+        return all(
+            v and not v.startswith("<")
+            for v in (self.databricks_server_hostname, self.databricks_http_path, self.databricks_token)
+        )
+
+    def databricks_url(self) -> str:
+        from urllib.parse import quote
+
+        host = self.databricks_server_hostname.removeprefix("https://").rstrip("/")
+        return (
+            f"databricks://token:{quote(self.databricks_token, safe='')}@{host}"
+            f"?http_path={quote(self.databricks_http_path, safe='/')}"
+            f"&catalog={quote(self.databricks_catalog, safe='')}&schema={quote(self.databricks_schema, safe='')}"
+        )
+
     gemini_api_key: str = ""
     tracker_xlsx_path: str = "./data/trackers/certification_tracker.xlsx"
     dev_default_employee_id: str = ""

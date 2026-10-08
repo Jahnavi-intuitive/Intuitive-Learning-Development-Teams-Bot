@@ -28,11 +28,12 @@ explicitly skips anything named "Summary", case-insensitive.
 
 import io
 import logging
+import re as _re_mod
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.portal_db import PortalSessionLocal
@@ -57,6 +58,52 @@ _PROVIDER_FILES = {
     Provider.aws: "AWS_Certifications_Merged.xlsx",
     Provider.databricks: "Databricks_Certifications_Record.xlsx",
 }
+
+# The portal Catalog (partner_certifications) is the single source of truth
+# for certification names. Some source workbooks still use older or short
+# names for a catalog cert; without this map those rows would show up as a
+# second, differently-named certification next to the catalog one.
+_CATALOG_NAME_MAP = {
+    (Provider.anthropic, "claude architect certification"): "Claude Certified Architect - Foundations",
+    (Provider.gemini, "gemini agent development"): "Certified Partner Specialist Gemini Enterprise Agent Development",
+    (Provider.gemini, "gemini enterprise deployment"): "Certified Partner Specialist Gemini Enterprise Deployment",
+    (Provider.gemini, "gcp genai leader"): "Google Cloud Generative AI Leader",
+    (Provider.aws, "aws certified sysops administrator - associate"): "AWS Certified CloudOps Engineer - Associate",
+}
+
+
+def _to_catalog_name(provider: Provider, name: str | None) -> str | None:
+    if not name:
+        return name
+    key = name.strip().lower().replace("–", "-").replace("—", "-")
+    return _CATALOG_NAME_MAP.get((provider, key), name)
+
+# Which file in the folder belongs to which provider. L&D re-uploads
+# workbooks (OneDrive/SharePoint then names the new copy "... (1).xlsx") and
+# exports from other tools (Databricks now arrives as "DXB- Certifications
+# Export.xlsx"), so the exact names above are only the preferred match —
+# anything matching the provider's pattern is used, highest copy number
+# first ("(2)" over "(1)" over the original).
+_PROVIDER_FILE_PATTERNS = {
+    Provider.anthropic: _re_mod.compile(r"^anthropic.*\.xlsx$", _re_mod.I),
+    Provider.gemini: _re_mod.compile(r"^(gemini|google|gcp).*\.xlsx$", _re_mod.I),
+    Provider.aws: _re_mod.compile(r"^(aws|amazon).*\.xlsx$", _re_mod.I),
+    Provider.databricks: _re_mod.compile(r"^(databricks|dxb|dbx).*\.xlsx$", _re_mod.I),
+}
+_COPY_SUFFIX = _re_mod.compile(r"\((\d+)\)\s*\.xlsx$", _re_mod.I)
+
+
+def _resolve_filename(provider: Provider, files: list[str]) -> str | None:
+    exact = _PROVIDER_FILES.get(provider)
+    candidates = [f for f in files if f == exact or _PROVIDER_FILE_PATTERNS[provider].match(f.strip())]
+    if not candidates:
+        return None
+
+    def rank(f: str) -> tuple:
+        m = _COPY_SUFFIX.search(f)
+        return (int(m.group(1)) if m else 0, f)
+
+    return max(candidates, key=rank)
 
 _ANTHROPIC_GEMINI_STATUS_MAP = {
     "Certified": StatusCanonical.completed,
@@ -202,6 +249,7 @@ _DATABRICKS_ALIAS_BOOTSTRAP = {
     "databricks certified data engineer assoociate": "Databricks Certified Data Engineer Associate",
     "databricks associate data engineer": "Databricks Certified Data Engineer Associate",
     "databricks certified machine learning professional": "Databricks Certified Machine Learning Professional",
+    "databricks certified machine learning engineer associate": "Databricks Certified Machine Learning Associate",
 }
 
 
@@ -316,13 +364,75 @@ def _parse_gemini(content: bytes, filename: str) -> ParseResult:
     return result
 
 
+def _people_directory(db: Session, exclude: Provider = Provider.databricks) -> tuple[dict, dict]:
+    """Practice / manager / PD for each person, from every other provider's
+    already-synced rows — keyed by normalized email and by lower-cased name.
+    The Databricks and AWS exports carry none of these, so they borrow them."""
+    by_email, by_name = {}, {}
+    for r in db.execute(select(CertificationRecord).where(CertificationRecord.provider != exclude)).scalars():
+        info = (r.practice_raw, r.practice_canonical, r.manager_name, r.pd_leader_name)
+        if not r.practice_canonical:
+            continue
+        if r.person_email_normalized:
+            by_email.setdefault(r.person_email_normalized, info)
+        if r.person_name:
+            by_name.setdefault(r.person_name.strip().lower(), info)
+    return by_email, by_name
+
+
+def _parse_databricks_export(db: Session, xl: pd.ExcelFile, filename: str) -> ParseResult:
+    """The Databricks certifications export ("DXB- Certifications Export"):
+    one sheet per level ("Associate", "Professional"), each a list of
+    certified people — No. / Name / Email / Certificate Name /
+    Certification Date / Expiry Date. Everyone listed holds the
+    certification (status completed). Practice / manager / PD aren't in the
+    export, so they're filled from the same person's rows in the other
+    providers' trackers (matched by email, then name)."""
+    result = ParseResult()
+    by_email, by_name = _people_directory(db)
+    for sheet in xl.sheet_names:
+        if sheet.strip().lower() in _SKIP_SHEET_NAMES:
+            continue
+        df = pd.read_excel(xl, sheet_name=sheet)
+        if not {"Name", "Certificate Name"}.issubset(df.columns):
+            continue  # the pivot/"Certifications"/"Expiry" helper tabs
+        for i, row in df.iterrows():
+            row_num = i + 1
+            raw = _raw_row_dict(row)
+            name = _clean_str(row.get("Name"))
+            cert_raw = _clean_str(row.get("Certificate Name"))
+            if not name or not cert_raw:
+                continue
+            email_norm = _normalize_email(row.get("Email"))
+            practice_raw, practice_canonical, manager, pd_leader = (
+                by_email.get(email_norm) or by_name.get(name.strip().lower()) or (None, None, None, None))
+            result.rows.append(ParsedRow(
+                fields=dict(
+                    provider=Provider.databricks, source_sheet=sheet.strip(),
+                    certification_name=_resolve_alias(db, Provider.databricks, cert_raw),
+                    certification_level=sheet.strip().title() or None,
+                    person_name=name, person_email=_clean_str(row.get("Email")), person_email_normalized=email_norm,
+                    practice_raw=practice_raw, practice_canonical=practice_canonical,
+                    manager_name=manager, pd_leader_name=pd_leader,
+                    status_raw="Certified", status_canonical=StatusCanonical.completed,
+                    prep_start_date=None, exam_date=None, submission_date=None,
+                    completion_date=_parse_date(row.get("Certification Date")), target_date=None,
+                    expiry_date=_parse_date(row.get("Expiry Date")), certificate_number=None, comments=None,
+                    consent_given=None, total_certs_held=None, certs_at_this_level=None,
+                    data_quality_flag=None if practice_canonical else "practice_not_in_export",
+                    source_file=filename, raw_row=raw,
+                ),
+                source_sheet=sheet.strip(), source_sheet_row=row_num, identity=name.strip().lower(),
+            ))
+    return result
+
+
 def _parse_databricks(db: Session, content: bytes, filename: str) -> ParseResult:
     result = ParseResult()
     xl = pd.ExcelFile(io.BytesIO(content))
     sheet = "Certifications"
-    if sheet not in xl.sheet_names:
-        result.rejected.append(RejectedRow(None, 0, f"Expected sheet {sheet!r} not found in {filename}", {}))
-        return result
+    if sheet not in xl.sheet_names or "Completed" not in pd.read_excel(xl, sheet_name=sheet, nrows=0).columns:
+        return _parse_databricks_export(db, xl, filename)
     df = pd.read_excel(xl, sheet_name=sheet)
     pd_practice_split = _re.compile(r"^(?P<pd>.*?)\s*\((?P<practice>[^)]*)\)\s*$")
     for i, row in df.iterrows():
@@ -366,13 +476,147 @@ def _parse_databricks(db: Session, content: bytes, filename: str) -> ParseResult
     return result
 
 
-def _parse_aws(content: bytes, filename: str) -> ParseResult:
+def _aws_level(cert_name: str) -> str | None:
+    n = cert_name.lower()
+    for word, label in (("specialty", "Specialty"), ("professional", "Professional"), ("associate", "Associate"),
+                        ("practitioner", "Foundational")):
+        if word in n:
+            return label
+    return None
+
+
+def _dash_key(s: str) -> str:
+    return _re.sub(r"\s+", " ", _re.sub(r"[\u2013\u2014-]", "-", s)).strip().lower()
+
+
+def _parse_aws_per_sheet(xl: pd.ExcelFile, filename: str) -> ParseResult:
+    """The merged AWS workbook: one sheet per certification (Excel caps sheet
+    names at 31 chars, so they're truncated — "Solutions Architect –
+    Professio"), each with Name / Email ID / Status / Manager / PD Leader /
+    Practice. The full certification names come from the Summary sheet's
+    "Certification" column, matched to each truncated sheet name by prefix."""
+    result = ParseResult()
+    full_names: list[str] = []
+    if "Summary" in xl.sheet_names:
+        summary = pd.read_excel(xl, sheet_name="Summary", header=None)
+        for v in summary.iloc[:, 0].tolist():
+            v = _clean_str(v)
+            if v and v.lower().startswith("aws certified"):
+                full_names.append(_re.sub(r"\s*[\u2013\u2014]\s*", " - ", v))
+    for sheet in xl.sheet_names:
+        if sheet.strip().lower() in _SKIP_SHEET_NAMES:
+            continue
+        df = pd.read_excel(xl, sheet_name=sheet)
+        if "Name" not in df.columns or "Status" not in df.columns:
+            continue
+        short = _dash_key(sheet)
+        cert_name = next((f for f in full_names if _dash_key(f).removeprefix("aws certified ").startswith(short)), None)
+        if not cert_name:
+            cert_name = "AWS Certified " + _re.sub(r"\s*[\u2013\u2014]\s*", " - ", sheet.strip())
+        for i, row in df.iterrows():
+            row_num = i + 1
+            raw = _raw_row_dict(row)
+            name = _clean_str(row.get("Name"))
+            status_raw = _clean_str(row.get("Status"))
+            if not name:
+                continue
+            status = {"completed": StatusCanonical.completed, "certified": StatusCanonical.completed,
+                      "in progress": StatusCanonical.in_progress, "in-progress": StatusCanonical.in_progress,
+                      "attempted - not cleared": StatusCanonical.not_cleared}.get((status_raw or "").lower())
+            if status is None:
+                result.rejected.append(RejectedRow(sheet, row_num, f"Unrecognized Status {status_raw!r}", raw))
+                continue
+            practice_raw = _clean_str(row.get("Practice"))
+            practice_canonical, dq_flag = _canonicalize_practice(practice_raw)
+            result.rows.append(ParsedRow(
+                fields=dict(
+                    provider=Provider.aws, source_sheet=sheet, certification_name=cert_name,
+                    certification_level=_aws_level(cert_name),
+                    person_name=name, person_email=_clean_str(row.get("Email ID")),
+                    person_email_normalized=_normalize_email(row.get("Email ID")),
+                    practice_raw=practice_raw, practice_canonical=practice_canonical,
+                    manager_name=_clean_str(row.get("Manager")), pd_leader_name=_clean_str(row.get("PD Leader")),
+                    status_raw=status_raw, status_canonical=status,
+                    prep_start_date=None, exam_date=None, submission_date=None, completion_date=None,
+                    target_date=None, expiry_date=None, certificate_number=_clean_str(row.get("Candidate ID")),
+                    comments=None, consent_given=None, total_certs_held=None, certs_at_this_level=None,
+                    data_quality_flag=dq_flag, source_file=filename, raw_row=raw,
+                ),
+                source_sheet=sheet, source_sheet_row=row_num, identity=name.strip().lower(),
+            ))
+    return result
+
+
+_REDACTED = _re.compile(r"^X{3,}$", _re.I)
+
+
+def _parse_aws_export(db: Session, xl: pd.ExcelFile, sheet: str, filename: str) -> ParseResult:
+    """AWS's own certification export (one sheet: User name / User work
+    email / Certification name / Certification level / Award date /
+    Expiration date). Everyone listed holds the certification. AWS redacts
+    the identity of people who haven't consented to share it ("XXXXXXX" in
+    both name and email): those rows are kept — the certification is real
+    and counts toward totals — each as its own anonymous entry, flagged
+    identity_redacted_in_export. Practice / manager / PD come from the same
+    person's rows in the other providers' trackers (email, then name)."""
+    result = ParseResult()
+    by_email, by_name = _people_directory(db, exclude=Provider.aws)
+    df = pd.read_excel(xl, sheet_name=sheet)
+    for i, row in df.iterrows():
+        row_num = i + 1
+        raw = _raw_row_dict(row)
+        cert_name = _clean_str(row.get("Certification name"))
+        name = _clean_str(row.get("User name"))
+        email_raw = _clean_str(row.get("User work email"))
+        if not cert_name:
+            result.rejected.append(RejectedRow(sheet, row_num, "Missing Certification name", raw))
+            continue
+        cert_name = _re.sub(r"\s*[\u2013\u2014]\s*", " - ", cert_name)
+        redacted = (not name or _REDACTED.match(name)) and (not email_raw or _REDACTED.match(email_raw or ""))
+        if redacted:
+            # Its own identity per row, so per-certification counts match the
+            # export; the same hidden person may hold several, so totals of
+            # people include each redacted holder separately.
+            name, email_norm, identity = f"Redacted (no consent) #{row_num}", None, f"redacted:{cert_name.lower()}:{row_num}"
+            practice_raw = practice_canonical = manager = pd_leader = None
+        else:
+            if not name:
+                result.rejected.append(RejectedRow(sheet, row_num, "Missing User name", raw))
+                continue
+            email_norm = _normalize_email(email_raw)
+            identity = name.strip().lower()
+            practice_raw, practice_canonical, manager, pd_leader = (
+                by_email.get(email_norm) or by_name.get(identity) or (None, None, None, None))
+        result.rows.append(ParsedRow(
+            fields=dict(
+                provider=Provider.aws, source_sheet=sheet, certification_name=cert_name,
+                certification_level=_clean_str(row.get("Certification level")) or _aws_level(cert_name),
+                person_name=name, person_email=None if redacted else email_raw, person_email_normalized=email_norm,
+                practice_raw=practice_raw, practice_canonical=practice_canonical,
+                manager_name=manager, pd_leader_name=pd_leader,
+                status_raw="Certified", status_canonical=StatusCanonical.completed,
+                prep_start_date=None, exam_date=None, submission_date=None,
+                completion_date=_parse_date(row.get("Award date")), target_date=None,
+                expiry_date=_parse_date(row.get("Expiration date")), certificate_number=None, comments=None,
+                consent_given=False if redacted else None, total_certs_held=None, certs_at_this_level=None,
+                data_quality_flag="identity_redacted_in_export" if redacted else (None if practice_canonical else "practice_not_in_export"),
+                source_file=filename, raw_row=raw,
+            ),
+            source_sheet=sheet, source_sheet_row=row_num, identity=identity,
+        ))
+    return result
+
+
+def _parse_aws(db: Session, content: bytes, filename: str) -> ParseResult:
     result = ParseResult()
     xl = pd.ExcelFile(io.BytesIO(content))
+    for candidate in xl.sheet_names:
+        cols = set(pd.read_excel(xl, sheet_name=candidate, nrows=0).columns)
+        if {"User name", "Certification name"}.issubset(cols):
+            return _parse_aws_export(db, xl, candidate, filename)
     sheet = "Certification Register"
     if sheet not in xl.sheet_names:
-        result.rejected.append(RejectedRow(None, 0, f"Expected sheet {sheet!r} not found in {filename}", {}))
-        return result
+        return _parse_aws_per_sheet(xl, filename)
     df = pd.read_excel(xl, sheet_name=sheet, skiprows=3)
     for i, row in df.iterrows():
         row_num = i + 1
@@ -431,8 +675,13 @@ def run_sync(trigger: str = "scheduled", providers: list[Provider] | None = None
     db.flush()
 
     try:
+        try:
+            folder_files = sharepoint_client.list_files_in_folder(_FOLDER)
+        except sharepoint_client.SharePointError as exc:
+            logger.error("Sync: could not list %r: %s", _FOLDER, exc)
+            folder_files = []
         for provider in targets:
-            filename = _PROVIDER_FILES[provider]
+            filename = _resolve_filename(provider, folder_files) or _PROVIDER_FILES[provider]
             try:
                 content = sharepoint_client.download_file_in_folder(_FOLDER, filename)
             except sharepoint_client.SharePointError as exc:
@@ -450,7 +699,7 @@ def run_sync(trigger: str = "scheduled", providers: list[Provider] | None = None
             elif provider is Provider.databricks:
                 parsed = _parse_databricks(db, content, filename)
             elif provider is Provider.aws:
-                parsed = _parse_aws(content, filename)
+                parsed = _parse_aws(db, content, filename)
             else:
                 continue
 
@@ -467,11 +716,17 @@ def run_sync(trigger: str = "scheduled", providers: list[Provider] | None = None
             # row in place rather than deleting and re-inserting it.
             by_key: dict[tuple, ParsedRow] = {}
             for r in parsed.rows:
+                r.fields["certification_name"] = _to_catalog_name(provider, r.fields["certification_name"])
                 key = (r.fields["certification_name"], r.identity)
                 by_key[key] = r  # last one wins if the sheet itself has an exact duplicate row
 
+            def _existing_identity(rec: CertificationRecord):
+                if rec.data_quality_flag == "identity_redacted_in_export":
+                    return f"redacted:{(rec.certification_name or '').lower()}:{rec.source_sheet_row}"
+                return rec.person_name.strip().lower() if rec.person_name else None
+
             existing = {
-                (rec.certification_name, rec.person_name.strip().lower() if rec.person_name else None): rec
+                (rec.certification_name, _existing_identity(rec)): rec
                 for rec in db.execute(select(CertificationRecord).where(CertificationRecord.provider == provider)).scalars()
             }
             seen_keys = set()
@@ -480,10 +735,15 @@ def run_sync(trigger: str = "scheduled", providers: list[Provider] | None = None
                 seen_keys.add(rec_key)
                 existing_rec = existing.get(rec_key)
                 if existing_rec:
+                    # Only assign values that actually changed, so an unchanged
+                    # row issues no UPDATE (each one is a warehouse round trip
+                    # on Databricks). last_synced_at is refreshed for the whole
+                    # provider in one statement below.
                     for k, v in r.fields.items():
-                        setattr(existing_rec, k, v)
-                    existing_rec.source_sheet_row = r.source_sheet_row
-                    existing_rec.last_synced_at = now
+                        if getattr(existing_rec, k) != v:
+                            setattr(existing_rec, k, v)
+                    if existing_rec.source_sheet_row != r.source_sheet_row:
+                        existing_rec.source_sheet_row = r.source_sheet_row
                     summary.rows_updated += 1
                 else:
                     db.add(CertificationRecord(**r.fields, source_sheet_row=r.source_sheet_row, last_synced_at=now))
@@ -494,8 +754,14 @@ def run_sync(trigger: str = "scheduled", providers: list[Provider] | None = None
                     db.delete(rec)
                     summary.rows_deleted += 1
 
-            summary.providers_synced.append(provider.value)
             db.flush()
+            db.execute(
+                update(CertificationRecord)
+                .where(CertificationRecord.provider == provider)
+                .values(last_synced_at=now)
+                .execution_options(synchronize_session=False)
+            )
+            summary.providers_synced.append(provider.value)
 
         log_row.rows_inserted = summary.rows_inserted
         log_row.rows_updated = summary.rows_updated

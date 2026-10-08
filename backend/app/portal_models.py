@@ -14,9 +14,10 @@ schema already snapshots employee_name/practice rather than trusting a join.
 
 import enum
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, Date, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.db_types import JSONText, PyEnum, UTCDateTime, utcnow
 from app.portal_db import PortalBase
 
 
@@ -25,8 +26,8 @@ class Provider(str, enum.Enum):
     gemini = "gemini"  # the real source file/folder calls this "Google" — same provider, one canonical value
     aws = "aws"
     databricks = "databricks"
-    # Azure and Snowflake: kept in the catalog per direct instruction even
-    # though there's no ingested data for them yet (no source Excel sheet) —
+    # Azure: kept in the catalog per direct instruction even
+    # though there's no ingested data for it yet (no source Excel sheet) —
     # the dashboard shows a real, honest 0 rather than hiding the column.
     # "google" and "bedrock" were removed here (2026-09-17): never had any
     # real data under either value (confirmed empty across
@@ -34,7 +35,6 @@ class Provider(str, enum.Enum):
     # enum was actually narrowed), and "google" was a duplicate of "gemini"
     # for the same real provider, not a second one.
     azure = "azure"
-    snowflake = "snowflake"
 
 
 class StatusCanonical(str, enum.Enum):
@@ -49,7 +49,7 @@ class CertificationRecord(PortalBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), nullable=False, index=True)
+    provider: Mapped[Provider] = mapped_column(PyEnum(Provider, name="provider"), nullable=False, index=True)
     # Which cert track/sheet within the provider file this row came from —
     # e.g. Gemini's 3 tracks ("Gemini Agent Development", "GCP GenAI Leader"),
     # or the source Excel sheet name for Databricks. Null where the whole
@@ -71,7 +71,7 @@ class CertificationRecord(PortalBase):
 
     status_raw: Mapped[str | None] = mapped_column(String(255))
     status_canonical: Mapped[StatusCanonical] = mapped_column(
-        Enum(StatusCanonical, name="status_canonical"), nullable=False, index=True
+        PyEnum(StatusCanonical, name="status_canonical"), nullable=False, index=True
     )
 
     prep_start_date: Mapped[object | None] = mapped_column(Date)
@@ -96,7 +96,7 @@ class CertificationRecord(PortalBase):
     data_quality_flag: Mapped[str | None] = mapped_column(String(255))
 
     source_file: Mapped[str] = mapped_column(String(255), nullable=False)
-    raw_row: Mapped[dict] = mapped_column(JSON, nullable=False)  # original row, for audit/debugging
+    raw_row: Mapped[dict] = mapped_column(JSONText(binary=False), nullable=False)  # original row, for audit/debugging
 
     # Provenance for the live SharePoint sync (services/portal_sharepoint_sync.py)
     # — every record traces back to exactly which sheet row it came from and
@@ -104,9 +104,9 @@ class CertificationRecord(PortalBase):
     # source_row is 1-indexed within its sheet (header row excluded), matching
     # what an admin would count opening the sheet in Excel.
     source_sheet_row: Mapped[int | None] = mapped_column(Integer)
-    last_synced_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+    last_synced_at: Mapped[object | None] = mapped_column(UTCDateTime())
 
-    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 class ProviderTarget(PortalBase):
@@ -120,10 +120,10 @@ class ProviderTarget(PortalBase):
 
     __tablename__ = "provider_targets"
 
-    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), primary_key=True)
+    provider: Mapped[Provider] = mapped_column(PyEnum(Provider, name="provider"), primary_key=True)
     target_count: Mapped[int] = mapped_column(Integer, nullable=False)
     updated_by: Mapped[str] = mapped_column(String(255), nullable=False)
-    updated_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
 
 
 class TrendGranularity(str, enum.Enum):
@@ -162,13 +162,13 @@ class DemoTrendBackfill(PortalBase):
     __tablename__ = "demo_trend_backfill"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), nullable=False, index=True)
+    provider: Mapped[Provider] = mapped_column(PyEnum(Provider, name="provider"), nullable=False, index=True)
     certification_name: Mapped[str | None] = mapped_column(String(255), index=True)
-    granularity: Mapped[TrendGranularity] = mapped_column(Enum(TrendGranularity, name="trend_granularity"), nullable=False)
+    granularity: Mapped[TrendGranularity] = mapped_column(PyEnum(TrendGranularity, name="trend_granularity"), nullable=False)
     period_start: Mapped[object] = mapped_column(Date, nullable=False)
     cumulative_completed: Mapped[int] = mapped_column(Integer, nullable=False)
     source: Mapped[str] = mapped_column(String(20), nullable=False, default="seed_demo")
-    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow)
 
     __table_args__ = (
         UniqueConstraint(
@@ -196,10 +196,10 @@ class CertificationAlias(PortalBase):
     __tablename__ = "certification_aliases"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), nullable=False, index=True)
+    provider: Mapped[Provider] = mapped_column(PyEnum(Provider, name="provider"), nullable=False, index=True)
     raw_key: Mapped[str] = mapped_column(String(255), nullable=False)
     canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    first_seen_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    first_seen_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow)
     updated_by: Mapped[str | None] = mapped_column(String(255))
 
     __table_args__ = (
@@ -218,14 +218,14 @@ class IngestionError(PortalBase):
     __tablename__ = "ingestion_errors"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    provider: Mapped[Provider] = mapped_column(Enum(Provider, name="provider"), nullable=False, index=True)
+    provider: Mapped[Provider] = mapped_column(PyEnum(Provider, name="provider"), nullable=False, index=True)
     source_file: Mapped[str] = mapped_column(String(255), nullable=False)
     source_sheet: Mapped[str | None] = mapped_column(String(255))
     source_row: Mapped[int | None] = mapped_column(Integer)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
-    raw_row: Mapped[dict] = mapped_column(JSON, nullable=False)
+    raw_row: Mapped[dict] = mapped_column(JSONText(binary=False), nullable=False)
     sync_run_id: Mapped[int | None] = mapped_column(Integer, index=True)
-    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 class IngestionLog(PortalBase):
@@ -238,12 +238,85 @@ class IngestionLog(PortalBase):
     __tablename__ = "ingestion_log"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    started_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    finished_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow)
+    finished_at: Mapped[object | None] = mapped_column(UTCDateTime())
     trigger: Mapped[str] = mapped_column(String(20), nullable=False)  # "scheduled" | "manual"
-    providers_synced: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
+    providers_synced: Mapped[dict] = mapped_column(JSONText(binary=False), nullable=False, default=list)
     rows_inserted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rows_updated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rows_deleted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rows_rejected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error: Mapped[str | None] = mapped_column(Text)
+
+
+class PartnerCertification(PortalBase):
+    """The partner certification catalog — the only list the next-
+    certification recommender (services/recommender/) chooses from. One
+    row per certification a partner (AWS, Google/Gemini, Anthropic,
+    Databricks, Azure) offers and the org wants people to be able to be
+    recommended. Deliberately separate from certification_records: that
+    table only knows certifications someone has already attempted, so a
+    brand-new partner cert nobody has taken yet would otherwise be
+    unrecommendable.
+
+    level is the canonical ladder value (foundational / associate /
+    professional / specialty / expert — see services/recommender/taxonomy.py);
+    skill_domains are taxonomy domain keys. Both are optional: left NULL /
+    empty, the recommender infers them from the certification name.
+    prerequisite_names are *recommended* prior certs, never an enforced
+    gate — no partner in scope hard-blocks exam registration on them.
+
+    Seeded by scripts/seed_partner_catalog.py, admin-editable via
+    routers/recommendations.py. If this table is empty, the recommender
+    falls back to the distinct certifications already present in
+    certification_records (and says so in its response)."""
+
+    __tablename__ = "partner_certifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[Provider] = mapped_column(PyEnum(Provider, name="provider"), nullable=False, index=True)
+    certification_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    level: Mapped[str | None] = mapped_column(String(31))
+    skill_domains: Mapped[list] = mapped_column(JSONText(binary=False), nullable=False, default=list)
+    relevant_practices: Mapped[list] = mapped_column(JSONText(binary=False), nullable=False, default=list)
+    prerequisite_names: Mapped[list] = mapped_column(JSONText(binary=False), nullable=False, default=list)
+    validity_months: Mapped[int | None] = mapped_column(Integer)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_by: Mapped[str | None] = mapped_column(String(255))
+    updated_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("provider", "certification_name", name="uq_partner_certification_provider_name"),
+    )
+
+
+class PartnershipRequirement(PortalBase):
+    """One partnership scale-up need: "<program> needs <required_count>
+    people certified in <a specific cert | any cert at min_level or above |
+    any cert in a skill domain> from <provider>", optionally scoped to one
+    practice and a target date. E.g. "AWS Advanced Tier — 4 people at
+    professional level by 2026-12-31", or "Databricks partnership — 10
+    Data Engineer Associate".
+
+    The current certified count is never stored — it's recomputed on every
+    read from certification_records (distinct people, same identity rule as
+    the portal Dashboard), so a gap can't drift stale. ProviderTarget above
+    is still honored as a coarser, provider-wide requirement; this table
+    adds the granularity partner programs actually specify."""
+
+    __tablename__ = "partnership_requirements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[Provider] = mapped_column(PyEnum(Provider, name="provider"), nullable=False, index=True)
+    program_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    certification_name: Mapped[str | None] = mapped_column(String(255))
+    min_level: Mapped[str | None] = mapped_column(String(31))
+    skill_domain: Mapped[str | None] = mapped_column(String(63))
+    practice: Mapped[str | None] = mapped_column(String(127))
+    required_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    deadline: Mapped[object | None] = mapped_column(Date)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=3)  # 1 low - 5 critical
+    notes: Mapped[str | None] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_by: Mapped[str | None] = mapped_column(String(255))
+    updated_at: Mapped[object] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)

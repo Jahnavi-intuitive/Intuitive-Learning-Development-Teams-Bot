@@ -1,6 +1,8 @@
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
 sqlalchemy==2.0.36
+databricks-sqlalchemy==2.0.10
+databricks-sql-connector==4.6.0
 psycopg[binary]==3.2.3
 alembic==1.14.0
 pydantic==2.10.3

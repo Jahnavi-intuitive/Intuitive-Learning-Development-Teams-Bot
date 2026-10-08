@@ -1,3 +1,4 @@
+import math
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,6 +17,12 @@ from app.services.rag_content import embed_if_changed
 router = APIRouter(prefix="/api/kb", tags=["knowledge_base"])
 
 
+def _cosine_distance(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    norm = math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(y * y for y in b))
+    return 1.0 - dot / norm if norm else 1.0
+
+
 @router.post("/query", response_model=KBQueryOut)
 def query_knowledge_base(payload: KBQueryIn, db: Session = Depends(get_db)):
     """RAG lookup over curated exam-prep content — the agent's tool for
@@ -23,14 +30,25 @@ def query_knowledge_base(payload: KBQueryIn, db: Session = Depends(get_db)):
     or unreviewed content stays out until an L&D admin marks it active."""
     query_embedding = embed_text(payload.question)
 
-    distance = KnowledgeBaseItem.embedding.cosine_distance(query_embedding)
-    stmt = (
-        select(KnowledgeBaseItem, distance.label("distance"))
-        .where(KnowledgeBaseItem.status == "active")
-        .order_by(distance)
-        .limit(payload.top_k)
-    )
-    rows = db.execute(stmt).all()
+    if db.get_bind().dialect.name == "postgresql":
+        distance = KnowledgeBaseItem.embedding.cosine_distance(query_embedding)
+        stmt = (
+            select(KnowledgeBaseItem, distance.label("distance"))
+            .where(KnowledgeBaseItem.status == "active")
+            .order_by(distance)
+            .limit(payload.top_k)
+        )
+        rows = db.execute(stmt).all()
+    else:
+        # No vector search on Databricks: score the (small) set of active
+        # items in Python with the same cosine distance pgvector uses.
+        items = db.execute(
+            select(KnowledgeBaseItem).where(
+                KnowledgeBaseItem.status == "active", KnowledgeBaseItem.embedding.is_not(None)
+            )
+        ).scalars().all()
+        rows = sorted(((i, _cosine_distance(i.embedding, query_embedding)) for i in items), key=lambda r: r[1])
+        rows = rows[: payload.top_k]
 
     matches = [
         KBMatchOut(

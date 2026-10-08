@@ -8,13 +8,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import settings
+from app.database import engine as main_engine
+from app.db_types import register_integer_id_assignment
 
-portal_engine = create_engine(settings.portal_database_url, pool_pre_ping=True)
+# On Databricks both schemas live in one Unity Catalog schema, so the portal
+# shares the main engine (one connection pool to the warehouse).
+portal_engine = main_engine if settings.use_databricks else create_engine(settings.portal_database_url, pool_pre_ping=True)
 PortalSessionLocal = sessionmaker(bind=portal_engine, autoflush=False, autocommit=False)
 
 
 class PortalBase(DeclarativeBase):
     pass
+
+
+register_integer_id_assignment(PortalBase)
 
 
 def get_portal_db():

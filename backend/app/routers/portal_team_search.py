@@ -48,7 +48,7 @@ _EXPIRY_WARNING_DAYS = 30  # confirmed with the user — only ever relevant for 
 
 _PROVIDER_LABELS = {
     Provider.aws: "AWS", Provider.anthropic: "Anthropic", Provider.azure: "Azure",
-    Provider.databricks: "Databricks", Provider.gemini: "Google", Provider.snowflake: "Snowflake",
+    Provider.databricks: "Databricks", Provider.gemini: "Google",
 }
 _STATUS_LABELS = {
     StatusCanonical.completed: "Completed",
@@ -87,6 +87,8 @@ def search_people(q: str = Query(..., min_length=1), db: Session = Depends(get_p
             func.max(CertificationRecord.pd_leader_name),
         )
         .where(func.lower(CertificationRecord.person_name).contains(query.lower()))
+        # AWS-redacted rows (no identity) aren't people anyone can look up.
+        .where(func.coalesce(CertificationRecord.data_quality_flag, '') != 'identity_redacted_in_export')
         .group_by(_IDENTITY)
         .order_by(func.max(CertificationRecord.person_name))
         .limit(_MAX_RESULTS)

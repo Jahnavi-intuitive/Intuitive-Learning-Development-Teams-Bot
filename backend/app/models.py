@@ -1,25 +1,21 @@
 import uuid
 from datetime import date, datetime
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     Date,
-    DateTime,
     Float,
     ForeignKey,
     Integer,
     String,
     Text,
     UniqueConstraint,
-    func,
 )
-from sqlalchemy.dialects.postgresql import ENUM as PGEnum
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.config import settings
 from app.database import Base
+from app.db_types import GUID, Embedding, EnumText, JSONText, UTCDateTime, utcnow
 
 # --- Enums -------------------------------------------------------------
 # Practice is hardcoded for local dev. Later this is sourced from the
@@ -32,30 +28,30 @@ PRACTICE_VALUES = (
     "NetSec + SDx",
     "Cloud & Platform Engineer",
 )
-practice_enum = PGEnum(*PRACTICE_VALUES, name="practice_enum")
+practice_enum = EnumText(*PRACTICE_VALUES, name="practice_enum")
 
 CATALOG_STATUS_VALUES = ("pending_setup", "active", "deprecated")
-catalog_status_enum = PGEnum(*CATALOG_STATUS_VALUES, name="catalog_status_enum")
+catalog_status_enum = EnumText(*CATALOG_STATUS_VALUES, name="catalog_status_enum")
 
 SUBMISSION_STATUS_VALUES = ("in_progress", "completed", "gave_exam_but_failed")
-submission_status_enum = PGEnum(*SUBMISSION_STATUS_VALUES, name="submission_status_enum")
+submission_status_enum = EnumText(*SUBMISSION_STATUS_VALUES, name="submission_status_enum")
 
 VERIFICATION_STATUS_VALUES = ("not_applicable", "pending", "verified", "exception")
-verification_status_enum = PGEnum(*VERIFICATION_STATUS_VALUES, name="verification_status_enum")
+verification_status_enum = EnumText(*VERIFICATION_STATUS_VALUES, name="verification_status_enum")
 
 VERIFICATION_METHOD_VALUES = ("credly_link_check", "manual")
-verification_method_enum = PGEnum(*VERIFICATION_METHOD_VALUES, name="verification_method_enum")
+verification_method_enum = EnumText(*VERIFICATION_METHOD_VALUES, name="verification_method_enum")
 
 VERIFICATION_RESULT_STATUS_VALUES = ("verified", "exception", "failed")
-verification_result_status_enum = PGEnum(
+verification_result_status_enum = EnumText(
     *VERIFICATION_RESULT_STATUS_VALUES, name="verification_result_status_enum"
 )
 
 KB_STATUS_VALUES = ("active", "pending_review", "deprecated")
-kb_status_enum = PGEnum(*KB_STATUS_VALUES, name="kb_status_enum")
+kb_status_enum = EnumText(*KB_STATUS_VALUES, name="kb_status_enum")
 
 ESCALATION_STATUS_VALUES = ("open", "in_progress", "resolved")
-escalation_status_enum = PGEnum(*ESCALATION_STATUS_VALUES, name="escalation_status_enum")
+escalation_status_enum = EnumText(*ESCALATION_STATUS_VALUES, name="escalation_status_enum")
 
 AUDIT_ACTION_VALUES = (
     "created",
@@ -65,7 +61,7 @@ AUDIT_ACTION_VALUES = (
     "deleted",
     "employee_auto_created",
 )
-audit_action_enum = PGEnum(*AUDIT_ACTION_VALUES, name="audit_action_enum")
+audit_action_enum = EnumText(*AUDIT_ACTION_VALUES, name="audit_action_enum")
 
 # --- Certification drives (mandatory campaigns) -------------------------
 # A drive targets a scope (one practice, one department, or the whole
@@ -74,13 +70,13 @@ audit_action_enum = PGEnum(*AUDIT_ACTION_VALUES, name="audit_action_enum")
 # next drive targets someone else — so these are their own lifecycle
 # objects, never folded into certification_catalog or learning_paths.
 DRIVE_TARGET_SCOPE_VALUES = ("practice", "department", "organization")
-drive_target_scope_enum = PGEnum(*DRIVE_TARGET_SCOPE_VALUES, name="drive_target_scope_enum")
+drive_target_scope_enum = EnumText(*DRIVE_TARGET_SCOPE_VALUES, name="drive_target_scope_enum")
 
 DRIVE_STATUS_VALUES = ("draft", "active", "closed")
-drive_status_enum = PGEnum(*DRIVE_STATUS_VALUES, name="drive_status_enum")
+drive_status_enum = EnumText(*DRIVE_STATUS_VALUES, name="drive_status_enum")
 
 ENROLLMENT_STATUS_VALUES = ("not_started", "in_progress", "completed", "exempted")
-enrollment_status_enum = PGEnum(*ENROLLMENT_STATUS_VALUES, name="enrollment_status_enum")
+enrollment_status_enum = EnumText(*ENROLLMENT_STATUS_VALUES, name="enrollment_status_enum")
 
 # --- Notifications (reminder sweep) --------------------------------------
 NOTIFICATION_TYPE_VALUES = (
@@ -88,17 +84,18 @@ NOTIFICATION_TYPE_VALUES = (
     "drive_escalation",
     "cert_expiry_reminder",
     "new_certification_added",
+    "prep_overdue_reminder",  # in-progress prep past its level's business-day target (migration 0013)
 )
-notification_type_enum = PGEnum(*NOTIFICATION_TYPE_VALUES, name="notification_type_enum")
+notification_type_enum = EnumText(*NOTIFICATION_TYPE_VALUES, name="notification_type_enum")
 
 NOTIFICATION_CHANNEL_VALUES = ("teams",)  # SEAM: only channel until a real Teams bot integration exists
-notification_channel_enum = PGEnum(*NOTIFICATION_CHANNEL_VALUES, name="notification_channel_enum")
+notification_channel_enum = EnumText(*NOTIFICATION_CHANNEL_VALUES, name="notification_channel_enum")
 
 NOTIFICATION_STATUS_VALUES = ("pending", "sent", "failed")
-notification_status_enum = PGEnum(*NOTIFICATION_STATUS_VALUES, name="notification_status_enum")
+notification_status_enum = EnumText(*NOTIFICATION_STATUS_VALUES, name="notification_status_enum")
 
 ESCALATION_LEVEL_VALUES = ("employee", "manager", "practice_director")
-escalation_level_enum = PGEnum(*ESCALATION_LEVEL_VALUES, name="escalation_level_enum")
+escalation_level_enum = EnumText(*ESCALATION_LEVEL_VALUES, name="escalation_level_enum")
 
 # Governs how multiple incoming CertificationPrerequisite edges into the
 # same certification are evaluated: 'any' = at least one prerequisite must
@@ -107,15 +104,15 @@ escalation_level_enum = PGEnum(*ESCALATION_LEVEL_VALUES, name="escalation_level_
 # nothing in the current seed data actually requires 'all' yet — added now
 # so a future converging-AND track doesn't need its own migration.
 PREREQUISITE_LOGIC_VALUES = ("any", "all")
-prerequisite_logic_enum = PGEnum(*PREREQUISITE_LOGIC_VALUES, name="prerequisite_logic_enum")
+prerequisite_logic_enum = EnumText(*PREREQUISITE_LOGIC_VALUES, name="prerequisite_logic_enum")
 
 # --- Conversation memory (Teams bot session continuity) -----------------
 CONVERSATION_ROLE_VALUES = ("user", "agent")
-conversation_role_enum = PGEnum(*CONVERSATION_ROLE_VALUES, name="conversation_role_enum")
+conversation_role_enum = EnumText(*CONVERSATION_ROLE_VALUES, name="conversation_role_enum")
 
 
 def uuid_pk():
-    return mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    return mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
 
 
 # --- Employees (local HRIS/directory stand-in) --------------------------
@@ -152,9 +149,9 @@ class Employee(Base):
     practice_director_name: Mapped[str | None] = mapped_column(String(255))
     # Nullable for the same reason as email — an auto-provisioned employee's
     # practice isn't knowable from a Teams activity alone. Every
-    # practice-dependent feature (routers/learning_paths.py's /next and
-    # /overview) must treat None as "not set up yet, say so plainly" rather
-    # than crashing or guessing a default practice.
+    # practice-dependent feature (e.g. the recommender's practice relevance
+    # signal, services/recommender/) must treat None as "not set up yet, say
+    # so plainly" rather than crashing or guessing a default practice.
     practice: Mapped[str | None] = mapped_column(practice_enum)
     is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Data-provenance flag, not an access gate: False for an auto-provisioned
@@ -170,9 +167,9 @@ class Employee(Base):
     # through services/admin_auth.py's require_admin — that is the single
     # place to swap in the real role check later.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
 
@@ -193,17 +190,17 @@ class CertificationCatalog(Base):
     short_name: Mapped[str | None] = mapped_column(String(31), unique=True)
     provider: Mapped[str | None] = mapped_column(String(255))
     level: Mapped[str | None] = mapped_column(String(100))
-    prerequisites: Mapped[list | None] = mapped_column(JSONB)  # informational display only — the
-    # real, queryable prerequisite graph is CertificationPrerequisite; this JSONB free-text list is
+    prerequisites: Mapped[list | None] = mapped_column(JSONText)  # informational display only — the
+    # real, queryable prerequisite graph is CertificationPrerequisite; this JSONText free-text list is
     # not read by any eligibility logic and exists only for a quick human-readable summary.
     validity_period_months: Mapped[int | None] = mapped_column(Integer)
-    relevant_roles: Mapped[list | None] = mapped_column(JSONB)  # tags
+    relevant_roles: Mapped[list | None] = mapped_column(JSONText)  # tags
     status: Mapped[str] = mapped_column(catalog_status_enum, default="pending_setup", nullable=False)
     prerequisite_logic: Mapped[str] = mapped_column(prerequisite_logic_enum, default="any", nullable=False)
     source_sheet_id: Mapped[str | None] = mapped_column(String(64))  # hidden GUID from Excel tab
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
 
@@ -214,9 +211,9 @@ class LearningPath(Base):
     practice: Mapped[str] = mapped_column(practice_enum, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
     items: Mapped[list["LearningPathItem"]] = relationship(back_populates="path")
@@ -241,9 +238,9 @@ class LearningPathItem(Base):
         ForeignKey("certification_catalog.id", ondelete="RESTRICT")
     )
     is_required: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
     path: Mapped["LearningPath"] = relationship(back_populates="items")
@@ -278,9 +275,9 @@ class CertificationPrerequisite(Base):
         ForeignKey("certification_catalog.id", ondelete="CASCADE"), nullable=False
     )
     track_label: Mapped[str | None] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
     certification: Mapped["CertificationCatalog"] = relationship(foreign_keys=[certification_id])
@@ -335,10 +332,10 @@ class CertificateRecord(Base):
 
     is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
     updated_by: Mapped[str] = mapped_column(String(255), nullable=False)
 
@@ -359,7 +356,7 @@ class VerificationResult(Base):
     cert_match: Mapped[bool | None] = mapped_column(Boolean)
     status: Mapped[str] = mapped_column(verification_result_status_enum, nullable=False)
     verifier: Mapped[str] = mapped_column(String(255), nullable=False)  # "system" or an admin's name
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    timestamp: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 # --- Knowledge base & escalations (RAG) -----------------------------------
@@ -371,7 +368,7 @@ class KnowledgeBaseItem(Base):
         ForeignKey("certification_catalog.id", ondelete="SET NULL")
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dim))
+    embedding: Mapped[list[float] | None] = mapped_column(Embedding(settings.embedding_dim))
     # SHA-256 hex digest of `content` as of the last time it was embedded —
     # see services/rag_content.py embed_if_changed(). Lets a save that only
     # touches owner/status/last_reviewed_date skip the embedding call
@@ -379,13 +376,13 @@ class KnowledgeBaseItem(Base):
     # rows written before this column existed (see migration 0003) or if
     # embedding ever fails; ordinary content-only rows always have it.
     content_hash: Mapped[str | None] = mapped_column(String(64))
-    tags: Mapped[list | None] = mapped_column(JSONB)
+    tags: Mapped[list | None] = mapped_column(JSONText)
     status: Mapped[str] = mapped_column(kb_status_enum, default="active", nullable=False)
     owner: Mapped[str | None] = mapped_column(String(255))
     last_reviewed_date: Mapped[date | None] = mapped_column(Date)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
 
@@ -395,19 +392,19 @@ class Escalation(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     employee_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employees.id", ondelete="SET NULL"))
     question: Mapped[str] = mapped_column(Text, nullable=False)
-    question_embedding: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dim))
+    question_embedding: Mapped[list[float] | None] = mapped_column(Embedding(settings.embedding_dim))
     context: Mapped[str | None] = mapped_column(Text)
     routed_owner: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(escalation_status_enum, default="open", nullable=False)
-    sla_due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sla_due_date: Mapped[datetime | None] = mapped_column(UTCDateTime())
     resolution_answer: Mapped[str | None] = mapped_column(Text)
-    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     promoted_kb_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("knowledge_base.id", ondelete="SET NULL")
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
 
@@ -436,13 +433,13 @@ class CertificationDrive(Base):
     # never admin-entered, per the 2026-09-02 drives-form simplification.
     start_date: Mapped[date | None] = mapped_column(Date)
     deadline: Mapped[date] = mapped_column(Date, nullable=False)
-    reminder_cadence: Mapped[list | None] = mapped_column(JSONB)  # e.g. [30, 14, 7, 1] days-before-deadline
+    reminder_cadence: Mapped[list | None] = mapped_column(JSONText)  # e.g. [30, 14, 7, 1] days-before-deadline
     status: Mapped[str] = mapped_column(drive_status_enum, default="draft", nullable=False)
     is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)  # actor employee_id
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
     required_certifications: Mapped[list["DriveCertification"]] = relationship(back_populates="drive")
@@ -463,7 +460,7 @@ class DriveCertification(Base):
     certification_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("certification_catalog.id", ondelete="RESTRICT")
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
     drive: Mapped["CertificationDrive"] = relationship(back_populates="required_certifications")
     certification: Mapped["CertificationCatalog"] = relationship()
@@ -494,9 +491,9 @@ class DriveEnrollment(Base):
     )
     exemption_reason: Mapped[str | None] = mapped_column(Text)
     is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    enrolled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    enrolled_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
     drive: Mapped["CertificationDrive"] = relationship(back_populates="enrollments")
@@ -516,11 +513,14 @@ class NotificationSettings(Base):
     __tablename__ = "notification_settings"
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    expiry_reminder_days: Mapped[list] = mapped_column(JSONB, nullable=False)  # e.g. [90, 60, 30, 7]
+    expiry_reminder_days: Mapped[list] = mapped_column(JSONText, nullable=False)  # e.g. [90, 60, 30, 7]
     retry_cap: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Business days of prep expected per certification level before an
+    # in-progress certification counts as overdue, e.g. {"associate": 20}.
+    prep_target_business_days: Mapped[dict] = mapped_column(JSONText, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
 
@@ -550,11 +550,12 @@ class Notification(Base):
     escalation_level: Mapped[str | None] = mapped_column(escalation_level_enum)
     status: Mapped[str] = mapped_column(notification_status_enum, default="pending", nullable=False)
     retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_attempt_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    read_at: Mapped[datetime | None] = mapped_column(UTCDateTime())  # set from the portal's Notifications tab
     is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
     recipient: Mapped["Employee"] = relationship()
@@ -566,12 +567,12 @@ class AuditLog(Base):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     entity_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    entity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    entity_id: Mapped[uuid.UUID] = mapped_column(GUID(), nullable=False)
     action: Mapped[str] = mapped_column(audit_action_enum, nullable=False)
     actor: Mapped[str] = mapped_column(String(255), nullable=False)
-    old_value: Mapped[dict | None] = mapped_column(JSONB)
-    new_value: Mapped[dict | None] = mapped_column(JSONB)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    old_value: Mapped[dict | None] = mapped_column(JSONText)
+    new_value: Mapped[dict | None] = mapped_column(JSONText)
+    timestamp: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 # --- Conversation memory (Teams bot session continuity) -------------------
@@ -597,7 +598,7 @@ class ConversationTurn(Base):
     conversation_id: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(conversation_role_enum, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
     employee: Mapped["Employee"] = relationship()
 
@@ -630,13 +631,13 @@ class ConversationMemory(Base):
         ForeignKey("employees.id", ondelete="CASCADE"), unique=True, nullable=False
     )
     summary_text: Mapped[str | None] = mapped_column(Text)
-    last_summarized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_summarized_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     turns_since_last_summary: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     turns_folded_since_reset: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    last_summarize_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_summarize_attempt_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime(), default=utcnow, onupdate=utcnow
     )
 
     employee: Mapped["Employee"] = relationship()
@@ -664,7 +665,7 @@ class LlmCallLog(Base):
     __tablename__ = "llm_call_log"
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    call_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    call_timestamp: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     agent_id: Mapped[str] = mapped_column(String(255), nullable=False)
     request_id: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -677,4 +678,53 @@ class LlmCallLog(Base):
     error_type: Mapped[str | None] = mapped_column(String(255))
     endpoint: Mapped[str] = mapped_column(String(255), nullable=False)
     env: Mapped[str] = mapped_column(String(50), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+
+
+# --- Next-certification recommender (services/recommender/) ----------------
+class EmployeeSkillProfile(Base):
+    """What certification records alone can't tell the recommender: how
+    experienced someone is and where their real expertise lies. This is
+    what lets an experienced hire skip foundational certs they don't need
+    (a senior engineer with five years of AWS but no AWS badge yet) while a
+    fresher is still started at foundational level.
+
+    expertise maps taxonomy domain keys (services/recommender/taxonomy.py
+    DOMAINS) to a 0-4 proficiency (0 none, 1 foundational, 2 associate,
+    3 professional, 4 expert). Self-declared through the agent today
+    (source="self_declared"); a future HRIS/skills sync would write
+    source="hr_sync" into the same row. Certification evidence is never
+    stored here — it's always derived live from the tracker."""
+
+    __tablename__ = "employee_skill_profiles"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    employee_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("employees.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    years_experience: Mapped[float | None] = mapped_column(Float)
+    expertise: Mapped[dict] = mapped_column(JSONText, nullable=False, default=dict)
+    career_goals: Mapped[list] = mapped_column(JSONText, nullable=False, default=list)
+    source: Mapped[str] = mapped_column(String(32), nullable=False, default="self_declared")
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(), default=utcnow, onupdate=utcnow
+    )
+
+
+class RecommendationFeedback(Base):
+    """Explicit feedback on a recommendation ("not interested", "already
+    have this elsewhere"). A dismissal suppresses that certification from
+    the employee's recommendations for DISMISS_TTL_DAYS
+    (services/recommender/engine.py) — mandatory-drive certs are never
+    suppressed. Append-only; the latest row per (employee, cert) wins."""
+
+    __tablename__ = "recommendation_feedback"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    employee_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    certification_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)  # "dismissed" | "interested"
+    reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)

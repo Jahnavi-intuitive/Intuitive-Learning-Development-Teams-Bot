@@ -26,9 +26,9 @@
     {
       "entityId": "ldPortalDashboard",
       "name": "L&D Portal",
-      "contentUrl": "https://lnd-backend.onrender.com/portal.html",
+      "contentUrl": "https://78vt8w7z-8000.inc1.devtunnels.ms/portal.html",
       "scopes": ["personal"]
     }
   ],
-  "validDomains": ["lnd-backend.onrender.com"]
+  "validDomains": ["78vt8w7z-8000.inc1.devtunnels.ms"]
 }

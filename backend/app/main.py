@@ -39,6 +39,7 @@ from app.routers import (
     portal_sync,
     portal_team_search,
     portal_trends,
+    recommendations,
     teams,
     tracker,
     verification,
@@ -86,8 +87,10 @@ app.include_router(portal_data_download.router)
 app.include_router(portal_sync.router)
 app.include_router(portal_team_search.router)
 app.include_router(portal_trends.router)
+app.include_router(recommendations.router)
 app.include_router(drives.router)
 app.include_router(notifications.router)
+app.include_router(notifications.me_router)
 app.include_router(internal.router)
 app.include_router(conversation.router)
 app.include_router(teams.router)
@@ -463,6 +466,24 @@ class _NoCacheStaticFiles(StaticFiles):
         response = super().file_response(*args, **kwargs)
         response.headers["Cache-Control"] = "no-cache"
         return response
+
+    async def get_response(self, path, scope):
+        # A link copied with its surrounding punctuation ("…/portal.html"")
+        # arrives as portal.html%22. Windows can't stat a filename containing
+        # " < > | * ? — StaticFiles then raised OSError and the request
+        # became a 500. Redirect to the cleaned path when stripping trailing
+        # quotes/punctuation fixes it; otherwise it's simply not found.
+        # (No "." in the set: the root path normalises to ".", which must
+        # never be "cleaned" into a redirect loop.)
+        cleaned = path.rstrip("\"'<>|*?,;) ")
+        if cleaned != path:
+            from starlette.responses import RedirectResponse
+            return RedirectResponse(url="/" + cleaned.lstrip("/"), status_code=307)
+        try:
+            return await super().get_response(path, scope)
+        except OSError:
+            from starlette.exceptions import HTTPException as StarletteHTTPException
+            raise StarletteHTTPException(status_code=404)
 
 
 # Mounted last, deliberately: FastAPI/Starlette match routes in the order

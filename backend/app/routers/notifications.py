@@ -4,7 +4,9 @@ lives entirely in services/notification_sweep.py — this router only calls
 it and exposes what it did.
 """
 
-from fastapi import APIRouter, Depends
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -17,6 +19,7 @@ from app.schemas import (
     SweepReportOut,
     SweepTriggerIn,
 )
+from app.services.access_scope import get_current_employee
 from app.services.admin_auth import require_admin
 from app.services.audited_crud import update_with_audit
 from app.services.notification_sweep import run_sweep
@@ -74,6 +77,57 @@ def list_notifications(
         )
         for n in rows
     ]
+
+
+# --- Employee-facing: the portal's Notifications tab -----------------------
+# Every notification the sweep creates is also shown in-app here (the only
+# delivery today; email is a later channel — services/notification_channel.py).
+me_router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+
+
+def _mine_out(n: Notification) -> dict:
+    return {
+        "id": n.id,
+        "notification_type": n.notification_type,
+        "message": n.message,
+        "threshold_days": n.threshold_days,
+        "related_certificate_record_id": n.related_certificate_record_id,
+        "created_at": n.created_at,
+        "read_at": n.read_at,
+    }
+
+
+@me_router.get("/mine")
+def my_notifications(
+    employee_id: str,
+    db: Session = Depends(get_db),
+    current: Employee = Depends(get_current_employee),
+):
+    if employee_id != current.employee_id:
+        raise HTTPException(status_code=403, detail="Can only view your own notifications.")
+    rows = db.scalars(
+        select(Notification).where(Notification.recipient_employee_id == current.id)
+        .order_by(Notification.created_at.desc()).limit(100)
+    ).all()
+    return {"notifications": [_mine_out(n) for n in rows], "unread": sum(1 for n in rows if n.read_at is None)}
+
+
+@me_router.post("/mark-read")
+def mark_my_notifications_read(
+    employee_id: str,
+    db: Session = Depends(get_db),
+    current: Employee = Depends(get_current_employee),
+):
+    if employee_id != current.employee_id:
+        raise HTTPException(status_code=403, detail="Can only update your own notifications.")
+    now = datetime.now(timezone.utc)
+    unread = db.scalars(
+        select(Notification).where(Notification.recipient_employee_id == current.id, Notification.read_at.is_(None))
+    ).all()
+    for n in unread:
+        n.read_at = now
+    db.commit()
+    return {"marked_read": len(unread)}
 
 
 @router.get("/settings", response_model=NotificationSettingsOut)

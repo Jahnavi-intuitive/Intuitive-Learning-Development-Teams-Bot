@@ -69,36 +69,44 @@ def weekly_period_starts(today: date) -> list[date]:
     return [current_monday - datetime.timedelta(weeks=i) for i in range(WEEKLY_PERIODS - 1, -1, -1)]
 
 
+def _completed_rows(db: Session) -> list[tuple]:
+    """Every completed record as (provider, certification_name, identity,
+    trend_date), fetched once per session and reused by every series in the
+    request — on Databricks each query is a warehouse round trip, and the
+    Trends tab would otherwise issue dozens of near-identical ones."""
+    if "_trend_completed_rows" not in db.info:
+        db.info["_trend_completed_rows"] = db.execute(
+            select(CertificationRecord.provider, CertificationRecord.certification_name, _IDENTITY, _TREND_DATE).where(
+                CertificationRecord.status_canonical == StatusCanonical.completed
+            )
+        ).all()
+    return db.info["_trend_completed_rows"]
+
+
 def fetch_person_dates(db: Session, provider: Provider, certification_name: str | None) -> list[date | None]:
     """One entry per distinct completed person on this series (their
     earliest known trend date, or None if genuinely undated in the source
     data). certification_name=None means the whole-provider series (every
     certification under that provider, combined)."""
-    stmt = (
-        select(_IDENTITY, func.min(_TREND_DATE))
-        .where(CertificationRecord.provider == provider, CertificationRecord.status_canonical == StatusCanonical.completed)
-        .group_by(_IDENTITY)
-    )
-    if certification_name is not None:
-        stmt = stmt.where(CertificationRecord.certification_name == certification_name)
-    return [d for _, d in db.execute(stmt).all()]
+    earliest: dict[str, date | None] = {}
+    for prov, cert, identity, d in _completed_rows(db):
+        if prov != provider or (certification_name is not None and cert != certification_name):
+            continue
+        current = earliest.get(identity)
+        if identity not in earliest or (d is not None and (current is None or d < current)):
+            earliest[identity] = d
+    return list(earliest.values())
 
 
 def tracked_certifications(db: Session, provider: Provider) -> list[tuple[str, int]]:
     """Every certification under this provider with at least one real
     completion, as (certification_name, completed_count), sorted by count
     descending. completed_count is a real distinct-person count."""
-    rows = db.execute(
-        select(CertificationRecord.certification_name, func.count(func.distinct(_IDENTITY)))
-        .where(
-            CertificationRecord.provider == provider,
-            CertificationRecord.status_canonical == StatusCanonical.completed,
-            CertificationRecord.certification_name.is_not(None),
-        )
-        .group_by(CertificationRecord.certification_name)
-        .order_by(func.count(func.distinct(_IDENTITY)).desc())
-    ).all()
-    return [(name, count) for name, count in rows]
+    people: dict[str, set[str]] = {}
+    for prov, cert, identity, _d in _completed_rows(db):
+        if prov == provider and cert is not None:
+            people.setdefault(cert, set()).add(identity)
+    return sorted(((name, len(ids)) for name, ids in people.items()), key=lambda r: r[1], reverse=True)
 
 
 @dataclass
@@ -126,17 +134,21 @@ def merged_series(
     dated = sorted(d for d in person_dates if d is not None)
     total = len(person_dates)
 
-    seeded_rows = dict(
-        db.execute(
-            select(DemoTrendBackfill.period_start, DemoTrendBackfill.cumulative_completed).where(
-                DemoTrendBackfill.provider == provider,
-                DemoTrendBackfill.certification_name.is_(certification_name)
-                if certification_name is None
-                else DemoTrendBackfill.certification_name == certification_name,
-                DemoTrendBackfill.granularity == granularity,
+    if "_trend_backfill_rows" not in db.info:
+        db.info["_trend_backfill_rows"] = db.execute(
+            select(
+                DemoTrendBackfill.provider,
+                DemoTrendBackfill.certification_name,
+                DemoTrendBackfill.granularity,
+                DemoTrendBackfill.period_start,
+                DemoTrendBackfill.cumulative_completed,
             )
         ).all()
-    )
+    seeded_rows = {
+        period: value
+        for prov, cert, gran, period, value in db.info["_trend_backfill_rows"]
+        if prov == provider and cert == certification_name and gran == granularity
+    }
 
     points = []
     last_idx = len(period_starts) - 1

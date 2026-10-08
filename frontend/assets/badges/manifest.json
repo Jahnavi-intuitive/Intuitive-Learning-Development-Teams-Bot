@@ -1,0 +1,324 @@
+{
+ "aws certified cloud practitioner": {
+  "img": "assets/badges/aws-aws-certified-cloud-practitioner.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-cloud-practitioner",
+  "code": "CLF-C02",
+  "source": "credly"
+ },
+ "aws certified solutions architect associate": {
+  "img": "assets/badges/aws-aws-certified-solutions-architect-associate.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-solutions-architect-associate",
+  "code": "SAA-C03",
+  "source": "credly"
+ },
+ "aws certified developer associate": {
+  "img": "assets/badges/aws-aws-certified-developer-associate.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-developer-associate",
+  "code": "DVA-C02",
+  "source": "credly"
+ },
+ "aws certified ai practitioner": {
+  "img": "assets/badges/aws-aws-certified-ai-practitioner.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-ai-practitioner",
+  "code": "AIF-C01",
+  "source": "credly"
+ },
+ "aws certified solutions architect professional": {
+  "img": "assets/badges/aws-aws-certified-solutions-architect-professional.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-solutions-architect-professional",
+  "code": "SAP-C02",
+  "source": "credly"
+ },
+ "aws certified security specialty": {
+  "img": "assets/badges/aws-aws-certified-security-specialty.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-security-specialty",
+  "code": null,
+  "source": "credly"
+ },
+ "aws certified devops engineer professional": {
+  "img": "assets/badges/aws-aws-certified-devops-engineer-professional.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-devops-engineer-professional",
+  "code": "DOP-C02",
+  "source": "credly"
+ },
+ "aws certified data engineer associate": {
+  "img": "assets/badges/aws-aws-certified-data-engineer-associate.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-data-engineer-associate",
+  "code": "DEA-C01",
+  "source": "credly"
+ },
+ "aws certified machine learning engineer associate": {
+  "img": "assets/badges/aws-aws-certified-machine-learning-engineer-associate.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-machine-learning-engineer-associate",
+  "code": "MLA-C01",
+  "source": "credly"
+ },
+ "aws certified advanced networking specialty": {
+  "img": "assets/badges/aws-aws-certified-advanced-networking-specialty.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-advanced-networking-specialty",
+  "code": "ANS-C01",
+  "source": "credly"
+ },
+ "google cloud associate cloud engineer": {
+  "img": "assets/badges/gemini-google-cloud-associate-cloud-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/associate-cloud-engineer-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional cloud architect": {
+  "img": "assets/badges/gemini-google-cloud-professional-cloud-architect.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-cloud-architect-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional data engineer": {
+  "img": "assets/badges/gemini-google-cloud-professional-data-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-data-engineer-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional machine learning engineer": {
+  "img": "assets/badges/gemini-google-cloud-professional-machine-learning-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-machine-learning-engineer-certificatio",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional cloud devops engineer": {
+  "img": "assets/badges/gemini-google-cloud-professional-cloud-devops-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-cloud-devops-engineer-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional cloud security engineer": {
+  "img": "assets/badges/gemini-google-cloud-professional-cloud-security-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-cloud-security-engineer-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional cloud developer": {
+  "img": "assets/badges/gemini-google-cloud-professional-cloud-developer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-cloud-developer-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional cloud database engineer": {
+  "img": "assets/badges/gemini-google-cloud-professional-cloud-database-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-cloud-database-engineer-certification.2",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional cloud network engineer": {
+  "img": "assets/badges/gemini-google-cloud-professional-cloud-network-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-cloud-network-engineer-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional google workspace administrator": {
+  "img": "assets/badges/gemini-google-cloud-professional-google-workspace-administrator.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-google-workspace-administrator-certifi.1",
+  "code": null,
+  "source": "credly"
+ },
+ "microsoft certified: azure administrator associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "AZ-104",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure developer associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "AZ-204",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure ai engineer associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "AI-102",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure data scientist associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "DP-100",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure security engineer associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "AZ-500",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure network engineer associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "AZ-700",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure database administrator associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "DP-300",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: fabric data engineer associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "DP-700",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: fabric analytics engineer associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "DP-600",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: power bi data analyst associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "PL-300",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: security operations analyst associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "SC-200",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: identity and access administrator associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "SC-300",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: windows server hybrid administrator associate": {
+  "img": "assets/badges/microsoft-associate.svg",
+  "code": "AZ-800 + AZ-801",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure solutions architect expert": {
+  "img": "assets/badges/microsoft-expert.svg",
+  "code": "AZ-305",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: devops engineer expert": {
+  "img": "assets/badges/microsoft-expert.svg",
+  "code": "AZ-400",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: cybersecurity architect expert": {
+  "img": "assets/badges/microsoft-expert.svg",
+  "code": "SC-100",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure for sap workloads specialty": {
+  "img": "assets/badges/microsoft-specialty.svg",
+  "code": "AZ-120",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure virtual desktop specialty": {
+  "img": "assets/badges/microsoft-specialty.svg",
+  "code": "AZ-140",
+  "source": "microsoft-learn"
+ },
+ "microsoft certified: azure cosmos db developer specialty": {
+  "img": "assets/badges/microsoft-specialty.svg",
+  "code": "DP-420",
+  "source": "microsoft-learn"
+ },
+ "snowpro core certification": {
+  "img": null,
+  "code": "COF-C02",
+  "source": "drawn"
+ },
+ "aws certified generative ai developer professional": {
+  "img": "assets/badges/aws-aws-certified-generative-ai-developer-professional.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-generative-ai-developer-professional",
+  "code": null,
+  "source": "credly"
+ },
+ "aws certified cloudops engineer associate": {
+  "img": "assets/badges/aws-aws-certified-cloudops-engineer-associate.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-cloudops-engineer-associate",
+  "code": null,
+  "source": "credly"
+ },
+ "aws certified ai business strategist": {
+  "img": "assets/badges/aws-aws-certified-ai-business-strategist.png",
+  "url": "https://www.credly.com/org/amazon-web-services/badge/aws-certified-ai-business-strategist",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud generative ai leader": {
+  "img": "assets/badges/gemini-google-cloud-generative-ai-leader.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/generative-ai-leader-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud associate data practitioner": {
+  "img": "assets/badges/gemini-google-cloud-associate-data-practitioner.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/associate-data-practitioner-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud associate google workspace administrator": {
+  "img": "assets/badges/gemini-google-cloud-associate-google-workspace-administrator.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/associate-google-workspace-administrator-certificat",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional security operations engineer": {
+  "img": "assets/badges/gemini-google-cloud-professional-security-operations-engineer.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-security-operations-engineer-certifica",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud professional agentic architect": {
+  "img": "assets/badges/gemini-google-cloud-professional-agentic-architect.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/professional-agentic-architect-certification",
+  "code": null,
+  "source": "credly"
+ },
+ "claude certified architect foundations": {
+  "img": "assets/badges/anthropic-claude-certified-architect-foundations.png",
+  "url": "https://www.credly.com/org/anthropic/badge/claude-certified-architect-foundations",
+  "code": null,
+  "source": "credly"
+ },
+ "claude certified associate foundations": {
+  "img": "assets/badges/anthropic-claude-certified-associate-foundations.png",
+  "url": "https://www.credly.com/org/anthropic/badge/claude-certified-associate-foundations",
+  "code": null,
+  "source": "credly"
+ },
+ "claude certified developer foundations": {
+  "img": "assets/badges/anthropic-claude-certified-developer-foundations.png",
+  "url": "https://www.credly.com/org/anthropic/badge/claude-certified-developer-foundations",
+  "code": null,
+  "source": "credly"
+ },
+ "claude certified architect professional": {
+  "img": "assets/badges/anthropic-claude-certified-architect-professional.png",
+  "url": "https://www.credly.com/org/anthropic/badge/claude-certified-architect-professional",
+  "code": null,
+  "source": "credly"
+ },
+ "microsoft certified: azure data fundamentals": {
+  "img": "assets/badges/azure-microsoft-certified-azure-data-fundamentals.png",
+  "url": "https://www.credly.com/org/microsoft-certification/badge/microsoft-certified-azure-data-fundamentals.1",
+  "code": null,
+  "source": "credly"
+ },
+ "microsoft certified: azure ai fundamentals": {
+  "img": "assets/badges/azure-microsoft-certified-azure-ai-fundamentals.png",
+  "url": "https://www.credly.com/org/microsoft-certification/badge/microsoft-certified-azure-ai-fundamentals.1",
+  "code": null,
+  "source": "credly"
+ },
+ "microsoft certified: azure fundamentals": {
+  "img": "assets/badges/azure-microsoft-certified-azure-fundamentals.png",
+  "url": "https://www.credly.com/org/microsoft-certification/badge/microsoft-certified-azure-fundamentals.1",
+  "code": null,
+  "source": "credly"
+ },
+ "microsoft certified: security, compliance, and identity fundamentals": {
+  "img": "assets/badges/azure-microsoft-certified-security-compliance-and-identity-fundamentals.png",
+  "url": "https://www.credly.com/org/microsoft-certification/badge/microsoft-certified-security-compliance-and-identit",
+  "code": null,
+  "source": "credly"
+ },
+ "google cloud digital leader": {
+  "img": "assets/badges/gemini-google-cloud-cloud-digital-leader.png",
+  "url": "https://www.credly.com/org/google-cloud/badge/cloud-digital-leader-certification",
+  "code": null,
+  "source": "credly"
+ }
+}

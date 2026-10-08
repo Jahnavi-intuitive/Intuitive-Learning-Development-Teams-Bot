@@ -1,0 +1,48 @@
+# Builds the backend and agent container images and pushes them to the
+# Azure Container Registry on every push to master. The Azure Container
+# Apps pull these images; to roll out a new build, create a new revision
+# of each app in the Azure portal.
+#
+# Needs, in GitHub > Settings > Secrets and variables > Actions:
+#   Variable  ACR_LOGIN_SERVER  e.g. lndacrjp01.azurecr.io
+#   Secret    ACR_USERNAME      registry > Access keys > Username
+#   Secret    ACR_PASSWORD      registry > Access keys > password
+
+name: Build and push images
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ vars.ACR_LOGIN_SERVER }}/lnd-backend:latest
+            ${{ vars.ACR_LOGIN_SERVER }}/lnd-backend:${{ github.sha }}
+
+      - name: Build and push agent
+        uses: docker/build-push-action@v6
+        with:
+          context: agent
+          file: agent/Dockerfile
+          push: true
+          tags: |
+            ${{ vars.ACR_LOGIN_SERVER }}/lnd-agent:latest
+            ${{ vars.ACR_LOGIN_SERVER }}/lnd-agent:${{ github.sha }}
